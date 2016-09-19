@@ -1,0 +1,63 @@
+# coding=utf-8
+
+import os
+import logging.config
+
+import yaml
+
+from xpaw.errors import UsageError
+from xpaw.master import Master
+from xpaw.fetcher import Fetcher
+from xpaw.agent import Agent
+from xpaw import cli
+
+
+class Command:
+    @property
+    def description(self):
+        return "Start components."
+
+    def add_arguments(self, parser):
+        modules = ["master", "fetcher", "agent"]
+        parser.add_argument("module", metavar="module", choices=modules, nargs="?",
+                            help="available values: {0}".format(", ".join(modules)))
+        parser.add_argument("-c", "--config", dest="config", metavar="FILE",
+                            help="the configuration file of this module")
+        parser.add_argument("-d", "--data-dir", dest="data_dir", metavar="DIR",
+                            help="the directory to store data")
+        parser.add_argument("-l", "--logger", dest="logger", metavar="FILE",
+                            help="the configuration file of the logger")
+
+    def run(self, args):
+        name = args.module
+        if not name:
+            raise UsageError()
+        if not args.config:
+            raise UsageError("Must assign the configuration file")
+        config = self._load_config(args.config)
+        if args.data_dir:
+            data_dir = os.path.abspath(args.data_dir)
+        else:
+            data_dir = os.path.join(os.getcwd(), "data")
+        config.setdefault("data_dir", data_dir)
+        if args.logger:
+            logging.config.dictConfig(self._load_config(args.logger))
+        else:
+            logging.config.dictConfig(cli.logger)
+        if name == "master":
+            master = Master.from_config(config)
+            master.start()
+        elif name == "fetcher":
+            fetcher = Fetcher.from_config(config)
+            fetcher.start()
+        elif name == "agent":
+            agent = Agent.from_config(config)
+            agent.start()
+        else:
+            raise UsageError()
+
+    @staticmethod
+    def _load_config(file):
+        with open(file, "r", encoding="utf-8") as f:
+            d = yaml.load(f)
+            return d

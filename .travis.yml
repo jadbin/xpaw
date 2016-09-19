@@ -1,0 +1,23 @@
+language: python
+python:
+  - 3.5
+
+sudo: false
+
+cache:
+  directories:
+  - $HOME/.cache/pip
+
+install:
+  - pip install -r requirements-ci.txt
+
+script:
+  - py.test --cov=xpaw tests
+
+after_success:
+  - coveralls
+
+branches:
+  only:
+    - master
+    - develop
