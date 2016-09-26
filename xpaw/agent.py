@@ -321,10 +321,9 @@ class ProxyChecker:
             else:
                 proxy = addr
             try:
-                with aiohttp.ClientSession(connector=aiohttp.ProxyConnector(proxy=proxy),
-                                           loop=self._loop) as session:
+                with aiohttp.ClientSession(loop=self._loop) as session:
                     with aiohttp.Timeout(self._timeout, loop=self._loop):
-                        async with session.request("GET", self._url) as resp:
+                        async with session.request("GET", self._url, proxy=proxy) as resp:
                             if resp.status != self._http_status:
                                 return False
                             if self._url_match and not self._url_match.search(resp.url):

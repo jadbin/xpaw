@@ -104,18 +104,15 @@ class Downloader:
 
     async def _get(self, request, timeout):
         log.debug("HTTP request: {0} {1}".format(request.method, request.url))
-        if request.proxy:
-            connector = aiohttp.ProxyConnector(proxy=request.proxy)
-        else:
-            connector = None
-        with aiohttp.ClientSession(connector=connector, cookies=request.cookies, loop=self._loop) as session:
+        with aiohttp.ClientSession(cookies=request.cookies, loop=self._loop) as session:
             with aiohttp.Timeout(timeout, loop=self._loop):
                 async with session.request(request.method,
                                            request.url,
                                            headers=request.headers,
-                                           data=request.body) as resp:
+                                           data=request.body,
+                                           proxy=request.proxy) as resp:
                     body = await resp.read()
-                    cookies = session.cookies
+                    cookies = resp.cookies
         response = HttpResponse(resp.url,
                                 resp.status,
                                 headers=resp.headers,
