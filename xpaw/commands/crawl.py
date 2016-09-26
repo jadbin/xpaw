@@ -144,6 +144,7 @@ class Cluster:
             self._queue.append(r)
         elif isinstance(result, HttpResponse):
             # bind HttpRequest
+            result.request = request
             for res in self._spider.parse(result, middleware=self._spidermw):
                 if isinstance(res, HttpRequest):
                     r = pickle.dumps(res)
