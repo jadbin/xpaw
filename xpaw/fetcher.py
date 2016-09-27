@@ -137,8 +137,10 @@ class Fetcher:
             for res in spider.parse(result, middleware=spidermw):
                 if isinstance(res, HttpRequest):
                     self._push_request(task_id, res)
-        else:
-            log.debug("Got {0} when request '{1}': {2}".format(type(result), request.url, result))
+                elif isinstance(res, Exception):
+                    log.warning("Unexpected error occurred when parse response", exc_info=res)
+        elif isinstance(result, Exception):
+            log.warn("Unexpected error occurred when request '{0}'".format(request.url), exc_info=result)
 
     def _push_request(self, task_id, req):
         self._producer.push_request(task_id, req)
@@ -154,14 +156,12 @@ class Fetcher:
     def _add_task(self, task_id):
         spider = self._task_config.spider(task_id)
         spidermws = self._task_config.spidermw(task_id)
-        try:
-            for res in spider.start_requests(middleware=spidermws):
-                if isinstance(res, HttpRequest):
-                    self._push_request(task_id, res)
-        except Exception:
-            log.warning("Unexpected error occurred when handle start requests", exc_info=True)
-        finally:
-            self._new_task_slot_recorder.release_slot()
+        for res in spider.start_requests(middleware=spidermws):
+            if isinstance(res, HttpRequest):
+                self._push_request(task_id, res)
+            elif isinstance(res, Exception):
+                log.warning("Unexpected error occurred when handle start requests", exc_info=res)
+        self._new_task_slot_recorder.release_slot()
 
     def _handle_task_gc(self, data):
         task_set = data.get("task_gc")

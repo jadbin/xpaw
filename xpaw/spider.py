@@ -30,7 +30,7 @@ class Spider:
                 else:
                     spider = spider_cls()
             except Exception:
-                log.warning("An error occurred when load spider '{0}'".format(cls_path), exc_info=True)
+                log.warning("Unexpected error occurred when load spider '{0}'".format(cls_path), exc_info=True)
             else:
                 spiders.append(spider)
         return cls(*spiders)
@@ -55,8 +55,9 @@ class Spider:
             try:
                 if middleware:
                     self._handle_error(response, e, middleware)
-            except Exception:
-                pass
+                yield e
+            except Exception as _e:
+                yield _e
 
     def start_requests(self, *, middleware=None):
         try:
@@ -66,8 +67,8 @@ class Spider:
                     res = self._handle_start_requests(res, middleware)
                 for r in res:
                     yield r
-        except Exception:
-            log.warning("Unexpected error occurred when generate start requests", exc_info=True)
+        except Exception as e:
+            yield e
 
     @staticmethod
     def _handle_input(response, middleware):

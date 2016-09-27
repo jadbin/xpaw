@@ -94,12 +94,11 @@ class Cluster:
         self._task_loop.call_soon_threadsafe(self._push_start_requests)
 
     def _push_start_requests(self):
-        try:
-            for res in self._spider.start_requests(middleware=self._spidermw):
-                if isinstance(res, HttpRequest):
-                    self._push_request(res)
-        except Exception:
-            log.warning("Unexpected error occurred when handle start requests", exc_info=True)
+        for res in self._spider.start_requests(middleware=self._spidermw):
+            if isinstance(res, HttpRequest):
+                self._push_request(res)
+            elif isinstance(res, Exception):
+                log.warning("Unexpected error occurred when handle start requests", exc_info=res)
 
     def _push_request(self, req):
         r = pickle.dumps(req)
@@ -149,5 +148,7 @@ class Cluster:
                 if isinstance(res, HttpRequest):
                     r = pickle.dumps(res)
                     self._queue.append(r)
-        else:
-            log.debug("Got {0} when request '{1}': {2}".format(type(result), request.url, result))
+                elif isinstance(res, Exception):
+                    log.warning("Unexpected error occurred when parse response", exc_info=res)
+        elif isinstance(result, Exception):
+            log.warn("Unexpected error occurred when request '{0}'".format(request.url), exc_info=result)
