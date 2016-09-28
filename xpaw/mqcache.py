@@ -157,6 +157,6 @@ class MQCache:
             finally:
                 if producer:
                     producer.stop()
-        self._mq.pop(topic)
+        del self._mq[topic]
         self._consumers[topic].stop()
-        self._consumers.pop(topic)
+        del self._consumers[topic]

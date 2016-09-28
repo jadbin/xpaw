@@ -208,13 +208,13 @@ class TaskDb:
     def get_info(self, task_id):
         task_info = self._info_tbl.find_one({"_id": ObjectId(task_id)})
         if task_info:
-            task_info.pop("_id")
+            del task_info["_id"]
         return task_info
 
     def get_progress(self, task_id):
         task_progress = self._progress_tbl.find_one({"_id": ObjectId(task_id)})
         if task_progress:
-            task_progress.pop("_id")
+            del task_progress["_id"]
         return task_progress
 
 
@@ -287,7 +287,7 @@ class TaskProgressHandler:
         for task_id in [i for i in self._last_modified.keys()]:
             if t - self._last_modified[task_id] > self._task_finished_delay:
                 log.debug("The task '{0}' has not been updated in the last {1} seconds".format(task_id, self._task_finished_delay))
-                self._last_modified.pop(task_id)
+                del self._last_modified[task_id]
                 self._finish_task(task_id)
 
     def _update_database(self, task_id, completed, total):

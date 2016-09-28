@@ -247,12 +247,12 @@ class TaskConfig:
 
     def _remove_task_config(self, task_id):
         self._remove_custom_objects(task_id)
-        self._config.pop(task_id)
+        del self._config[task_id]
 
     def _remove_custom_objects(self, task_id):
-        self._downloadermw.pop(task_id)
-        self._spider.pop(task_id)
-        self._spidermw.pop(task_id)
+        del self._downloadermw[task_id]
+        del self._spider[task_id]
+        del self._spidermw[task_id]
 
     def _load_custom_objects(self, task_id, task_config, code_dir):
         # add project path
@@ -304,7 +304,7 @@ class RequestProducer:
             for t in del_task:
                 self._set.remove(t)
                 self._producers[t].stop()
-                self._producers.pop(t)
+                del self._producers[t]
 
     def push_request(self, topic, req):
         log.debug("Push request (url={0}) into the topic '{1}'".format(req.url, topic))

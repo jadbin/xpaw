@@ -43,7 +43,7 @@ class Command:
             k = self._format_key(args.unset)
             config = self._load_config()
             if k in config:
-                config.pop(k)
+                del config[k]
                 self._save_config(config)
         elif args.unset_all:
             if os.path.isfile(cli.CONFIG_FILE):
