@@ -177,8 +177,8 @@ class ProxyManager:
             i = 1
             while i <= count:
                 proxy = self._proxy_list.top()
-                self._proxy_list.pop(proxy.queue_index)
-                self._queue.pop(proxy.queue_index)
+                del self._proxy_list[proxy.queue_index]
+                del self._queue[proxy.queue_index]
                 t.append(proxy)
                 if detail:
                     res.append({"addr": proxy.addr, "success": proxy.good, "fail": proxy.bad})
@@ -267,9 +267,9 @@ class ProxyManager:
         proxy.status = proxy.IN_QUEUE
 
     def _pop_queue(self, proxy):
-        self._time_line.pop(proxy.line_index)
-        self._queue.pop(proxy.queue_index)
-        self._proxy_list.pop(proxy.queue_index)
+        del self._time_line[proxy.line_index]
+        del self._queue[proxy.queue_index]
+        del self._proxy_list[proxy.queue_index]
         proxy.status = None
 
     def _push_backup(self, proxy):
@@ -278,8 +278,8 @@ class ProxyManager:
         proxy.status = proxy.IN_BACKUP
 
     def _pop_backup(self, proxy):
-        self._time_line.pop(proxy.line_index)
-        self._backup.pop(proxy.queue_index)
+        del self._time_line[proxy.line_index]
+        del self._backup[proxy.queue_index]
         proxy.status = None
 
 

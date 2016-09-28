@@ -25,7 +25,7 @@ class TestPriorityQueue:
             elif i[0] == 1:
                 q.push(i[1], i[2])
             elif i[0] == -1:
-                q.pop()
+                del q[None]
             else:
                 raise RuntimeError("Unexpected operation: %s" % i[0])
 
@@ -78,7 +78,7 @@ class TestPriorityQueue:
             elif i[0] == 1:
                 q.push(i[1], i[2])
             elif i[0] == -1:
-                q.pop()
+                del q[None]
             else:
                 raise RuntimeError("Unexpected operation: %s" % i[0])
 
@@ -129,7 +129,7 @@ class TestPriorityQueue:
             elif i[0] == 1:
                 index[i[1]] = q.push(i[1], i[2])
             elif i[0] == -1:
-                q.pop(index[i[1]])
+                del q[index[i[1]]]
                 index.pop(i[1])
             else:
                 raise RuntimeError("Unexpected operation: %s" % i[0])

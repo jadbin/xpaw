@@ -17,6 +17,13 @@ class PriorityQueue:
     def __len__(self):
         return self._size - len(self._q)
 
+    def __delitem__(self, index):
+        if len(self._q) < self._size:
+            i = self._h[1] if index is None else index
+            self._p[i] = None
+            self._update(i)
+            self._q.append(i)
+
     def is_full(self):
         return len(self._q) == 0
 
@@ -26,13 +33,6 @@ class PriorityQueue:
             self._v[i], self._p[i] = item, priority
             self._update(i)
             return i
-
-    def pop(self, index=None):
-        if len(self._q) < self._size:
-            i = self._h[1] if index is None else index
-            self._p[i] = None
-            self._update(i)
-            self._q.append(i)
 
     def top(self):
         if len(self._q) < self._size:
