@@ -99,20 +99,22 @@ class TestRpc:
     def test_call_function(self, rpc_server, rpc_client):
         async def _test():
             async_rpc_client = RpcClient(self.rpc_addr, loop=loop)
-            res = await async_rpc_client.rpc.handle(0, "str", dict={"key": "value"})
-            assert res == ((0, "str"), {"dict": {"key": "value"}})
+            res = await async_rpc_client.rpc.handle(0, "str", b"bytes", pi=3.141592657, dict={"list": [0, 1.0, "2", b"3"]})
+            assert res == ((0, "str", b"bytes"), {"pi": 3.141592657, "dict": {"list": [0, 1.0, "2", b"3"]}})
 
-        assert rpc_client.rpc.handle(0, "str", dict={"key": "value"}) == ((0, "str"), {"dict": {"key": "value"}})
+        assert rpc_client.rpc.handle(0, "str", b"bytes", pi=3.141592657, dict={"list": [0, 1.0, "2", b"3"]}) == \
+               ((0, "str", b"bytes"), {"pi": 3.141592657, "dict": {"list": [0, 1.0, "2", b"3"]}})
         loop = asyncio.new_event_loop()
         loop.run_until_complete(_test())
 
     def test_call_async_function(self, rpc_server, rpc_client):
         async def _test():
             async_rpc_client = RpcClient(self.rpc_addr, loop=loop)
-            res = await async_rpc_client.rpc.async_handle(0, "str", dict={"key": "value"})
-            assert res == ((0, "str"), {"dict": {"key": "value"}})
+            res = await async_rpc_client.rpc.async_handle(0, "str", b"bytes", pi=3.141592657, dict={"list": [0, 1.0, "2", b"3"]})
+            assert res == ((0, "str", b"bytes"), {"pi": 3.141592657, "dict": {"list": [0, 1.0, "2", b"3"]}})
 
-        assert rpc_client.rpc.async_handle(0, "str", dict={"key": "value"}) == ((0, "str"), {"dict": {"key": "value"}})
+        assert rpc_client.rpc.async_handle(0, "str", b"bytes", pi=3.141592657, dict={"list": [0, 1.0, "2", b"3"]}) == \
+               ((0, "str", b"bytes"), {"pi": 3.141592657, "dict": {"list": [0, 1.0, "2", b"3"]}})
         loop = asyncio.new_event_loop()
         loop.run_until_complete(_test())
 
