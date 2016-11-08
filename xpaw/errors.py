@@ -25,24 +25,6 @@ class RpcError(Exception):
     """
 
 
-class RpcNotFound(RpcError):
-    """
-    RPC not found.
-    """
-
-
-class RpcTimeoutError(RpcError):
-    """
-    RPC timeout error.
-    """
-
-
-class RpcParsingError(RpcError):
-    """
-    Fail to parse data.
-    """
-
-
 class UsageError(Exception):
     """
     CLI usage error.

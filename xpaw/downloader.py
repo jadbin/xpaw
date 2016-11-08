@@ -4,6 +4,7 @@ import logging
 import asyncio
 
 import aiohttp
+import async_timeout
 
 from xpaw.middleware import MiddlewareManager
 from xpaw.http import HttpRequest, HttpResponse
@@ -80,7 +81,8 @@ class Downloader:
         for method in middleware.request_handlers:
             res = await method(request)
             if not (res is None or isinstance(res, (HttpRequest, HttpResponse))):
-                raise TypeError("Request handler must return None, HttpRequest or HttpResponse, got {0}".format(type(res)))
+                raise TypeError(
+                    "Request handler must return None, HttpRequest or HttpResponse, got {0}".format(type(res)))
             if res:
                 return res
 
@@ -105,7 +107,7 @@ class Downloader:
     async def _get(self, request, timeout):
         log.debug("HTTP request: {0} {1}".format(request.method, request.url))
         with aiohttp.ClientSession(cookies=request.cookies, loop=self._loop) as session:
-            with aiohttp.Timeout(timeout, loop=self._loop):
+            with async_timeout.timeout(timeout, loop=self._loop):
                 async with session.request(request.method,
                                            request.url,
                                            headers=request.headers,

@@ -11,6 +11,7 @@ import threading
 
 import aiohttp
 from aiohttp import web
+import async_timeout
 
 from xpaw.ds import PriorityQueue
 
@@ -56,7 +57,8 @@ class Agent:
             resource.add_route("POST", lambda r, i=i: self._post_proxy_list(r, i))
         host, port = self._server_listen.split(":")
         port = int(port)
-        self._server_loop.run_until_complete(self._server_loop.create_server(app.make_handler(access_log=None), host, port))
+        self._server_loop.run_until_complete(
+            self._server_loop.create_server(app.make_handler(access_log=None), host, port))
         t = threading.Thread(target=_start)
         t.start()
 
@@ -93,7 +95,9 @@ class Agent:
             host, _ = peername
         log.debug("'{0}' request '/{1}', count={2}, detail={3}".format(host, id_string, count, detail))
         proxy_list = self._proxy_managers[id_string].get_proxy_list(count, detail=detail)
-        return web.Response(body=json.dumps(proxy_list).encode("utf-8"))
+        return web.Response(body=json.dumps(proxy_list).encode("utf-8"),
+                            charset="utf-8",
+                            content_type="application/json")
 
     async def _post_proxy_list(self, request, id_string):
         """
@@ -107,7 +111,7 @@ class Agent:
         peername = request.transport.get_extra_info("peername")
         if peername:
             host, _ = peername
-        log.debug("'{0}' post proxy list, the number of proxies: {1}".format(host, len(addr_list)))
+        log.debug("'{0}' post {1} proxies to '/{2}'".format(host, len(addr_list), id_string))
         self._proxy_managers[id_string].add_proxy(*addr_list)
         return web.Response(status=200)
 
@@ -322,7 +326,7 @@ class ProxyChecker:
                 proxy = addr
             try:
                 with aiohttp.ClientSession(loop=self._loop) as session:
-                    with aiohttp.Timeout(self._timeout, loop=self._loop):
+                    with async_timeout.timeout(self._timeout, loop=self._loop):
                         async with session.request("GET", self._url, proxy=proxy) as resp:
                             if resp.status != self._http_status:
                                 return False
@@ -399,7 +403,8 @@ class ProxyDb:
 
         :param xpaw.agent.ProxyInfo proxy: proxy information
         """
-        self._conn.execute("REPLACE INTO {0} (addr, timestamp) VALUES ('{1}', {2})".format(self.TBL_NAME, proxy.addr, proxy.timestamp))
+        self._conn.execute(
+            "REPLACE INTO {0} (addr, timestamp) VALUES ('{1}', {2})".format(self.TBL_NAME, proxy.addr, proxy.timestamp))
         self._update_count += 1
         if self._update_count >= self.COMMIT_COUNT:
             self._conn.commit()

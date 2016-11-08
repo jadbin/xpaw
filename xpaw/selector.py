@@ -42,15 +42,5 @@ class SelectorList(list):
         return res
 
     @property
-    def first(self):
-        if len(self) > 0:
-            return self[0]
-
-    @property
-    def last(self):
-        if len(self) > 0:
-            return self[-1]
-
-    @property
     def value(self):
         return [i.value for i in self]
