@@ -6,7 +6,7 @@ import threading
 import pytest
 
 from xpaw.rpc import RpcServer, RpcClient
-from xpaw.errors import RpcNotFound
+from xpaw.errors import RpcError
 
 from .helpers import wait_server_start
 
@@ -71,7 +71,6 @@ def rpc_server(request):
             loop.close()
 
     def stop_loop():
-        server.shutdown()
         loop.call_soon_threadsafe(loop.stop)
 
     loop = asyncio.new_event_loop()
@@ -132,10 +131,10 @@ class TestRpc:
     def test_method_not_found(self, rpc_server, rpc_client):
         async def _test():
             async_rpc_client = RpcClient(self.rpc_addr, loop=loop)
-            with pytest.raises(RpcNotFound):
+            with pytest.raises(RpcError):
                 await async_rpc_client.handle()
 
-        with pytest.raises(RpcNotFound):
+        with pytest.raises(RpcError):
             rpc_client.handle()
         loop = asyncio.new_event_loop()
         loop.run_until_complete(_test())

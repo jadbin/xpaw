@@ -6,6 +6,7 @@ import asyncio
 import logging
 
 import aiohttp
+import async_timeout
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ class ProxyAgentMiddleware:
                 log.debug("Update proxy list")
                 try:
                     with aiohttp.ClientSession(loop=self._loop) as session:
-                        with aiohttp.Timeout(self._update_timeout, loop=self._loop):
+                        with async_timeout.timeout(self._update_timeout, loop=self._loop):
                             async with session.get(self._agent_addr) as resp:
                                 body = await resp.read()
                                 proxy_list = json.loads(body.decode(encoding="utf-8"))
