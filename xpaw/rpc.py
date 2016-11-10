@@ -4,6 +4,7 @@ import pickle
 import inspect
 import asyncio
 import logging
+import traceback
 
 import aiohttp
 from aiohttp import web
@@ -11,6 +12,8 @@ from aiohttp import web
 from xpaw.errors import RpcError
 
 log = logging.getLogger(__name__)
+
+ENCODING = "utf-8"
 
 
 class RpcServer:
@@ -25,7 +28,7 @@ class RpcServer:
             name = func.__name__
         self._funcs[name] = func
 
-    def serve_forever(self):
+    def start(self):
         log.debug("Start RPC server on '{0}'".format(self._server_listen))
         app = web.Application(logger=log, loop=self._loop)
         for f in self._funcs:
@@ -55,11 +58,11 @@ class RpcServer:
             res = func(*params, *args, **kwargs)
             if inspect.iscoroutine(res):
                 res = await res
-        except Exception as e:
-            return web.Response(body=pickle.dumps(e),
-                                status=500)
+        except Exception:
+            err_msg = traceback.format_exc()
+            return web.Response(status=500, body=err_msg.encode(ENCODING))
         else:
-            return web.Response(body=pickle.dumps(res))
+            return web.Response(status=200, body=pickle.dumps(res))
 
 
 class RpcClient:
@@ -70,37 +73,27 @@ class RpcClient:
             server_addr = server_addr[:-1]
         self._server_addr = server_addr
         self._timeout = timeout
-        if loop is None:
-            self._send = self._call
-            self._loop = asyncio.new_event_loop()
-        else:
-            self._send = self._async_call
-            self._loop = loop
+        self._loop = loop or asyncio.get_event_loop()
+        self._session = aiohttp.ClientSession(loop=self._loop)
 
     def __getattr__(self, name):
-        return _Method(self._send, name)
-
-    def _call(self, func_name, args, kw):
-        return self._loop.run_until_complete(self._request(func_name, args, kw))
+        return _Method(self._async_call, name)
 
     async def _async_call(self, func_name, args, kw):
         return await self._request(func_name, args, kw)
 
     async def _request(self, func_name, args, kw):
-        data = [args if args else [], kw if kw else {}]
-        async with aiohttp.ClientSession(loop=self._loop) as session:
-            async with session.post("{0}/{1}".format(self._server_addr, func_name),
-                                    data=pickle.dumps(data),
-                                    timeout=self._timeout) as resp:
-                body = await resp.read()
-                if resp.status == 200:
-                    return pickle.loads(body)
-                elif resp.status == 500:
-                    raise pickle.loads(body)
-                elif resp.status == 404:
-                    raise RpcError("The method '{0}' is not found".format(func_name))
-                else:
-                    raise RpcError("Unknown RPC error")
+        req_data = [args if args else [], kw if kw else {}]
+        async with self._session.post("{0}/{1}".format(self._server_addr, func_name),
+                                      data=pickle.dumps(req_data),
+                                      timeout=self._timeout) as resp:
+            body = await resp.read()
+            if resp.status == 200:
+                return pickle.loads(body)
+            raise RpcError(body.decode(ENCODING))
+
+    def close(self):
+        self._session.close()
 
 
 class _Method:

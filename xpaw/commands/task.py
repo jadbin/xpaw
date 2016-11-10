@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import os
+import asyncio
 import zipfile
 
 import yaml
@@ -48,15 +49,17 @@ class Command:
             if not project:
                 project_dir = os.getcwd()
                 if not os.path.isfile(os.path.join(project_dir, "info.yaml")):
-                    raise UsageError("Connot find 'info.yaml' in current working directory, please assign the task project directory")
+                    raise UsageError("Connot find 'info.yaml' in current working directory, "
+                                     "please assign the task project directory")
                 if not os.path.isfile(os.path.join(project_dir, "config.yaml")):
-                    raise UsageError("Connot find 'config.yaml' in current working directory, please assign the task project directory")
+                    raise UsageError("Connot find 'config.yaml' in current working directory, "
+                                     "please assign the task project directory")
             else:
                 project_dir = os.path.abspath(project)
             task_info = self._load_config(os.path.join(project_dir, "info.yaml"))
             zipb = self._compress_dir(project_dir)
             client = RpcClient(master_rpc_addr)
-            task_id = client.create_task(task_info, zipb)
+            task_id = loop.run_until_complete(client.create_task(task_info, zipb))
             print("Please remember the task ID: {0}".format(task_id))
             print("Task description: {0}".format(task_info.get("description")))
 
@@ -64,46 +67,47 @@ class Command:
         @_check_id
         def _start():
             client = RpcClient(master_rpc_addr)
-            client.start_task(task_id)
+            loop.run_until_complete(client.start_task(task_id))
 
         @_check_master
         @_check_id
         def _stop():
             client = RpcClient(master_rpc_addr)
-            client.stop_task(task_id)
+            loop.run_until_complete(client.stop_task(task_id))
 
         @_check_master
         @_check_id
         def _finish():
             client = RpcClient(master_rpc_addr)
-            client.finish_task(task_id)
+            loop.run_until_complete(client.finish_task(task_id))
 
         @_check_master
         @_check_id
         def _remove():
             client = RpcClient(master_rpc_addr)
-            client.remove_task(task_id)
+            loop.run_until_complete(client.remove_task(task_id))
 
         @_check_master
         @_check_id
         def _get_info():
             client = RpcClient(master_rpc_addr)
-            info = client.get_task_info(task_id)
+            info = loop.run_until_complete(client.get_task_info(task_id))
             print("Task information: {0}".format(info))
 
         @_check_master
         @_check_id
         def _get_progress():
             client = RpcClient(master_rpc_addr)
-            progress = client.get_task_progress(task_id)
+            progress = loop.run_until_complete(client.get_task_progress(task_id))
             print("Task progress: {0}".format(progress))
 
         @_check_master
         def _get_tasks():
             client = RpcClient(master_rpc_addr)
-            tasks = client.get_running_tasks()
+            tasks = loop.run_until_complete(client.get_running_tasks())
             print("Running tasks: {0}".format(tasks))
 
+        loop = asyncio.get_event_loop()
         master_rpc_addr = args.master_rpc_addr or cli.config.get("master_rpc_addr")
         task_id = args.id
         project = args.project

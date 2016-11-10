@@ -21,9 +21,9 @@ log = logging.getLogger(__name__)
 class Agent:
     def __init__(self, server_listen, *, local_config=None):
         self._server_listen = server_listen
-        self._manager_loop = local_config.get("_manager_loop", asyncio.new_event_loop())
-        self._server_loop = local_config.get("_server_loop", asyncio.new_event_loop())
-        local_config["_manager_loop"] = self._manager_loop
+        self._manager_loop = asyncio.new_event_loop()
+        self._server_loop = asyncio.new_event_loop()
+        local_config["proxy_manager_loop"] = self._manager_loop
         self._proxy_managers = ProxyManagers.from_config(local_config)
         self._is_running = False
 
@@ -120,17 +120,17 @@ class ProxyManagers(dict):
     @classmethod
     def from_config(cls, config):
         managers = {}
-        m = config.get("proxy_checker")
+        m = config.get("proxy_checkers")
         if m:
-            loop = config.get("_manager_loop")
+            loop = config.get("proxy_manager_loop")
             if not loop:
                 loop = asyncio.get_event_loop()
             semaphore = asyncio.Semaphore(config.get("proxy_checker_clients", 100), loop=loop)
             for k, v in m.items():
-                v["_loop"] = loop
-                v["_semaphore"] = semaphore
-                config["_proxy_checker"] = ProxyChecker.from_config(v)
-                config["_proxy_db"] = ProxyDb(os.path.join(config.get("data_dir") or "", "proxy-db", k))
+                v["loop"] = loop
+                v["semaphore"] = semaphore
+                config["proxy_checker"] = ProxyChecker.from_config(v)
+                config["proxy_db"] = ProxyDb(os.path.join(config.get("data_dir") or ".", "proxy-db", k))
                 managers[k] = ProxyManager.from_config(config)
         return cls(managers)
 
@@ -168,8 +168,8 @@ class ProxyManager:
             kw["proxy_fail_times"] = config["proxy_fail_times"]
         if "checker_sleep_time" in config:
             kw["sleep_time"] = config["checker_sleep_time"]
-        kw["loop"] = config.get("_manager_loop")
-        return cls(config.get("_proxy_checker"), config.get("_proxy_db"), **kw)
+        kw["loop"] = config.get("proxy_manager_loop")
+        return cls(config.get("proxy_checker"), config.get("proxy_db"), **kw)
 
     def get_proxy_list(self, count, *, detail=False):
         res = []
@@ -314,8 +314,8 @@ class ProxyChecker:
                 kw["body_match"] = re.compile(resp["body_match"].encode(encoding))
         if "timeout" in config:
             kw["timeout"] = config["timeout"]
-        kw["loop"] = config.get("_loop")
-        kw["semaphore"] = config.get("_semaphore")
+        kw["loop"] = config.get("loop")
+        kw["semaphore"] = config.get("semaphore")
         return cls(config.get("url"), **kw)
 
     async def check_proxy(self, addr, callback):

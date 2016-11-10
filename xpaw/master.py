@@ -10,7 +10,7 @@ from bson.objectid import ObjectId
 from pymongo import MongoClient
 
 from xpaw.rpc import RpcServer
-from xpaw.mqcache import MQCache
+from xpaw.unikafka import Unikafka
 
 log = logging.getLogger(__name__)
 
@@ -21,19 +21,25 @@ class Master(object):
         if local_config is None:
             local_config = {}
         self._local_config = dict(local_config)
-        local_config.setdefault("_finish_task", self.finish_task)
-        local_config.setdefault("_get_running_tasks", self.get_running_tasks)
-        self._rpc_loop = local_config.get("_rpc_loop", asyncio.new_event_loop())
-        local_config.setdefault("_rpc_loop", self._rpc_loop)
+
+        self._rpc_loop = asyncio.new_event_loop()
+
+        local_config["finish_task"] = self.finish_task
+        local_config["get_running_tasks"] = self.get_running_tasks
         task_progress_handler = TaskProgressHandler.from_config(local_config)
         task_gc_handler = TaskGcHandler.from_config(local_config)
-        local_config.setdefault("_heartbeat_recheck_handlers", (task_progress_handler.recheck,))
-        local_config.setdefault("_heartbeat_data_handlers", (self._assign_new_task,
-                                                             task_progress_handler.handle_data,
-                                                             task_gc_handler.handle_data))
+        local_config["heartbeat_recheck_handlers"] = (task_progress_handler.recheck,)
+        local_config["heartbeat_data_handlers"] = (self._assign_new_task,
+                                                   task_progress_handler.handle_data,
+                                                   task_gc_handler.handle_data)
+        local_config["heartbeat_handler_loop"] = self._rpc_loop
         self._heartbeat_handler = HeartbeatHandler.from_config(local_config)
+
         self._task_db = TaskDb.from_config(local_config)
-        self._mq_cache = MQCache.from_config(local_config)
+
+        local_config["unikafka_loop"] = self._rpc_loop
+        self._unikafka = Unikafka.from_config(local_config)
+
         self._tasks, self._new_tasks = set(), deque()
         self._is_running = False
 
@@ -45,7 +51,7 @@ class Master(object):
         if not self._is_running:
             self._is_running = True
             self._start_rpc_loop()
-            self._mq_cache.start()
+            self._unikafka.start()
 
     def _start_rpc_loop(self):
         def _start():
@@ -76,7 +82,7 @@ class Master(object):
         server.register_function(self.get_task_progress)
         server.register_function(self.get_running_tasks)
         server.register_function(self.handle_heartbeat)
-        server.serve_forever()
+        server.start()
 
     def create_task(self, task_info, task_config_zip):
         task = TaskInfo(**task_info)
@@ -103,7 +109,7 @@ class Master(object):
         log.info("Stop the task '{0}'".format(task_id))
         if task_id in self._tasks:
             self._task_db.update_info(task_id, {"$set": {"status": TaskInfo.STOPPED}})
-            self._tasks.remove(task_id)
+            del self._tasks[task_id]
             self._update_tasks()
 
     def finish_task(self, task_id):
@@ -111,7 +117,7 @@ class Master(object):
         if task_id in self._tasks:
             self._task_db.update_info(task_id, {"$set": {"status": TaskInfo.FINISHED,
                                                          "finish_time": int(time.time())}})
-            self._tasks.remove(task_id)
+            del self._tasks[task_id]
             self._update_tasks()
 
     def remove_task(self, task_id):
@@ -139,7 +145,7 @@ class Master(object):
         return self._tasks
 
     def _update_tasks(self):
-        self._mq_cache.subscribe(self._tasks)
+        self._unikafka.subscribe(self._tasks)
 
     def handle_heartbeat(self, _host, pid, data):
         identity = (_host, pid)
@@ -191,10 +197,7 @@ class TaskDb:
 
     @classmethod
     def from_config(cls, config):
-        kw = {}
-        if "mongo_db" in config:
-            kw["mongo_db"] = config["mongo_db"]
-        return cls(config.get("mongo_addr"), **kw)
+        return cls(config.get("mongo_addr"))
 
     def insert_info(self, task_id, task_info):
         self._info_tbl.insert_one({"_id": ObjectId(task_id), **task_info})
@@ -230,9 +233,9 @@ class HeartbeatHandler:
         kw = {}
         if "recheck_interval" in config:
             kw["recheck_interval"] = config["recheck_interval"]
-        kw["recheck_handlers"] = config.get("_heartbeat_recheck_handlers")
-        kw["data_handlers"] = config.get("_heartbeat_data_handlers")
-        kw["loop"] = config.get("_rpc_loop")
+        kw["recheck_handlers"] = config.get("heartbeat_recheck_handlers")
+        kw["data_handlers"] = config.get("heartbeat_data_handlers")
+        kw["loop"] = config.get("heartbeat_handler_loop")
         return cls(**kw)
 
     def handle_heartbeat(self, identity, data):
@@ -261,11 +264,9 @@ class TaskProgressHandler:
     @classmethod
     def from_config(cls, config):
         kw = {}
-        if "mongo_db" in config:
-            kw["mongo_db"] = config["mongo_db"]
         if "task_finished_delay" in config:
             kw["task_finished_delay"] = config["task_finished_delay"]
-        return cls(config.get("mongo_addr"), config.get("_finish_task"), **kw)
+        return cls(config.get("mongo_addr"), config.get("finish_task"), **kw)
 
     def handle_data(self, identity, data):
         progress_list = data.get("task_progress")
@@ -286,7 +287,8 @@ class TaskProgressHandler:
         t = time.time()
         for task_id in [i for i in self._last_modified.keys()]:
             if t - self._last_modified[task_id] > self._task_finished_delay:
-                log.debug("The task '{0}' has not been updated in the last {1} seconds".format(task_id, self._task_finished_delay))
+                log.debug("The task '{0}' has not been updated in the last {1} seconds".format(task_id,
+                                                                                               self._task_finished_delay))
                 del self._last_modified[task_id]
                 self._finish_task(task_id)
 
@@ -317,7 +319,7 @@ class TaskGcHandler:
         kw = {}
         if "task_gc_interval" in config:
             kw["gc_interval"] = config["task_gc_interval"]
-        return cls(config.get("_get_running_tasks"), **kw)
+        return cls(config.get("get_running_tasks"), **kw)
 
     def handle_data(self, identity, data):
         t = time.time()

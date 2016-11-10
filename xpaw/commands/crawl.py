@@ -37,7 +37,8 @@ class Command:
         if not args.project:
             project_dir = os.getcwd()
             if not os.path.isfile(os.path.join(project_dir, "config.yaml")):
-                raise UsageError("Connot find 'config.yaml' in current working directory, please assign the task project directory")
+                raise UsageError("Connot find 'config.yaml' in current working directory, "
+                                 "please assign the task project directory")
         else:
             project_dir = os.path.abspath(args.project)
         if args.logger:
@@ -64,8 +65,8 @@ class Cluster:
             task_config = yaml.load(f)
         task_id = "{0}".format(ObjectId())
         log.info("Please remember the task ID: {0}".format(task_id))
-        task_config.setdefault("_task_id", task_id)
-        task_config.setdefault("_event_loop", self._downloader_loop)
+        task_config["_task_id"] = task_id
+        task_config["_event_loop"] = self._downloader_loop
         sys.path.append(project_dir)
         self._downloadermw = DownloaderMiddlewareManager.from_config(task_config)
         self._spider = Spider.from_config(task_config)

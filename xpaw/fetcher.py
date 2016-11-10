@@ -14,6 +14,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 
 from xpaw.rpc import RpcClient
+from xpaw.unikafka import UnikafkaClient
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloader import Downloader, DownloaderMiddlewareManager
 from xpaw.spider import Spider, SpiderMiddlewareManager
@@ -24,30 +25,37 @@ log = logging.getLogger(__name__)
 class Fetcher:
     def __init__(self, master_rpc_addr, *, local_config=None):
         self._pid = os.getpid()
-        self._master_rpc_addr = master_rpc_addr
         if local_config is None:
             local_config = {}
+        self._rpc_loop = asyncio.new_event_loop()
+        self._master_rpc_client = RpcClient(master_rpc_addr, loop=self._rpc_loop)
+
         remote_config = self._pull_remote_config()
         if remote_config:
             for k in remote_config:
                 local_config.setdefault(k, remote_config[k])
-        self._rpc_loop = local_config.get("_rpc_loop", asyncio.new_event_loop())
-        self._task_loop = local_config.get("_task_loop", asyncio.new_event_loop())
-        self._downloader_loop = local_config.get("_downloader_loop", asyncio.new_event_loop())
-        local_config.setdefault("_rpc_loop", self._rpc_loop)
-        local_config.setdefault("_downloader_loop", self._downloader_loop)
+
+        self._task_loop = asyncio.new_event_loop()
+        self._downloader_loop = asyncio.new_event_loop()
         self._producer = RequestProducer.from_config(local_config)
+
+        local_config["event_loop"] = self._downloader_loop
+        local_config["downloader_loop"] = self._downloader_loop
+        local_config["unikafka_client_loop"] = self._downloader_loop
         self._task_config = TaskConfig.from_config(local_config)
-        self._consumer = RequestConsumer.from_config(local_config)
+        self._unikafka_client = UnikafkaClient.from_config(local_config)
         self._downloader = Downloader.from_config(local_config)
+
         self._task_progress_recorder = TaskProgressRecorder.from_config(local_config)
         self._new_task_slot_recorder = NewTaskSlotRecorder.from_config(local_config)
-        local_config.setdefault("_send_heartbeat", self.send_heartbeat)
-        local_config.setdefault("_heartbeat_request_handlers", (self._task_progress_recorder.fetch_data,
-                                                                self._new_task_slot_recorder.fetch_data))
-        local_config.setdefault("_heartbeat_response_handlers", (self._handle_new_task,
-                                                                 self._handle_task_gc))
+        local_config["heartbeat_sender_loop"] = self._rpc_loop
+        local_config["send_heartbeat"] = self.send_heartbeat
+        local_config["heartbeat_request_handlers"] = (self._task_progress_recorder.fetch_data,
+                                                      self._new_task_slot_recorder.fetch_data)
+        local_config["heartbeat_response_handlers"] = (self._handle_new_task,
+                                                       self._handle_task_gc)
         self._heartbeat_sender = HeartbeatSender.from_config(local_config)
+
         self._is_running = False
 
     @classmethod
@@ -55,9 +63,8 @@ class Fetcher:
         return cls(config.get("master_rpc_addr"), local_config=config)
 
     def _pull_remote_config(self):
-        rpc_client = RpcClient(self._master_rpc_addr)
-        conf = rpc_client.get_config()
-        log.info("Get remote configuration from '{0}': {1}".format(self._master_rpc_addr, conf))
+        conf = self._rpc_loop.run_until_completed(self._master_rpc_client.get_config())
+        log.info("Get remote configuration: {0}".format(conf))
         return conf
 
     def start(self):
@@ -114,8 +121,12 @@ class Fetcher:
     async def _pull_requests(self):
         log.info("Start to pull requests")
         while self._is_running:
-            task_id, data = await self._consumer.poll_request()
-            if task_id:
+            task_id, data = None, None
+            try:
+                task_id, data = await self._unikafka_client.poll()
+            except Exception:
+                log.warning("Unexpected error occurred when poll request", exc_info=True)
+            if task_id and data:
                 req = pickle.loads(data)
                 log.debug("The request (url={0}) has been pulled".format(req.url))
                 self._task_progress_recorder.pull_request(task_id)
@@ -124,6 +135,9 @@ class Fetcher:
                                                 self._handle_result,
                                                 timeout=self._task_config.downloader_timeout(task_id),
                                                 middleware=self._task_config.downloadermw(task_id))
+            else:
+                # sleep when there is no work
+                await asyncio.sleep(3, loop=self._downloader_loop)
 
     def _handle_result(self, request, result):
         task_id = request.meta["_task_id"]
@@ -171,8 +185,7 @@ class Fetcher:
             self._producer.gc(task_set)
 
     async def send_heartbeat(self, data):
-        rpc_client = RpcClient(self._master_rpc_addr, loop=self._rpc_loop)
-        return await rpc_client.handle_heartbeat(self._pid, data)
+        return await self._master_rpc_client.handle_heartbeat(self._pid, data)
 
 
 class TaskConfig:
@@ -180,7 +193,7 @@ class TaskConfig:
         self._task_dir = task_dir
         self._mongo_client = MongoClient(mongo_addr)
         self._task_config_tbl = self._mongo_client[mongo_db]["task_config"]
-        self._event_loop = event_loop
+        self._event_loop = event_loop or asyncio.get_event_loop()
         self._set = set()
         self._config = {}
         self._downloadermw, self._spider, self._spidermw = {}, {}, {}
@@ -188,11 +201,11 @@ class TaskConfig:
 
     @classmethod
     def from_config(cls, config):
-        task_dir = os.path.join(config.get("data_dir") or "", "task")
+        task_dir = os.path.join(config.get("data_dir") or ".", "task")
         kw = {}
         if "mongo_db" in config:
             kw["mongo_db"] = config["mongo_db"]
-        kw["event_loop"] = config.get("_downloader_loop")
+        kw["event_loop"] = config.get("event_loop")
         return cls(task_dir, config.get("mongo_addr"), **kw)
 
     def gc(self, task_set):
@@ -202,7 +215,7 @@ class TaskConfig:
                 if t not in task_set:
                     del_task.append(t)
             for t in del_task:
-                self._set.remove(t)
+                del self._set[t]
                 self._remove_task_config(t)
 
     def downloadermw(self, task_id):
@@ -240,8 +253,8 @@ class TaskConfig:
         with open(config_yaml, "r", encoding="utf-8") as f:
             task_config = yaml.load(f)
             log.debug("Loaded the configuration of the task '{0}': {1}".format(task_id, task_config))
-        task_config.setdefault("_task_id", task_id)
-        task_config.setdefault("_event_loop", self._event_loop)
+        task_config["_task_id"] = task_id
+        task_config["_event_loop"] = self._event_loop
         self._config[task_id] = task_config
         self._load_custom_objects(task_id, task_config, code_dir)
 
@@ -302,7 +315,7 @@ class RequestProducer:
                 if t not in task_set:
                     del_task.append(t)
             for t in del_task:
-                self._set.remove(t)
+                del self._set[t]
                 self._producers[t].stop()
                 del self._producers[t]
 
@@ -316,34 +329,10 @@ class RequestProducer:
             self._producers[topic].produce(r)
 
 
-class RequestConsumer:
-    def __init__(self, mqcache_rpc_addr, *, sleep_time=3, loop=None):
-        self._mqcache_rpc_addr = mqcache_rpc_addr
-        self._sleep_time = sleep_time
-        self._loop = loop or asyncio.get_event_loop()
-        self._rpc_client = RpcClient(self._mqcache_rpc_addr, loop=self._loop)
-
-    @classmethod
-    def from_config(cls, config):
-        kw = {}
-        if "consumer_sleep_time" in config:
-            kw["sleep_time"] = config["consumer_sleep_time"]
-        kw["loop"] = config.get("_downloader_loop")
-        return cls(config.get("mqcache_rpc_addr"), **kw)
-
-    async def poll_request(self):
-        task_id, data = None, None
-        try:
-            task_id, data = await self._rpc_client.poll()
-        except Exception:
-            log.warning("Unexpected error occurred when poll request", exc_info=True)
-        if not task_id:
-            await asyncio.sleep(self._sleep_time, loop=self._loop)
-        return task_id, data
-
-
 class HeartbeatSender:
-    def __init__(self, send_heartbeat, *, heartbeat_interval=10, request_handlers=None, response_handlers=None, loop=None):
+    def __init__(self, send_heartbeat, *, heartbeat_interval=10,
+                 request_handlers=None, response_handlers=None,
+                 loop=None):
         self._heartbeat_interval = heartbeat_interval
         self._request_handlers = request_handlers or ()
         self._response_handlers = response_handlers or ()
@@ -355,10 +344,10 @@ class HeartbeatSender:
         kw = {}
         if "heartbeat_interval" in config:
             kw["heartbeat_interval"] = config["heartbeat_interval"]
-        kw["request_handlers"] = config.get("_heartbeat_request_handlers")
-        kw["response_handlers"] = config.get("_heartbeat_response_handlers")
-        kw["loop"] = config.get("_rpc_loop")
-        return cls(config.get("_send_heartbeat"), **kw)
+        kw["request_handlers"] = config.get("heartbeat_request_handlers")
+        kw["response_handlers"] = config.get("heartbeat_response_handlers")
+        kw["loop"] = config.get("heartbeat_sender_loop")
+        return cls(config.get("send_heartbeat"), **kw)
 
     async def send_heartbeat(self):
         log.info("Start to send heartbeats")

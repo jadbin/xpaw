@@ -81,8 +81,8 @@ class Downloader:
         for method in middleware.request_handlers:
             res = await method(request)
             if not (res is None or isinstance(res, (HttpRequest, HttpResponse))):
-                raise TypeError(
-                    "Request handler must return None, HttpRequest or HttpResponse, got {0}".format(type(res)))
+                raise TypeError("Request handler must return None, "
+                                "HttpRequest or HttpResponse, got {0}".format(type(res)))
             if res:
                 return res
 

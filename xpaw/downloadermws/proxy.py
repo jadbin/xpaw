@@ -56,7 +56,7 @@ class ProxyAgentMiddleware:
                 self._update_slot -= 1
                 log.debug("Update proxy list")
                 try:
-                    with aiohttp.ClientSession(loop=self._loop) as session:
+                    async with aiohttp.ClientSession(loop=self._loop) as session:
                         with async_timeout.timeout(self._update_timeout, loop=self._loop):
                             async with session.get(self._agent_addr) as resp:
                                 body = await resp.read()

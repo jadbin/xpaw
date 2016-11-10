@@ -162,7 +162,7 @@ def task_data(request):
     server.register_function(get_task_info)
     server.register_function(get_task_progress)
     server.register_function(get_running_tasks)
-    server.serve_forever()
+    server.start()
     t = threading.Thread(target=run)
     t.start()
     wait_server_start(d.rpc_addr)

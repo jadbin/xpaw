@@ -1,7 +1,7 @@
 master_rpc_listen: 0.0.0.0:7310
-mqcache_rpc_listen: 0.0.0.0:7311
+unikafka_listen: 0.0.0.0:7311
 
 kafka_addr: {KAFKA_IP}:9092
 zookeeper_addr: {ZOOKEEPER_IP}:2181
 mongo_addr: mongodb://{MONGO_USER}:{USER_PWD}@{MONGO_IP}:27017
-mqcache_rpc_addr: {MASTER_IP}:7311
+unikafka_addr: {MASTER_IP}:7311
