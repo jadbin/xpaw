@@ -39,6 +39,7 @@ class Master(object):
 
         local_config["unikafka_loop"] = self._rpc_loop
         self._unikafka = Unikafka.from_config(local_config)
+        self._rpc_server = self._create_rpc_server(self._rpc_loop)
 
         self._tasks, self._new_tasks = set(), deque()
         self._is_running = False
@@ -51,7 +52,6 @@ class Master(object):
         if not self._is_running:
             self._is_running = True
             self._start_rpc_loop()
-            self._unikafka.start()
 
     def _start_rpc_loop(self):
         def _start():
@@ -65,7 +65,8 @@ class Master(object):
                 self._rpc_loop.close()
 
         asyncio.ensure_future(self._heartbeat_handler.recheck(), loop=self._rpc_loop)
-        self._create_rpc_server(self._rpc_loop)
+        self._unikafka.start()
+        self._rpc_server.start()
         t = threading.Thread(target=_start)
         t.start()
 
@@ -82,7 +83,7 @@ class Master(object):
         server.register_function(self.get_task_progress)
         server.register_function(self.get_running_tasks)
         server.register_function(self.handle_heartbeat)
-        server.start()
+        return server
 
     def create_task(self, task_info, task_config_zip):
         task = TaskInfo(**task_info)
@@ -109,7 +110,7 @@ class Master(object):
         log.info("Stop the task '{0}'".format(task_id))
         if task_id in self._tasks:
             self._task_db.update_info(task_id, {"$set": {"status": TaskInfo.STOPPED}})
-            del self._tasks[task_id]
+            self._tasks.remove(task_id)
             self._update_tasks()
 
     def finish_task(self, task_id):
@@ -117,7 +118,7 @@ class Master(object):
         if task_id in self._tasks:
             self._task_db.update_info(task_id, {"$set": {"status": TaskInfo.FINISHED,
                                                          "finish_time": int(time.time())}})
-            del self._tasks[task_id]
+            self._tasks.remove(task_id)
             self._update_tasks()
 
     def remove_task(self, task_id):
@@ -145,7 +146,8 @@ class Master(object):
         return self._tasks
 
     def _update_tasks(self):
-        self._unikafka.subscribe(self._tasks)
+        asyncio.run_coroutine_threadsafe(self._unikafka.subscribe([i for i in self._tasks]),
+                                         loop=self._unikafka._loop)
 
     def handle_heartbeat(self, _host, pid, data):
         identity = (_host, pid)

@@ -26,7 +26,7 @@ class Downloader:
             kw["clients"] = config["downloader_clients"]
         if "downloader_timeout" in config:
             kw["timeout"] = config["downloader_timeout"]
-        kw["loop"] = config.get("_downloader_loop")
+        kw["loop"] = config.get("downloader_loop")
         return cls(**kw)
 
     async def add_task(self, request, callback, *, timeout=None, middleware=None):

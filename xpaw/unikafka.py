@@ -53,8 +53,8 @@ class Unikafka:
             self._is_running = True
             asyncio.ensure_future(self._poll_forever(), loop=self._loop)
             app = web.Application(logger=log, loop=self._loop)
-            app.router.add_get("/poll", self.poll)
-            app.router.add_post("/subscribe", self.subscribe)
+            app.router.add_get("/poll", self._poll)
+            app.router.add_post("/subscribe", self._subscribe)
             host, port = self._server_listen.split(":")
             port = int(port)
             self._loop.run_until_complete(self._loop.create_server(app.make_handler(access_log=None), host, port))
@@ -63,7 +63,7 @@ class Unikafka:
         if self._is_running:
             self._is_running = False
 
-    async def poll(self, request):
+    async def _poll(self, request):
         params = request.GET
         topic = params.get("topic")
         if not topic:
@@ -82,23 +82,42 @@ class Unikafka:
             return web.Response(status=404)
         if topic not in self._mq:
             return web.Response(status=404, headers={TOPIC_HEADER: topic})
-        data = await self._poll(topic)
+        data = await self.poll(topic)
         if data is None:
             return web.Response(status=204, headers={TOPIC_HEADER: topic})
         return web.Response(status=200, headers={TOPIC_HEADER: topic}, body=data)
 
-    async def subscribe(self, request):
-        body = await request.read()
-        topic_list = json.loads(body.decode("utf-8"))
-        await self._subscribe(topic_list)
-        return web.Response(status=200)
-
-    async def _poll(self, topic):
+    async def poll(self, topic):
         data = None
         mq = self._mq[topic]
         if len(mq) > 0:
             data = mq.popleft()
         return data
+
+    async def _subscribe(self, request):
+        body = await request.read()
+        topic_list = json.loads(body.decode("utf-8"))
+        await self.subscribe(topic_list)
+        return web.Response(status=200)
+
+    async def subscribe(self, topic_list):
+        log.debug("Subscribe topics: {0}".format(topic_list))
+        await self._topic_lock.acquire()
+        new_set = set()
+        for t in topic_list:
+            new_set.add(t)
+        old_set = set()
+        for t in self._topics:
+            old_set.add(t)
+        for t in self._topics:
+            if t not in new_set:
+                self._remove_consumer(t)
+        for t in topic_list:
+            if t not in old_set:
+                self._create_consumer(t)
+        self._topics = topic_list
+        self._index = 0
+        self._topic_lock.release()
 
     async def _poll_forever(self):
         log.debug("Start to poll message")
@@ -128,25 +147,6 @@ class Unikafka:
                 self._topic_lock.release()
             if no_work:
                 await asyncio.sleep(self._sleep_time, loop=self._loop)
-
-    async def _subscribe(self, topic_list):
-        log.debug("Subscribe topics: {0}".format(topic_list))
-        await self._topic_lock.acquire()
-        new_set = set()
-        for t in topic_list:
-            new_set.add(t)
-        old_set = set()
-        for t in self._topics:
-            old_set.add(t)
-        for t in self._topics:
-            if t not in new_set:
-                self._remove_consumer(t)
-        for t in topic_list:
-            if t not in old_set:
-                self._create_consumer(t)
-        self._topics = topic_list
-        self._index = 0
-        self._topic_lock.release()
 
     def _create_consumer(self, topic):
         q = deque(maxlen=self._queue_size)
@@ -178,6 +178,8 @@ class Unikafka:
 
 class UnikafkaClient:
     def __init__(self, unikafka_addr, *, timeout=10, loop=None):
+        if not unikafka_addr.startswith("http://"):
+            unikafka_addr = "http://{0}".format(unikafka_addr)
         self._unikafka_addr = unikafka_addr
         self._timeout = timeout
         self._loop = loop or asyncio.get_event_loop()

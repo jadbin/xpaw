@@ -27,6 +27,7 @@ class Fetcher:
         self._pid = os.getpid()
         if local_config is None:
             local_config = {}
+
         self._rpc_loop = asyncio.new_event_loop()
         self._master_rpc_client = RpcClient(master_rpc_addr, loop=self._rpc_loop)
 
@@ -35,8 +36,8 @@ class Fetcher:
             for k in remote_config:
                 local_config.setdefault(k, remote_config[k])
 
-        self._task_loop = asyncio.new_event_loop()
         self._downloader_loop = asyncio.new_event_loop()
+
         self._producer = RequestProducer.from_config(local_config)
 
         local_config["event_loop"] = self._downloader_loop
@@ -63,7 +64,7 @@ class Fetcher:
         return cls(config.get("master_rpc_addr"), local_config=config)
 
     def _pull_remote_config(self):
-        conf = self._rpc_loop.run_until_completed(self._master_rpc_client.get_config())
+        conf = self._rpc_loop.run_until_complete(self._master_rpc_client.get_config())
         log.info("Get remote configuration: {0}".format(conf))
         return conf
 
@@ -71,7 +72,6 @@ class Fetcher:
         if not self._is_running:
             self._is_running = True
             self._start_rpc_loop()
-            self._start_task_loop()
             self._start_downloader_loop()
 
     def _start_rpc_loop(self):
@@ -86,20 +86,6 @@ class Fetcher:
                 self._rpc_loop.close()
 
         asyncio.ensure_future(self._heartbeat_sender.send_heartbeat(), loop=self._rpc_loop)
-        t = threading.Thread(target=_start)
-        t.start()
-
-    def _start_task_loop(self):
-        def _start():
-            asyncio.set_event_loop(self._task_loop)
-            try:
-                self._task_loop.run_forever()
-            except Exception:
-                log.error("Unexpected error occurred when run loop", exc_info=True)
-                raise
-            finally:
-                self._task_loop.close()
-
         t = threading.Thread(target=_start)
         t.start()
 
@@ -165,9 +151,9 @@ class Fetcher:
         if task_id is not None:
             log.info("Add task: {0}".format(task_id))
             self._new_task_slot_recorder.acquire_slot()
-            self._task_loop.call_soon_threadsafe(self._add_task, task_id)
+            asyncio.run_coroutine_threadsafe(self._add_task(task_id), loop=self._rpc_loop)
 
-    def _add_task(self, task_id):
+    async def _add_task(self, task_id):
         spider = self._task_config.spider(task_id)
         spidermws = self._task_config.spidermw(task_id)
         for res in spider.start_requests(middleware=spidermws):
@@ -175,6 +161,8 @@ class Fetcher:
                 self._push_request(task_id, res)
             elif isinstance(res, Exception):
                 log.warning("Unexpected error occurred when handle start requests", exc_info=res)
+            # take a very short break
+            await asyncio.sleep(0.001, loop=self._rpc_loop)
         self._new_task_slot_recorder.release_slot()
 
     def _handle_task_gc(self, data):
@@ -215,7 +203,7 @@ class TaskConfig:
                 if t not in task_set:
                     del_task.append(t)
             for t in del_task:
-                del self._set[t]
+                self._set.remove(t)
                 self._remove_task_config(t)
 
     def downloadermw(self, task_id):
@@ -315,7 +303,7 @@ class RequestProducer:
                 if t not in task_set:
                     del_task.append(t)
             for t in del_task:
-                del self._set[t]
+                self._set.remove(t)
                 self._producers[t].stop()
                 del self._producers[t]
 
