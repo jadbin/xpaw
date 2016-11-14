@@ -76,8 +76,7 @@ class Downloader:
         finally:
             self._clients.release()
 
-    @staticmethod
-    async def _handle_request(request, middleware):
+    async def _handle_request(self, request, middleware):
         for method in middleware.request_handlers:
             res = await method(request)
             if not (res is None or isinstance(res, (HttpRequest, HttpResponse))):
@@ -86,8 +85,7 @@ class Downloader:
             if res:
                 return res
 
-    @staticmethod
-    async def _handle_response(request, response, middleware):
+    async def _handle_response(self, request, response, middleware):
         for method in middleware.response_handlers:
             res = await method(request, response)
             if not (res is None or isinstance(res, HttpRequest)):
@@ -95,8 +93,7 @@ class Downloader:
             if res:
                 return res
 
-    @staticmethod
-    async def _handle_error(request, error, middleware):
+    async def _handle_error(self, request, error, middleware):
         for method in middleware.error_handlers:
             res = await method(request, error)
             if not (res is None or isinstance(res, HttpRequest)):

@@ -70,33 +70,29 @@ class Spider:
         except Exception as e:
             yield e
 
-    @staticmethod
-    def _handle_input(response, middleware):
+    def _handle_input(self, response, middleware):
         for method in middleware.input_handlers:
             res = method(response)
             if res is not None:
                 raise TypeError("Input handler must return None, got {0}".format(type(res)))
 
-    @classmethod
-    def _handle_output(cls, response, result, middleware):
+    def _handle_output(self, response, result, middleware):
         for method in middleware.output_handlers:
             result = method(response, result)
-            if not cls._isiterable(result):
+            if not self._isiterable(result):
                 raise TypeError("Response handler must return an iterable object, got {0}".format(type(result)))
         return result
 
-    @staticmethod
-    def _handle_error(response, error, middleware):
+    def _handle_error(self, response, error, middleware):
         for method in middleware.error_handlers:
             res = method(response, error)
             if res is not None:
                 raise TypeError("Exception handler must return None, got {0}".format(type(res)))
 
-    @classmethod
-    def _handle_start_requests(cls, result, middleware):
+    def _handle_start_requests(self, result, middleware):
         for method in middleware.start_requests_handlers:
             result = method(result)
-            if not cls._isiterable(result):
+            if not self._isiterable(result):
                 raise TypeError("Start requests handler must return an iterable object, got {0}".format(type(result)))
         return result
 
