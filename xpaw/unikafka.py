@@ -20,11 +20,13 @@ class Unikafka:
                  queue_size=100, sleep_time=1,
                  loop=None):
         self._server_listen = server_listen
+        self._kafka_addr = kafka_addr
         self._zookeeper_addr = zookeeper_addr
         self._group = group
         self._queue_size = queue_size
         self._sleep_time = sleep_time
-        self._kafka_client = KafkaClient(hosts=kafka_addr)
+        self._kafka_client = KafkaClient(hosts=self._kafka_addr,
+                                         broker_version="0.9.2")
         self._mq, self._consumers = {}, {}
         self._topics = []
         self._index = 0
@@ -133,7 +135,11 @@ class Unikafka:
                         try:
                             msg = self._consumers[t].consume(block=True)
                         except ConsumerStoppedException:
-                            self._consumers[t].start()
+                            log.warn("Consumer of topic '{0}' stopped".format(t))
+                            self._remove_consumer(t)
+                            self._kafka_client.update_cluster()
+                            self._create_consumer(t)
+                            log.info("Reset consumer of topic '{0}'".format(t))
                             msg = self._consumers[t].consume(block=True)
                         finally:
                             if msg:
