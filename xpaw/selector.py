@@ -23,9 +23,16 @@ class Selector:
         return SelectorList([self.__class__(root=i) for i in res])
 
     @property
-    def value(self):
+    def html(self):
         try:
             return etree.tostring(self._root, encoding="unicode", method="html")
+        except TypeError:
+            return str(self._root)
+
+    @property
+    def text(self):
+        try:
+            return etree.tostring(self._root, encoding="unicode", method="text")
         except TypeError:
             return str(self._root)
 
@@ -42,5 +49,9 @@ class SelectorList(list):
         return res
 
     @property
-    def value(self):
-        return [i.value for i in self]
+    def html(self):
+        return [i.html for i in self]
+
+    @property
+    def text(self):
+        return [i.text for i in self]
