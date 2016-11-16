@@ -12,8 +12,8 @@ class TestSelector:
         s = Selector(html)
         assert s.select("//li/text()")[0].text == "a"
         assert s.select("//li/text()")[-1].text == "d"
-        assert s.select("//div").select(".//li/text()").text[0] == "b"
-        assert s.select("//div").select(".//li/text()").text[-1] == "c"
+        assert s.select("//div").select(".//li").text[0] == "b"
+        assert s.select("//div").select(".//li").text[-1] == "c"
 
     def test_attribute_selection(self):
         html = """<div style=display:none><a href="http://example.com/" target=_blank></div>"""
@@ -25,10 +25,11 @@ class TestSelector:
     def test_text_selection(self):
         html = """<div><p>expression: <var>x</var>+<var>y</var>=<var>z</var></p></div>"""
         s = Selector(html)
-        assert s.select("//var[last()-1]/text()")[0].text == "y"
-        assert s.select("//var/text()").text == ["x", "y", "z"]
+        assert s.select("//var[last()-1]/text()")[0].html == "y"
+        assert s.select("//var/text()").html == ["x", "y", "z"]
         assert s.select("//p")[0].html == "<p>expression: <var>x</var>+<var>y</var>=<var>z</var></p>"
         assert s.select("//p")[0].text == "expression: x+y=z"
+        assert s.select("//p/text()")[0].html == "expression: "
 
     def test_encoding_detection(self):
         html = "<html lang=en><head>" \
@@ -53,8 +54,16 @@ class TestSelector:
         with pytest.raises(ValueError):
             s = Selector()
 
-    def test_wrong_xpath(self):
-        html = "<ul><li>a</li><li>b</li></ul>"
+    def test_confused_xpath(self):
+        html = "<p>text</p><ul><p>header</p><li>a</li><li>b</li></ul>"
         s = Selector(html)
-        assert s.select("/li").html == []
-        assert s.select("//li/text()").select("/a").html == []
+
+        assert s.select("/li") == []
+        assert s.select("//li") != []
+
+        assert s.select("/ul") == []
+        assert s.select("/html/body/ul") != []
+
+        assert s.select("//ul").select("//p")[0].text == "text"
+        assert s.select("//ul").select(".//p")[0].text == "header"
+        assert s.select("//ul").select("./p")[0].text == "header"
