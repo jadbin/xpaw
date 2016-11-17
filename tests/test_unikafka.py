@@ -62,6 +62,9 @@ class TopicClient:
     def topics(self):
         return self._topic_dict
 
+    def update_cluster(self):
+        pass
+
 
 @pytest.fixture(scope="function")
 def topic_consumer(request, monkeypatch):

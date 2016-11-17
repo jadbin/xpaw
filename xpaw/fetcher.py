@@ -313,6 +313,7 @@ class RequestProducer:
         with self._lock:
             if topic not in self._set:
                 self._set.add(topic)
+                self._kafka_client.update_cluster()
                 self._producers[topic] = self._kafka_client.topics[topic.encode("utf-8")].get_producer()
             self._producers[topic].produce(r)
 

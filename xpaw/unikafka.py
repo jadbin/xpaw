@@ -137,7 +137,6 @@ class Unikafka:
                         except ConsumerStoppedException:
                             log.warn("Consumer of topic '{0}' stopped".format(t))
                             self._remove_consumer(t)
-                            self._kafka_client.update_cluster()
                             self._create_consumer(t)
                             log.info("Reset consumer of topic '{0}'".format(t))
                             msg = self._consumers[t].consume(block=True)
@@ -157,6 +156,7 @@ class Unikafka:
     def _create_consumer(self, topic):
         q = deque(maxlen=self._queue_size)
         self._mq[topic] = q
+        self._kafka_client.update_cluster()
         self._consumers[topic] = self._kafka_client.topics[topic.encode("utf-8")].get_balanced_consumer(
             consumer_group=self._group.encode("utf-8"),
             auto_commit_enable=True,
@@ -168,6 +168,7 @@ class Unikafka:
         if len(q) > 0:
             producer = None
             try:
+                self._kafka_client.update_cluster()
                 producer = self._kafka_client.topics[topic.encode("utf-8")].get_producer(linger_ms=100)
                 while len(q) > 0:
                     b = q.popleft()
