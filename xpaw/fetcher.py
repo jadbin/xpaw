@@ -64,7 +64,11 @@ class Fetcher:
         return cls(config.get("master_rpc_addr"), local_config=config)
 
     def _pull_remote_config(self):
-        conf = self._rpc_loop.run_until_complete(self._master_rpc_client.get_config())
+        try:
+            conf = self._rpc_loop.run_until_complete(self._master_rpc_client.get_config())
+        except Exception:
+            log.error("Unable to get configuration from master")
+            raise
         log.info("Get remote configuration: {0}".format(conf))
         return conf
 
@@ -174,7 +178,13 @@ class Fetcher:
             self._task_config.gc(task_set)
 
     async def send_heartbeat(self, data):
-        return await self._master_rpc_client.handle_heartbeat(self._pid, data)
+        res = {}
+        try:
+            log.debug("Send heartbeat")
+            res = await self._master_rpc_client.handle_heartbeat(self._pid, data)
+        except Exception:
+            log.warning("Unexpected error occurred when send heartbeat", exc_info=True)
+        return res
 
 
 class TaskConfig:
