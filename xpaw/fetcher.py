@@ -307,7 +307,10 @@ class RequestProducer:
     def push_request(self, topic, req):
         log.debug("Push request (url={0}) into the topic '{1}'".format(req.url, topic))
         r = pickle.dumps(req)
-        self._producer.send(topic, r)
+        try:
+            self._producer.send(topic, r)
+        except Exception:
+            log.warning("Unexpected error occurred when push request", exc_info=True)
 
 
 class HeartbeatSender:
