@@ -9,7 +9,7 @@ import zipfile
 import threading
 
 import yaml
-from pykafka import KafkaClient
+from kafka import KafkaProducer
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
@@ -170,7 +170,6 @@ class Fetcher:
         if task_set is not None:
             log.debug("Task GC, keep the following tasks: {0}".format(task_set))
             self._task_config.gc(task_set)
-            self._producer.gc(task_set)
 
     async def send_heartbeat(self, data):
         return await self._master_rpc_client.handle_heartbeat(self._pid, data)
@@ -287,35 +286,16 @@ class TaskConfig:
 
 class RequestProducer:
     def __init__(self, kafka_addr):
-        self._set = set()
-        self._producers = {}
-        self._kafka_client = KafkaClient(hosts=kafka_addr)
-        self._lock = threading.Lock()
+        self._producer = KafkaProducer(bootstrap_servers=kafka_addr)
 
     @classmethod
     def from_config(cls, config):
         return cls(config.get("kafka_addr"))
 
-    def gc(self, task_set):
-        with self._lock:
-            del_task = []
-            for t in self._set:
-                if t not in task_set:
-                    del_task.append(t)
-            for t in del_task:
-                self._set.remove(t)
-                self._producers[t].stop()
-                del self._producers[t]
-
     def push_request(self, topic, req):
         log.debug("Push request (url={0}) into the topic '{1}'".format(req.url, topic))
         r = pickle.dumps(req)
-        with self._lock:
-            if topic not in self._set:
-                self._set.add(topic)
-                self._kafka_client.update_cluster()
-                self._producers[topic] = self._kafka_client.topics[topic.encode("utf-8")].get_producer()
-            self._producers[topic].produce(r)
+        self._producer.send(topic, r)
 
 
 class HeartbeatSender:

@@ -7,8 +7,7 @@ from collections import deque
 
 import aiohttp
 from aiohttp import web
-from pykafka import KafkaClient
-from pykafka.exceptions import ConsumerStoppedException
+from kafka import KafkaConsumer, KafkaProducer
 
 log = logging.getLogger(__name__)
 
@@ -16,17 +15,13 @@ TOPIC_HEADER = "x-unikafka-topic"
 
 
 class Unikafka:
-    def __init__(self, server_listen, kafka_addr, zookeeper_addr, *, group=__name__,
-                 queue_size=100, sleep_time=1,
-                 loop=None):
+    def __init__(self, server_listen, kafka_addr, *,
+                 group=__name__, queue_size=100, sleep_time=1, loop=None):
         self._server_listen = server_listen
         self._kafka_addr = kafka_addr
-        self._zookeeper_addr = zookeeper_addr
         self._group = group
         self._queue_size = queue_size
         self._sleep_time = sleep_time
-        self._kafka_client = KafkaClient(hosts=self._kafka_addr,
-                                         broker_version="0.9.2")
         self._mq, self._consumers = {}, {}
         self._topics = []
         self._index = 0
@@ -47,7 +42,6 @@ class Unikafka:
             kw["loop"] = config["unikafka_loop"]
         return cls(config.get("unikafka_listen"),
                    config.get("kafka_addr"),
-                   config.get("zookeeper_addr"),
                    **kw)
 
     def start(self):
@@ -133,13 +127,9 @@ class Unikafka:
                     if n < m:
                         msg = None
                         try:
-                            msg = self._consumers[t].consume(block=True)
-                        except ConsumerStoppedException:
-                            log.warn("Consumer of topic '{0}' stopped".format(t))
-                            self._remove_consumer(t)
-                            self._create_consumer(t)
-                            log.info("Reset consumer of topic '{0}'".format(t))
-                            msg = self._consumers[t].consume(block=True)
+                            msg = next(self._consumers[t])
+                        except StopIteration:
+                            pass
                         finally:
                             if msg:
                                 q.append(msg.value)
@@ -151,35 +141,31 @@ class Unikafka:
             finally:
                 self._topic_lock.release()
             if no_work:
+                # sleep when there is no work
                 await asyncio.sleep(self._sleep_time, loop=self._loop)
 
     def _create_consumer(self, topic):
         q = deque(maxlen=self._queue_size)
         self._mq[topic] = q
-        self._kafka_client.update_cluster()
-        self._consumers[topic] = self._kafka_client.topics[topic.encode("utf-8")].get_balanced_consumer(
-            consumer_group=self._group.encode("utf-8"),
-            auto_commit_enable=True,
-            zookeeper_connect=self._zookeeper_addr,
-            consumer_timeout_ms=10)
+        self._consumers[topic] = KafkaConsumer(topic,
+                                               group_id=self._group,
+                                               bootstrap_servers=self._kafka_addr,
+                                               consumer_timeout_ms=10,
+                                               auto_offset_reset="earliest")
 
     def _remove_consumer(self, topic):
         q = self._mq[topic]
         if len(q) > 0:
-            producer = None
             try:
-                self._kafka_client.update_cluster()
-                producer = self._kafka_client.topics[topic.encode("utf-8")].get_producer(linger_ms=100)
+                producer = KafkaProducer(bootstrap_servers=self._kafka_addr)
                 while len(q) > 0:
                     b = q.popleft()
-                    producer.produce(b)
+                    producer.send(topic, b)
+                producer.flush()
+                del producer
             except Exception:
                 log.warning("Unexpected error occurred when save the cache of topic '{0}'".format(topic), exc_info=True)
-            finally:
-                if producer:
-                    producer.stop()
         del self._mq[topic]
-        self._consumers[topic].stop()
         del self._consumers[topic]
 
 

@@ -12,63 +12,39 @@ from xpaw.unikafka import Unikafka, UnikafkaClient
 from .helpers import wait_server_start
 
 
-class TopicClient:
-    class TopicDict:
-        class Topic:
-            class Consumer:
-                class Message:
-                    def __init__(self, value):
-                        self.value = value
+class Consumer:
+    class Message:
+        def __init__(self, value):
+            self.value = value
 
-                def __init__(self, topic, *args, **kw):
-                    self._topic = topic
+    def __init__(self, topic, *args, **kw):
+        self._topic = topic
 
-                def consume(self, block=True):
-                    if self._topic == b"None":
-                        return None
-                    if self._topic:
-                        return self.Message(self._topic)
+    def consume(self):
+        if self._topic == "None":
+            return None
+        if self._topic:
+            return self.Message(self._topic.encode("utf-8"))
 
-                def stop(self):
-                    pass
+    def __iter__(self):
+        return self
 
-            class Producer:
-                def __init__(self, topic, *args, **kw):
-                    self._topic = topic
+    def __next__(self):
+        return self.consume()
 
-                def produce(self, msg):
-                    assert msg == self._topic
 
-                def stop(self):
-                    pass
-
-            def __init__(self, topic):
-                self._topic = topic
-
-            def get_balanced_consumer(self, *args, **kw):
-                return self.Consumer(self._topic, *args, **kw)
-
-            def get_producer(self, *args, **kw):
-                return self.Producer(self._topic, *args, **kw)
-
-        def __getitem__(self, topic):
-            assert isinstance(topic, bytes)
-            return self.Topic(topic)
-
+class Producer:
     def __init__(self, *args, **kw):
-        self._topic_dict = self.TopicDict()
-
-    @property
-    def topics(self):
-        return self._topic_dict
-
-    def update_cluster(self):
         pass
+
+    def produce(self, topic, msg):
+        assert topic == msg
 
 
 @pytest.fixture(scope="function")
-def topic_consumer(request, monkeypatch):
-    monkeypatch.setattr(unikafka, "KafkaClient", TopicClient)
+def kafka_env(request, monkeypatch):
+    monkeypatch.setattr(unikafka, "KafkaConsumer", Consumer)
+    monkeypatch.setattr(unikafka, "KafkaProducer", Producer)
     request.addfinalizer(lambda: monkeypatch.undo())
 
     def handle_error(loop, context):
@@ -99,7 +75,7 @@ def topic_consumer(request, monkeypatch):
     return server
 
 
-def test_subscribe_and_poll(topic_consumer):
+def test_subscribe_and_poll(kafka_env):
     async def _test():
         assert await client.poll() == (None, None)
         await client.subscribe(["None"])

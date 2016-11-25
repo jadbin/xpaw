@@ -1,6 +1,6 @@
 aiohttp
 async-timeout
-pykafka
+kafka-python
 pymongo
 pyyaml
 lxml
