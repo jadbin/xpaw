@@ -62,6 +62,7 @@ class Master(object):
                 log.error("Unexpected error occurred when run loop", exc_info=True)
                 raise
             finally:
+                log.info("Close RPC loop")
                 self._rpc_loop.close()
 
         asyncio.ensure_future(self._heartbeat_handler.recheck(), loop=self._rpc_loop)

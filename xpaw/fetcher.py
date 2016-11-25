@@ -83,6 +83,7 @@ class Fetcher:
                 log.error("Unexpected error occurred when run loop", exc_info=True)
                 raise
             finally:
+                log.info("Close RPC loop")
                 self._rpc_loop.close()
 
         asyncio.ensure_future(self._heartbeat_sender.send_heartbeat(), loop=self._rpc_loop)
@@ -98,6 +99,7 @@ class Fetcher:
                 log.error("Unexpected error occurred when run loop", exc_info=True)
                 raise
             finally:
+                log.info("Close downloader loop")
                 self._downloader_loop.close()
 
         asyncio.ensure_future(self._pull_requests(), loop=self._downloader_loop)
