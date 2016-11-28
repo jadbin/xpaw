@@ -119,14 +119,18 @@ class Fetcher:
             except Exception:
                 log.warning("Unexpected error occurred when poll request", exc_info=True)
             if task_id and data:
-                req = pickle.loads(data)
-                log.debug("The request (url={0}) has been pulled".format(req.url))
-                self._task_progress_recorder.pull_request(task_id)
-                req.meta["_task_id"] = task_id
-                await self._downloader.add_task(req,
-                                                self._handle_result,
-                                                timeout=self._task_config.downloader_timeout(task_id),
-                                                middleware=self._task_config.downloadermw(task_id))
+                try:
+                    req = pickle.loads(data)
+                except Exception:
+                    log.warning("Cannot load data: {0}".format(data))
+                else:
+                    log.debug("The request (url={0}) has been pulled".format(req.url))
+                    self._task_progress_recorder.pull_request(task_id)
+                    req.meta["_task_id"] = task_id
+                    await self._downloader.add_task(req,
+                                                    self._handle_result,
+                                                    timeout=self._task_config.downloader_timeout(task_id),
+                                                    middleware=self._task_config.downloadermw(task_id))
             else:
                 # sleep when there is no work
                 await asyncio.sleep(3, loop=self._downloader_loop)
@@ -306,8 +310,8 @@ class RequestProducer:
 
     def push_request(self, topic, req):
         log.debug("Push request (url={0}) into the topic '{1}'".format(req.url, topic))
-        r = pickle.dumps(req)
         try:
+            r = pickle.dumps(req)
             self._producer.send(topic, r)
         except Exception:
             log.warning("Unexpected error occurred when push request", exc_info=True)

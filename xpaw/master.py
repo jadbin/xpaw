@@ -148,7 +148,7 @@ class Master(object):
 
     def _update_tasks(self):
         asyncio.run_coroutine_threadsafe(self._unikafka.subscribe([i for i in self._tasks]),
-                                         loop=self._unikafka._loop)
+                                         loop=self._rpc_loop)
 
     def handle_heartbeat(self, _host, pid, data):
         identity = (_host, pid)

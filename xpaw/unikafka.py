@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import time
 import json
 import asyncio
 import logging
@@ -16,24 +17,22 @@ TOPIC_HEADER = "x-unikafka-topic"
 
 class Unikafka:
     def __init__(self, server_listen, kafka_addr, *,
-                 group=__name__, queue_size=100, sleep_time=1, loop=None):
+                 queue_size=100, sleep_time=1, loop=None):
         self._server_listen = server_listen
         self._kafka_addr = kafka_addr
-        self._group = group
         self._queue_size = queue_size
         self._sleep_time = sleep_time
         self._mq, self._consumers = {}, {}
         self._topics = []
         self._index = 0
         self._loop = loop or asyncio.get_event_loop()
+        self._producer = KafkaProducer(bootstrap_servers=kafka_addr)
         self._is_running = False
         self._topic_lock = asyncio.Lock(loop=self._loop)
 
     @classmethod
     def from_config(cls, config):
         kw = {}
-        if "unikafka_group" in config:
-            kw["group"] = config["unikafka_group"]
         if "unikafka_queue_size" in config:
             kw["queue_size"] = config["unikafka_queue_size"]
         if "unikafka_sleep_time" in config:
@@ -47,13 +46,14 @@ class Unikafka:
     def start(self):
         if not self._is_running:
             self._is_running = True
-            asyncio.ensure_future(self._poll_forever(), loop=self._loop)
             app = web.Application(logger=log, loop=self._loop)
             app.router.add_get("/poll", self._poll)
             app.router.add_post("/subscribe", self._subscribe)
             host, port = self._server_listen.split(":")
             port = int(port)
             self._loop.run_until_complete(self._loop.create_server(app.make_handler(access_log=None), host, port))
+            # add task
+            asyncio.ensure_future(self._poll_forever(), loop=self._loop)
 
     def stop(self):
         if self._is_running:
@@ -145,24 +145,29 @@ class Unikafka:
                 await asyncio.sleep(self._sleep_time, loop=self._loop)
 
     def _create_consumer(self, topic):
-        q = deque(maxlen=self._queue_size)
-        self._mq[topic] = q
-        self._consumers[topic] = KafkaConsumer(topic,
-                                               group_id=self._group,
-                                               bootstrap_servers=self._kafka_addr,
-                                               consumer_timeout_ms=10,
-                                               auto_offset_reset="earliest")
+        log.debug("Create consumer of topic '{0}'".format(topic))
+        try:
+            self._consumers[topic] = KafkaConsumer(topic,
+                                                   group_id=topic,
+                                                   bootstrap_servers=self._kafka_addr,
+                                                   consumer_timeout_ms=10,
+                                                   request_timeout_ms=1000,
+                                                   auto_offset_reset="earliest",
+                                                   enable_auto_commit=True)
+            q = deque(maxlen=self._queue_size)
+            self._mq[topic] = q
+        except Exception:
+            log.warning("Unexpected error occurred when create consumer of topic '{0}'".format(topic), exc_info=True)
 
     def _remove_consumer(self, topic):
+        log.debug("Remove consumer of topic '{0}'".format(topic))
         q = self._mq[topic]
         if len(q) > 0:
             try:
-                producer = KafkaProducer(bootstrap_servers=self._kafka_addr)
                 while len(q) > 0:
                     b = q.popleft()
-                    producer.send(topic, b)
-                producer.flush()
-                del producer
+                    self._producer.send(topic, b)
+                self._producer.flush()
             except Exception:
                 log.warning("Unexpected error occurred when save the cache of topic '{0}'".format(topic), exc_info=True)
         del self._mq[topic]
