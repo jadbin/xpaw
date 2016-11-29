@@ -34,8 +34,8 @@ class Agent:
     def start(self):
         if not self._is_running:
             self._is_running = True
-            self._start_server_loop()
             self._start_manager_loop()
+            self._start_server_loop()
 
     def _start_server_loop(self):
         def _start():
@@ -59,8 +59,7 @@ class Agent:
         port = int(port)
         self._server_loop.run_until_complete(
             self._server_loop.create_server(app.make_handler(access_log=None), host, port))
-        t = threading.Thread(target=_start)
-        t.start()
+        _start()
 
     def _start_manager_loop(self):
         def _start():
@@ -75,7 +74,7 @@ class Agent:
 
         for manager in self._proxy_managers.values():
             asyncio.ensure_future(manager.check_proxy(), loop=self._manager_loop)
-        t = threading.Thread(target=_start)
+        t = threading.Thread(target=_start, daemon=True)
         t.start()
 
     async def _get_proxy_list(self, request, id_string):

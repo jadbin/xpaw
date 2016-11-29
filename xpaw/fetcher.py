@@ -75,8 +75,8 @@ class Fetcher:
     def start(self):
         if not self._is_running:
             self._is_running = True
-            self._start_rpc_loop()
             self._start_downloader_loop()
+            self._start_rpc_loop()
 
     def _start_rpc_loop(self):
         def _start():
@@ -91,8 +91,7 @@ class Fetcher:
                 self._rpc_loop.close()
 
         asyncio.ensure_future(self._heartbeat_sender.send_heartbeat(), loop=self._rpc_loop)
-        t = threading.Thread(target=_start)
-        t.start()
+        _start()
 
     def _start_downloader_loop(self):
         def _start():
@@ -107,7 +106,7 @@ class Fetcher:
                 self._downloader_loop.close()
 
         asyncio.ensure_future(self._pull_requests(), loop=self._downloader_loop)
-        t = threading.Thread(target=_start)
+        t = threading.Thread(target=_start, daemon=True)
         t.start()
 
     async def _pull_requests(self):

@@ -68,8 +68,7 @@ class Master(object):
         asyncio.ensure_future(self._heartbeat_handler.recheck(), loop=self._rpc_loop)
         self._unikafka.start()
         self._rpc_server.start()
-        t = threading.Thread(target=_start)
-        t.start()
+        _start()
 
     def _create_rpc_server(self, loop):
         log.info("Start RPC server on '{0}'".format(self._rpc_listen))

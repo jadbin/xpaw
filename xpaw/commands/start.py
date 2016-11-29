@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import os
+import traceback
 import logging.config
 
 import yaml
@@ -45,14 +46,30 @@ class Command:
         else:
             logging.config.dictConfig(cli.logger)
         if name == "master":
-            master = Master.from_config(config)
-            master.start()
+            try:
+                master = Master.from_config(config)
+                master.start()
+            except BaseException:
+                err_msg = traceback.format_exc()
+                print("xpaw: error: Unhandled exception occurred")
+                print(err_msg)
+
         elif name == "fetcher":
-            fetcher = Fetcher.from_config(config)
-            fetcher.start()
+            try:
+                fetcher = Fetcher.from_config(config)
+                fetcher.start()
+            except BaseException:
+                err_msg = traceback.format_exc()
+                print("xpaw: error: Unhandled exception occurred")
+                print(err_msg)
         elif name == "agent":
-            agent = Agent.from_config(config)
-            agent.start()
+            try:
+                agent = Agent.from_config(config)
+                agent.start()
+            except BaseException:
+                err_msg = traceback.format_exc()
+                print("xpaw: error: Unhandled exception occurred")
+                print(err_msg)
         else:
             raise UsageError()
 
