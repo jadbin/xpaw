@@ -3,7 +3,6 @@
 import time
 import logging
 import asyncio
-import threading
 from collections import deque
 
 from bson.objectid import ObjectId

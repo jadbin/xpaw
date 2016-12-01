@@ -1,7 +1,6 @@
 # coding=utf-8
 
 import os
-import logging
 import logging.config
 
 import yaml
@@ -11,8 +10,6 @@ from xpaw.master import Master
 from xpaw.fetcher import Fetcher
 from xpaw.agent import Agent
 from xpaw import cli
-
-log = logging.getLogger(__name__)
 
 
 class Command:
@@ -48,24 +45,14 @@ class Command:
         else:
             logging.config.dictConfig(cli.logger)
         if name == "master":
-            try:
-                master = Master.from_config(config)
-                master.start()
-            except BaseException:
-                log.error("Unhandled exception occurred", exc_info=True)
-
+            master = Master.from_config(config)
+            master.start()
         elif name == "fetcher":
-            try:
-                fetcher = Fetcher.from_config(config)
-                fetcher.start()
-            except BaseException:
-                log.error("Unhandled exception occurred", exc_info=True)
+            fetcher = Fetcher.from_config(config)
+            fetcher.start()
         elif name == "agent":
-            try:
-                agent = Agent.from_config(config)
-                agent.start()
-            except BaseException:
-                log.error("Unhandled exception occurred", exc_info=True)
+            agent = Agent.from_config(config)
+            agent.start()
         else:
             raise UsageError()
 
