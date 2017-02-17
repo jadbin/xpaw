@@ -11,6 +11,10 @@ from xpaw.commands import Command
 
 class StartCommand(Command):
     @property
+    def syntax(self):
+        return "<module>"
+
+    @property
     def name(self):
         return "start"
 

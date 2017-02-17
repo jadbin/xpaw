@@ -12,6 +12,10 @@ log = logging.getLogger(__name__)
 
 class CrawlCommand(Command):
     @property
+    def syntax(self):
+        return "<project_dir>"
+
+    @property
     def name(self):
         return "crawl"
 
@@ -22,15 +26,13 @@ class CrawlCommand(Command):
     def add_arguments(self, parser):
         Command.add_arguments(self, parser)
 
-        parser.add_argument("-p", "--project", dest="project", metavar="DIR",
-                            help="task project directory")
+        parser.add_argument("project_dir", metavar="project_dir", nargs="?", help="project directory")
 
     def process_arguments(self, args):
         Command.process_arguments(self, args)
 
         if not args.project:
-            args = os.getcwd()
-        args.project = os.path.abspath(args.project)
+            raise UsageError()
         if not os.path.isfile(os.path.join(args.project, "config.yaml")):
             raise UsageError("Connot find 'config.yaml' in current working directory, "
                              "please assign the task project directory")
