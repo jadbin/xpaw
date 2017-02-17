@@ -1,6 +1,5 @@
 # coding=utf-8
 
-import time
 import json
 import asyncio
 import logging

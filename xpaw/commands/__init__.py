@@ -19,15 +19,23 @@ class Command:
 
     @property
     def name(self):
-        raise NotImplementedError
+        return ""
 
     @property
-    def description(self):
-        raise NotImplementedError
+    def syntax(self):
+        return ""
+
+    @property
+    def short_desc(self):
+        return ""
+
+    @property
+    def long_desc(self):
+        return self.short_desc
 
     def add_arguments(self, parser):
-        parser.add_argument("-c", "--config", dest="config_file", metavar="DIR",
-                            help="data directory")
+        parser.add_argument("-c", "--config-file", dest="config_file", metavar="FILE",
+                            help="configuration file")
         parser.add_argument("-l", "--log-level", dest="log_level", metavar="LEVEL",
                             help="log level")
 
@@ -35,7 +43,7 @@ class Command:
         # configuration
         if args.config_file:
             config = helpers.load_config_file(args.config_file)
-            for k, v in config:
+            for k, v in config.items():
                 self.config[k] = v
 
         # logger

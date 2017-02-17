@@ -10,7 +10,7 @@ from xpaw.commands import Command
 
 
 def _iter_command_classes():
-    for module in helpers.walk_modules("xpaw.commands")[1:]:
+    for module in helpers.walk_modules("xpaw.commands"):
         for obj in vars(module).values():
             if inspect.isclass(obj) and issubclass(obj, Command) and obj.__module__ == module.__name__:
                 yield obj
@@ -20,17 +20,17 @@ def _get_commands_from_module():
     d = {}
     for cmd in _iter_command_classes():
         o = cmd()
-        d[o.name] = o
+        if o.name:
+            d[o.name] = o
     return d
 
 
 def _print_commands():
-    print("Usage:")
-    print("  xpaw <command> [options] [args]\n")
-    print("Available commands:")
+    print("usage: xpaw <command> [options] [args]\n")
+    print("available commands:")
     cmds = _get_commands_from_module()
     for cmdname, cmdclass in sorted(cmds.items()):
-        print("  {:<10} {}".format(cmdname, cmdclass.description))
+        print("  {:<10} {}".format(cmdname, cmdclass.short_desc))
     print()
     print('Use "xpaw <command> -h" to see more info about a command')
 
@@ -54,8 +54,8 @@ def main(argv=None):
     del argv[1]
     cmd = cmds[cmdname]
     parser = argparse.ArgumentParser()
-    parser.prog = "xpaw {0}".format(cmdname)
-    parser.description = cmd.description
+    parser.usage = "xpaw {} {}".format(cmdname, cmd.syntax)
+    parser.description = cmd.long_desc
     cmd.add_arguments(parser)
     args = parser.parse_args(args=argv[1:])
     cmd.process_arguments(args)

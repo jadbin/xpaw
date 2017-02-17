@@ -16,7 +16,7 @@ class CrawlCommand(Command):
         return "crawl"
 
     @property
-    def description(self):
+    def short_desc(self):
         return "Start to crawl web pages"
 
     def add_arguments(self, parser):

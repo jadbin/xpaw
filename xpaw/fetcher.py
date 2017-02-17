@@ -23,13 +23,13 @@ log = logging.getLogger(__name__)
 
 
 class Fetcher:
-    def __init__(self, master_rpc_addr, *, local_config=None):
+    def __init__(self, master_addr, *, local_config=None):
         self._pid = os.getpid()
         if local_config is None:
             local_config = {}
 
         self._rpc_loop = asyncio.new_event_loop()
-        self._master_rpc_client = RpcClient(master_rpc_addr, loop=self._rpc_loop)
+        self._master_rpc_client = RpcClient(master_addr, loop=self._rpc_loop)
 
         remote_config = self._pull_remote_config()
         if remote_config:
@@ -61,7 +61,7 @@ class Fetcher:
 
     @classmethod
     def from_config(cls, config):
-        return cls(config.get("master_rpc_addr"), local_config=config)
+        return cls(config.get("master_addr"), local_config=config)
 
     def _pull_remote_config(self):
         try:

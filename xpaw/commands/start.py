@@ -15,7 +15,7 @@ class StartCommand(Command):
         return "start"
 
     @property
-    def description(self):
+    def short_desc(self):
         return "Start to run modules"
 
     def add_arguments(self, parser):
@@ -24,7 +24,7 @@ class StartCommand(Command):
         modules = ["master", "fetcher", "agent"]
         parser.add_argument("module", metavar="module", choices=modules, nargs="?",
                             help="available values: {0}".format(", ".join(modules)))
-        parser.add_argument("-d", "--data", dest="data_dir", metavar="DIR",
+        parser.add_argument("-d", "--data-dir", dest="data_dir", metavar="DIR",
                             help="data directory")
 
     def process_arguments(self, args):

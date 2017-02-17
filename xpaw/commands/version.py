@@ -11,7 +11,7 @@ class VersionCommand(Command):
         return "version"
 
     @property
-    def description(self):
+    def short_desc(self):
         return "Print the version"
 
     def add_arguments(self, parser):
