@@ -4,24 +4,29 @@ import os
 import asyncio
 import zipfile
 
-import yaml
-
 from xpaw.errors import UsageError
 from xpaw.rpc import RpcClient
-from xpaw import cli
+from xpaw.commands import Command
+from xpaw import helpers
 
 
-class Command:
+class TaskCommand(Command):
+    @property
+    def name(self):
+        return "task"
+
     @property
     def description(self):
-        return "Control tasks."
+        return "Control tasks"
 
     def add_arguments(self, parser):
+        Command.add_arguments(self, parser)
+
         commands = ["submit", "start", "stop", "finish", "remove", "get-info", "get-progress", "get-tasks"]
         parser.add_argument("command", metavar="command", choices=commands, nargs="?",
                             help="available values: {0}".format(", ".join(commands)))
-        parser.add_argument("-m", "--master-rpc-addr", dest="master_rpc_addr", metavar="ADDR",
-                            help="the RPC address of master")
+        parser.add_argument("-m", "--master", dest="master_rpc_addr", metavar="ADDR",
+                            help="master address")
         parser.add_argument("-i", "--id", dest="id", metavar="ID",
                             help="the ID of a specific task")
         parser.add_argument("-p", "--project", dest="project", metavar="DIR",
@@ -56,7 +61,7 @@ class Command:
                                      "please assign the task project directory")
             else:
                 project_dir = os.path.abspath(project)
-            task_info = self._load_config(os.path.join(project_dir, "info.yaml"))
+            task_info = helpers.load_config_file(os.path.join(project_dir, "info.yaml"))
             zipb = self._compress_dir(project_dir)
             client = RpcClient(master_rpc_addr)
             task_id = loop.run_until_complete(client.create_task(task_info, zipb))
@@ -108,7 +113,7 @@ class Command:
             print("Running tasks: {0}".format(tasks))
 
         loop = asyncio.get_event_loop()
-        master_rpc_addr = args.master_rpc_addr or cli.config.get("master_rpc_addr")
+        master_rpc_addr = args.master_rpc_addr or self.config.get("master_rpc_addr")
         task_id = args.id
         project = args.project
         cmd = args.command
@@ -130,12 +135,6 @@ class Command:
             _get_tasks()
         else:
             raise UsageError()
-
-    @staticmethod
-    def _load_config(file):
-        with open(file, "r", encoding="utf-8") as f:
-            d = yaml.load(f)
-            return d
 
     @staticmethod
     def _compress_dir(dir):

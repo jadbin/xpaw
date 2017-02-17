@@ -2,12 +2,17 @@
 
 
 import xpaw
+from xpaw.commands import Command
 
 
-class Command:
+class VersionCommand(Command):
+    @property
+    def name(self):
+        return "version"
+
     @property
     def description(self):
-        return "Print the version."
+        return "Print the version"
 
     def add_arguments(self, parser):
         pass
