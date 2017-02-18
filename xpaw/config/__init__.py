@@ -99,7 +99,7 @@ class BaseConfig(MutableMapping):
 
 class Config(BaseConfig):
     def __init__(self, values=None, priority="project"):
-        super(BaseConfig, self).__init__()
+        super(Config, self).__init__()
         for key in dir(defaultconfig):
             if key.isupper():
                 self.set(key.lower(), getattr(defaultconfig, key), priority)

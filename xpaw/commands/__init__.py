@@ -38,7 +38,7 @@ class Command:
             raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
 
         # logger
-        if args.loglevel:
+        if args.log_level:
             self.config.set("log_level", args.loglevel, priority="cmdline")
 
     def run(self, args):
