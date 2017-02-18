@@ -5,12 +5,12 @@ import argparse
 import inspect
 
 from xpaw.errors import UsageError
-from xpaw import helpers
+from xpaw.utils.project import walk_modules
 from xpaw.commands import Command
 
 
 def _iter_command_classes():
-    for module in helpers.walk_modules("xpaw.commands"):
+    for module in walk_modules("xpaw.commands"):
         for obj in vars(module).values():
             if inspect.isclass(obj) and issubclass(obj, Command) and obj.__module__ == module.__name__:
                 yield obj

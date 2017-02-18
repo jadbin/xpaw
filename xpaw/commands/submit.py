@@ -7,7 +7,7 @@ import zipfile
 from xpaw.errors import UsageError
 from xpaw.rpc import RpcClient
 from xpaw.commands import Command
-from xpaw import helpers
+from xpaw.utils.config import load_config_file
 
 
 class TaskCommand(Command):
@@ -42,7 +42,7 @@ class TaskCommand(Command):
         if not os.path.isfile(os.path.join(project_dir, "config.yaml")):
             raise UsageError("Connot find 'config.yaml' in current working directory, "
                              "please assign the task project directory")
-        task_info = helpers.load_config_file(os.path.join(project_dir, "info.yaml"))
+        task_info = load_config_file(os.path.join(project_dir, "info.yaml"))
         zipb = self._compress_dir(project_dir)
         client = RpcClient(master_addr)
         task_id = loop.run_until_complete(client.create_task(task_info, zipb))

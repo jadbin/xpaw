@@ -6,6 +6,7 @@ import logging.config
 from xpaw.errors import UsageError
 from xpaw.commands import Command
 from xpaw.cluster import LocalCluster
+from xpaw.utils.log import configure_logging
 
 log = logging.getLogger(__name__)
 
@@ -38,5 +39,6 @@ class CrawlCommand(Command):
                              "please assign the task project directory")
 
     def run(self, args):
+        configure_logging(self.config)
         cluster = LocalCluster(args.project)
         cluster.start()
