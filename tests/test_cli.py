@@ -11,6 +11,7 @@ from xpaw.rpc import RpcServer
 from xpaw.master import Master
 from xpaw.fetcher import Fetcher
 from xpaw.agent import Agent
+from xpaw.config import Config
 
 from .helpers import wait_server_start
 
@@ -33,7 +34,7 @@ def start_data(request, monkeypatch, tmpdir):
             d.func_name.remove("master_start")
 
     def master_from_config(config):
-        assert isinstance(config, dict)
+        assert isinstance(config, Config)
         d.func_name.remove("master_from_config")
         return M()
 
@@ -42,7 +43,7 @@ def start_data(request, monkeypatch, tmpdir):
             d.func_name.remove("fetcher_start")
 
     def fetcher_from_config(config):
-        assert isinstance(config, dict)
+        assert isinstance(config, Config)
         d.func_name.remove("fetcher_from_config")
         return F()
 
@@ -51,7 +52,7 @@ def start_data(request, monkeypatch, tmpdir):
             d.func_name.remove("agent_start")
 
     def agent_from_config(config):
-        assert isinstance(config, dict)
+        assert isinstance(config, Config)
         d.func_name.remove("agent_from_config")
         return A()
 
