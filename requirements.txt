@@ -1,5 +1,4 @@
 aiohttp
-async-timeout
 kafka-python
 pymongo
 pyyaml

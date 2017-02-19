@@ -45,15 +45,6 @@ class InitCommand(Command):
         # project module name
         module_name = self._read_project_module_name()
 
-        # using dedupe
-        using_dedupe = self._read_using_dedupe()
-
-        # using proxy
-        using_proxy = self._read_using_proxy()
-
-        # retry
-        retry = self._read_retry()
-
         # TODO initialize project
 
     def _read_project_module_name(self):
@@ -64,33 +55,3 @@ class InitCommand(Command):
         if not module_name:
             module_name = "project"
         return module_name
-
-    def _read_using_dedupe(self):
-        print('({}/{}) Would you like to use MongoDB to deduplicate URL automatically?'
-              ' You need set the MongoDB address in the configuration later. (Y/n)'.format(self.steps_count,
-                                                                                           self.steps_total))
-        self.steps_count += 1
-        s = input().strip().lower()
-        if s.startswith("n"):
-            return False
-        return True
-
-    def _read_using_proxy(self):
-        print('({}/{}) Would you like to use proxy when send requests?'
-              ' You need set the proxy agent address in the configuration later. (Y/n)'.format(self.steps_count,
-                                                                                               self.steps_total))
-        self.steps_count += 1
-        s = input().strip().lower()
-        if s.startswith("n"):
-            return False
-        return True
-
-    def _read_retry(self):
-        print('({}/{}) Would you like to retry when fail to send requests?'
-              ' You can reset the maximal retry times in the configuration later. (Y/n)'.format(self.steps_count,
-                                                                                                self.steps_total))
-        self.steps_count += 1
-        s = input().strip().lower()
-        if s.startswith("n"):
-            return False
-        return True
