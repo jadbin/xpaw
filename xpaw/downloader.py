@@ -14,69 +14,10 @@ log = logging.getLogger(__name__)
 
 
 class Downloader:
-    def __init__(self, *, clients=100, timeout=20, loop=None):
+    def __init__(self, loop=None):
         self._loop = loop or asyncio.get_event_loop()
-        self._clients = asyncio.Semaphore(clients, loop=self._loop)
-        self._timeout = timeout
 
-    @classmethod
-    def from_config(cls, config):
-        kw = {}
-        if "downloader_clients" in config:
-            kw["clients"] = config["downloader_clients"]
-        if "downloader_timeout" in config:
-            kw["timeout"] = config["downloader_timeout"]
-        kw["loop"] = config.get("downloader_loop")
-        return cls(**kw)
-
-    async def add_task(self, request, callback, *, timeout=None, middleware=None):
-        if not timeout:
-            timeout = self._timeout
-        await self._clients.acquire()
-        asyncio.ensure_future(self._task(request, callback, timeout, middleware), loop=self._loop)
-
-    async def _task(self, request, callback, timeout, middleware):
-        async def _handle():
-            try:
-                res = None
-                if middleware:
-                    res = await middleware.handle_request(request, middleware)
-                if isinstance(res, HttpRequest):
-                    return res
-                if res is None:
-                    try:
-                        response = await self._download(request, timeout)
-                        log.debug("HTTP response: {0} {1}".format(response.url, response.status))
-                    except Exception as e:
-                        log.debug("Network error {0}: {1}".format(type(e), e))
-                        raise NetworkError(e)
-                    else:
-                        res = response
-                if middleware:
-                    _res = await middleware.handle_response(request, res, middleware)
-                    if _res:
-                        res = _res
-            except Exception as e:
-                try:
-                    res = None
-                    if middleware:
-                        res = await middleware.handle_error(request, e, middleware)
-                except Exception as _e:
-                    return _e
-                else:
-                    return res or e
-            else:
-                return res
-
-        result = await _handle()
-        try:
-            callback(request, result)
-        except Exception:
-            log.warning("Unexpected error occurred in callback", exc_info=True)
-        finally:
-            self._clients.release()
-
-    async def _download(self, request, timeout):
+    async def download(self, request, timeout=None):
         log.debug("HTTP request: {0} {1}".format(request.method, request.url))
         with aiohttp.ClientSession(cookies=request.cookies, loop=self._loop) as session:
             with async_timeout.timeout(timeout, loop=self._loop):
@@ -110,31 +51,6 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         if hasattr(middleware, "handle_error"):
             self._error_handlers.append(middleware.handle_error)
 
-    async def handle_request(self, request):
-        for method in self._request_handlers:
-            res = await method(request)
-            if not (res is None or isinstance(res, (HttpRequest, HttpResponse))):
-                raise TypeError("Request handler must return None, "
-                                "HttpRequest or HttpResponse, got {0}".format(type(res)))
-            if res:
-                return res
-
-    async def handle_response(self, request, response):
-        for method in self._response_handlers:
-            res = await method(request, response)
-            if not (res is None or isinstance(res, HttpRequest)):
-                raise TypeError("Response handler must return None or HttpRequest, got {0}".format(type(res)))
-            if res:
-                return res
-
-    async def handle_error(self, request, error):
-        for method in self._error_handlers:
-            res = await method(request, error)
-            if not (res is None or isinstance(res, HttpRequest)):
-                raise TypeError("Exception handler must return None or HttpRequest, got {0}".format(type(res)))
-            if res:
-                return res
-
     @classmethod
     def _middleware_list_from_config(cls, config):
         mw_list = config.get("downloader_middlewares")
@@ -145,3 +61,57 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             mw_list = []
         log.debug("Downloader middleware list: {0}".format(mw_list))
         return mw_list
+
+    async def download(self, downloader, request, timeout=None):
+        try:
+            res = await self._handle_request(request)
+            if isinstance(res, HttpRequest):
+                return res
+            if res is None:
+                try:
+                    response = await downloader.download(request, timeout=timeout)
+                    log.debug("HTTP response: {0} {1}".format(response.url, response.status))
+                except Exception as e:
+                    log.debug("Network error {0}: {1}".format(type(e), e))
+                    raise NetworkError(e)
+                else:
+                    res = response
+            _res = await self._handle_response(request, res)
+            if _res:
+                res = _res
+        except Exception as e:
+            try:
+                res = await self._handle_error(request, e)
+            except Exception as _e:
+                return _e
+            else:
+                return res or e
+        else:
+            return res
+
+    async def _handle_request(self, request):
+        for method in self._request_handlers:
+            res = await method(request)
+            if not (res is None or isinstance(res, (HttpRequest, HttpResponse))):
+                raise TypeError("Request handler must return None, HttpRequest or HttpResponse,"
+                                " got {0}".format(type(res)))
+            if res:
+                return res
+
+    async def _handle_response(self, request, response):
+        for method in self._response_handlers:
+            res = await method(request, response)
+            if not (res is None or isinstance(res, HttpRequest)):
+                raise TypeError("Response handler must return None or HttpRequest, "
+                                "got {0}".format(type(res)))
+            if res:
+                return res
+
+    async def _handle_error(self, request, error):
+        for method in self._error_handlers:
+            res = await method(request, error)
+            if not (res is None or isinstance(res, (HttpRequest, HttpResponse))):
+                raise TypeError("Exception handler must return None, HttpRequest or HttpResponse,"
+                                " got {0}".format(type(res)))
+            if res:
+                return res

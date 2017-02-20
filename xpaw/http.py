@@ -1,26 +1,25 @@
 # coding=utf-8
 
+import inspect
+
 
 class HttpRequest:
-    def __init__(self, url, method="GET", *, proxy=None, headers=None, body=None, cookies=None, meta=None):
+    def __init__(self, url, method="GET",
+                 body=None, headers=None, cookies=None, proxy=None,
+                 meta=None, callback=None):
         """
         Construct an HTTP request.
-
-        :param str url: URL
-        :param str method: HTTP method
-        :param str proxy: HTTP proxy address
-        :param dict headers: HTTP headers
-        :param bytes body: HTTP body
-        :param dict cookies: HTTP cookies
-        :param dict meta: meta data
         """
         self.url = url
         self.method = method
-        self.proxy = proxy
-        self.headers = headers or {}
         self.body = body
+        self.headers = headers or {}
         self.cookies = cookies or {}
+        self.proxy = proxy
         self._meta = dict(meta) if meta else {}
+        if callback and inspect.isfunction(callback):
+            callback = callback.__name__
+        self.callback = callback
 
     @property
     def meta(self):
@@ -34,21 +33,16 @@ class HttpRequest:
 
 
 class HttpResponse:
-    def __init__(self, url, status, *, headers=None, body=None, cookies=None, request=None):
+    def __init__(self, url, status,
+                 body=None, headers=None, cookies=None,
+                 request=None):
         """
         Construct an HTTP response.
-
-        :param str url: URL
-        :param int status: HTTP status
-        :param dict headers: HTTP headers
-        :param bytes body: HTTP body
-        :param cookies: HTTP cookies
-        :param xpaw.http.HttpRequest request: the corresponding HTTP request
         """
         self.url = url
         self.status = status
-        self.headers = headers
         self.body = body
+        self.headers = headers
         self.cookies = cookies
         self.request = request
 

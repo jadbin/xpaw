@@ -9,3 +9,13 @@ LOG_FORMAT = "%(asctime)s %(name)s [%(levelname)s]: %(message)s"
 LOG_DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 
 TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
+
+DOWNLOADER_TIMEOUT = 20
+
+HEARTBEAT_INTERVAL = 10
+
+MONGO_DBNAME = "xpaw"
+
+TASK_FINISHED_DELAY = 300
+TASK_GC_INTERVAL = 300
+TASK_RECHECK_INTERVAL = 60

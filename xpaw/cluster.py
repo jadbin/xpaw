@@ -1,7 +1,5 @@
 # coding=utf-8
 
-import os
-import sys
 import time
 import pickle
 import asyncio
@@ -9,33 +7,26 @@ import threading
 import logging.config
 from collections import deque
 
-import yaml
 from bson import ObjectId
 
-from xpaw.downloader import Downloader, DownloaderMiddlewareManager
-from xpaw.spider import Spider, SpiderMiddlewareManager
+from xpaw.downloader import Downloader
 from xpaw.http import HttpRequest, HttpResponse
+from xpaw.loader import TaskLoader
 
 log = logging.getLogger(__name__)
 
 
 class LocalCluster:
-    def __init__(self, project_dir):
+    def __init__(self, proj_dir, config):
+        self._config = config
         self._queue = deque()
         self._downloader_loop = asyncio.new_event_loop()
         self._task_loop = asyncio.new_event_loop()
         self._downloader = Downloader(loop=self._downloader_loop)
-        with open(os.path.join(project_dir, "config.yaml"), "r", encoding="utf-8") as f:
-            task_config = yaml.load(f)
+        self._task_loader = TaskLoader(proj_dir)
         task_id = "{0}".format(ObjectId())
         log.info("Please remember the task ID: {0}".format(task_id))
-        task_config["_task_id"] = task_id
-        task_config["_event_loop"] = self._downloader_loop
-        sys.path.append(project_dir)
-        self._downloadermw = DownloaderMiddlewareManager.from_config(task_config)
-        self._spider = Spider.from_config(task_config)
-        self._spidermw = SpiderMiddlewareManager.from_config(task_config)
-        sys.path.remove(project_dir)
+        self._task_loader.config.set("task_id", task_id, "project")
         self._is_running = False
 
     def start(self):
@@ -59,7 +50,7 @@ class LocalCluster:
         self._task_loop.call_soon_threadsafe(self._push_start_requests)
 
     def _push_start_requests(self):
-        for res in self._spider.start_requests(middleware=self._spidermw):
+        for res in self._task_loader.spidermw.start_requests(self._task_loader.spider):
             if isinstance(res, HttpRequest):
                 self._push_request(res)
             elif isinstance(res, Exception):
@@ -80,19 +71,22 @@ class LocalCluster:
             finally:
                 self._downloader_loop.close()
 
-        asyncio.ensure_future(self._pull_requests(), loop=self._downloader_loop)
+        for i in range(self._config["downloader_clients"]):
+            asyncio.ensure_future(self._pull_requests(), loop=self._downloader_loop)
         t = threading.Thread(target=_start)
         t.start()
 
     async def _pull_requests(self):
-        log.info("Start to pull requests")
         last_time = time.time()
         while self._is_running:
             if len(self._queue) > 0:
                 data = self._queue.popleft()
                 req = pickle.loads(data)
                 log.debug("The request (url={0}) has been pulled".format(req.url))
-                await self._downloader.add_task(req, self._handle_result, middleware=self._downloadermw)
+                result = await self._task_loader.downloadermw.download(self._downloader, req,
+                                                                       timeout=self._task_loader.config[
+                                                                           "downloader_timeout"])
+                self._handle_result(req, result)
                 last_time = time.time()
             else:
                 if time.time() - last_time > 30:
@@ -109,7 +103,8 @@ class LocalCluster:
         elif isinstance(result, HttpResponse):
             # bind HttpRequest
             result.request = request
-            for res in self._spider.parse(result, middleware=self._spidermw):
+            for res in self._task_loader.spidermw.parse(self._task_loader.spider,
+                                                        result):
                 if isinstance(res, HttpRequest):
                     r = pickle.dumps(res)
                     self._queue.append(r)

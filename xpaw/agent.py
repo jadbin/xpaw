@@ -19,17 +19,13 @@ log = logging.getLogger(__name__)
 
 
 class Agent:
-    def __init__(self, server_listen, *, local_config=None):
-        self._server_listen = server_listen
+    def __init__(self, config):
+        self._config = config
         self._manager_loop = asyncio.new_event_loop()
         self._server_loop = asyncio.new_event_loop()
-        local_config["proxy_manager_loop"] = self._manager_loop
-        self._proxy_managers = ProxyManagers.from_config(local_config)
+        self._config["proxy_manager_loop"] = self._manager_loop
+        self._proxy_managers = ProxyManagers.from_config(self._config)
         self._is_running = False
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(config.get("agent_server_listen"), local_config=config)
 
     def start(self):
         if not self._is_running:
@@ -48,14 +44,15 @@ class Agent:
             finally:
                 self._server_loop.close()
 
-        log.info("Start agent server on '{0}'".format(self._server_listen))
+        agent_listen = self._config["agent_listen"]
+        log.info("Start agent server on '{}'".format(agent_listen))
         app = web.Application(logger=log, loop=self._server_loop)
         for i in self._proxy_managers:
             log.debug("Add route '/{0}'".format(i))
             resource = app.router.add_resource("/{0}".format(i))
             resource.add_route("GET", lambda r, i=i: self._get_proxy_list(r, i))
             resource.add_route("POST", lambda r, i=i: self._post_proxy_list(r, i))
-        host, port = self._server_listen.split(":")
+        host, port = agent_listen.split(":")
         port = int(port)
         self._server_loop.run_until_complete(
             self._server_loop.create_server(app.make_handler(access_log=None), host, port))

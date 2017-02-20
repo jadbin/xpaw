@@ -26,9 +26,9 @@ def loop(request):
     return loop
 
 
-class TestForwardForChinaMiddleware:
+class TestForwardedForMiddleware:
     def test_handle_request(self, loop):
-        mw = ForwardForChinaMiddleware()
+        mw = ForwardedForMiddleware()
         req = HttpRequest("http://www.example.com")
         loop.run_until_complete(mw.handle_request(req))
         assert re.search(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", req.headers["X-Forwarded-For"])
@@ -131,7 +131,7 @@ class TestRetryMiddleware:
             raise ErrorFlag
 
         mw = RetryMiddleware.from_config({})
-        monkeypatch.setattr(mw, "_retry", _retry)
+        monkeypatch.setattr(mw, "retry", _retry)
         req = HttpRequest("http://www.example.com")
         resp = HttpResponse("http://www.example.com", 400)
         loop.run_until_complete(mw.handle_response(req, resp))
@@ -148,7 +148,7 @@ class TestRetryMiddleware:
             raise ErrorFlag
 
         mw = RetryMiddleware.from_config({})
-        monkeypatch.setattr(mw, "_retry", _retry)
+        monkeypatch.setattr(mw, "retry", _retry)
         req = HttpRequest("http://www.example.com")
         err = ValueError()
         loop.run_until_complete(mw.handle_error(req, err))
@@ -161,7 +161,7 @@ class TestRetryMiddleware:
         mw = RetryMiddleware.from_config(dict(max_retry_times=max_retry_times))
         req = HttpRequest("http://www.example.com")
         for i in range(max_retry_times):
-            req = mw._retry(req, "")
+            req = mw.retry(req, "")
             assert isinstance(req, HttpRequest)
         with pytest.raises(IgnoreRequest):
-            req = mw._retry(req, "")
+            req = mw.retry(req, "")

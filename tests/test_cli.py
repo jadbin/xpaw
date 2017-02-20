@@ -33,32 +33,32 @@ def start_data(request, monkeypatch, tmpdir):
         def start(self):
             d.func_name.remove("master_start")
 
-    def master_from_config(config):
-        assert isinstance(config, Config)
-        d.func_name.remove("master_from_config")
-        return M()
+        def __init__(self, config):
+            assert isinstance(config, Config)
+            d.func_name.remove("master_init")
 
     class F:
         def start(self):
             d.func_name.remove("fetcher_start")
 
-    def fetcher_from_config(config):
-        assert isinstance(config, Config)
-        d.func_name.remove("fetcher_from_config")
-        return F()
+        def __init__(self, config):
+            assert isinstance(config, Config)
+            d.func_name.remove("fetcher_init")
 
     class A:
         def start(self):
             d.func_name.remove("agent_start")
 
-    def agent_from_config(config):
-        assert isinstance(config, Config)
-        d.func_name.remove("agent_from_config")
-        return A()
+        def __init__(self, config):
+            assert isinstance(config, Config)
+            d.func_name.remove("agent_init")
 
-    monkeypatch.setattr(Master, "from_config", master_from_config)
-    monkeypatch.setattr(Fetcher, "from_config", fetcher_from_config)
-    monkeypatch.setattr(Agent, "from_config", agent_from_config)
+    monkeypatch.setattr(Master, "__init__", M.__init__)
+    monkeypatch.setattr(Master, "start", M.start)
+    monkeypatch.setattr(Fetcher, "__init__", F.__init__)
+    monkeypatch.setattr(Fetcher, "start", F.start)
+    monkeypatch.setattr(Agent, "__init__", A.__init__)
+    monkeypatch.setattr(Agent, "start", A.start)
     request.addfinalizer(lambda: monkeypatch.undo())
     d = StartData("{0}".format(tmpdir))
     with open(d.config_file, "wb") as f:
@@ -70,7 +70,7 @@ def start_data(request, monkeypatch, tmpdir):
 def test_start_master(start_data):
     d = start_data
     d.func_name.add("master_start")
-    d.func_name.add("master_from_config")
+    d.func_name.add("master_init")
     main(argv=["xpaw", "start", "master", "--config-file", d.config_file, "--data-dir", d.data_dir])
     assert len(d.func_name) == 0
 
@@ -78,7 +78,7 @@ def test_start_master(start_data):
 def test_start_fetcher(start_data):
     d = start_data
     d.func_name.add("fetcher_start")
-    d.func_name.add("fetcher_from_config")
+    d.func_name.add("fetcher_init")
     main(argv=["xpaw", "start", "fetcher", "--config-file", d.config_file, "--data-dir", d.data_dir])
     assert len(d.func_name) == 0
 
@@ -86,7 +86,7 @@ def test_start_fetcher(start_data):
 def test_start_agent(start_data):
     d = start_data
     d.func_name.add("agent_start")
-    d.func_name.add("agent_from_config")
+    d.func_name.add("agent_init")
     main(
         argv=["xpaw", "start", "agent", "--config-file", d.config_file, "--data-dir", d.data_dir])
     assert len(d.func_name) == 0

@@ -2,7 +2,6 @@
 
 import pytest
 
-from xpaw.spidermws import dedupe
 from xpaw.spidermws import *
 from xpaw.http import HttpRequest, HttpResponse
 
@@ -75,7 +74,7 @@ class TestMongoDedupeMiddleware:
     res_list = [req1, req2, resp]
 
     def test_handle_start_requests(self, mongo_client_patch):
-        mw = MongoDedupeMiddleware.from_config(dict(_task_id=self.task_id, mongo_dedupe_addr=self.mongo_dedupe_addr))
+        mw = MongoDedupeMiddleware.from_config(dict(task_id=self.task_id, mongo_dedupe_addr=self.mongo_dedupe_addr))
         assert mw._dedupe_tbl.name == self.mongo_dedupe_tbl
         assert mw._dedupe_tbl.database.name == self.mongo_dedupe_db
         assert mw._dedupe_tbl.database.client.mongo_addr == self.mongo_dedupe_addr
@@ -83,7 +82,7 @@ class TestMongoDedupeMiddleware:
         assert res == self.res_list
 
     def test_handle_output(self, mongo_client_patch):
-        mw = MongoDedupeMiddleware.from_config(dict(_task_id=self.task_id, mongo_dedupe_addr=self.mongo_dedupe_addr))
+        mw = MongoDedupeMiddleware.from_config(dict(task_id=self.task_id, mongo_dedupe_addr=self.mongo_dedupe_addr))
         assert mw._dedupe_tbl.name == self.mongo_dedupe_tbl
         assert mw._dedupe_tbl.database.name == self.mongo_dedupe_db
         assert mw._dedupe_tbl.database.client.mongo_addr == self.mongo_dedupe_addr

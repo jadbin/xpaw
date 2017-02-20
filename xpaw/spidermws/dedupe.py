@@ -38,7 +38,7 @@ class MongoDedupeMiddleware(DedupeMiddleware):
 
     @classmethod
     def from_config(cls, config):
-        task_id = config.get("_task_id")
+        task_id = config.get("task_id")
         return cls(config.get("mongo_dedupe_addr"),
                    "xpaw_dedupe",
                    "task_{0}".format(task_id))

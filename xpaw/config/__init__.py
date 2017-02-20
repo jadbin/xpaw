@@ -102,5 +102,5 @@ class Config(BaseConfig):
         super(Config, self).__init__()
         for key in dir(defaultconfig):
             if key.isupper():
-                self.set(key.lower(), getattr(defaultconfig, key), priority)
+                self.set(key.lower(), getattr(defaultconfig, key), "default")
         self.update(values, priority)

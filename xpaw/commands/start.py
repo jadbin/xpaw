@@ -54,13 +54,13 @@ class StartCommand(Command):
             raise UsageError()
         configure_logging(self.config)
         if name == "master":
-            master = Master.from_config(self.config)
+            master = Master(self.config)
             master.start()
         elif name == "fetcher":
-            fetcher = Fetcher.from_config(self.config)
+            fetcher = Fetcher(self.config)
             fetcher.start()
         elif name == "agent":
-            agent = Agent.from_config(self.config)
+            agent = Agent(self.config)
             agent.start()
         else:
             raise UsageError()
