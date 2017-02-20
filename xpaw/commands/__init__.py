@@ -7,6 +7,7 @@ from xpaw.config import Config
 class Command:
     def __init__(self):
         self.config = Config()
+        self.exitcode = 0
 
     @property
     def name(self):

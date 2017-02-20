@@ -1,6 +1,5 @@
 include README.rst
 include LICENSE
-recursive-include bin *.sh
-recursive-include conf *.yaml *.sh
+recursive-include xpaw/templates *
 recursive-include docs *.rst *.py
 recursive-include tests *.py
