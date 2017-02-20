@@ -18,6 +18,10 @@ class Spider:
         raise NotImplementedError
 
 
+def _isiterable(obj):
+    return hasattr(obj, "__iter__")
+
+
 class SpiderMiddlewareManager(MiddlewareManager):
     def __init__(self, *middlewares):
         self._input_handlers = []
@@ -54,7 +58,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 r = getattr(spider, response.request.callback)(response)
             else:
                 r = spider.parse(response)
-            r = self._handle_output(response, r)
+            if r:
+                r = self._handle_output(response, r)
         except Exception as e:
             try:
                 self._handle_error(response, e)
@@ -62,16 +67,21 @@ class SpiderMiddlewareManager(MiddlewareManager):
             except Exception as _e:
                 yield _e
         else:
+            if r is None:
+                return ()
             for i in r:
                 yield i
 
     def start_requests(self, spider):
         try:
             r = spider.start_requests()
-            r = self._handle_start_requests(r)
+            if r:
+                r = self._handle_start_requests(r)
         except Exception as e:
             yield e
         else:
+            if r is None:
+                return ()
             for i in r:
                 yield i
 
@@ -84,7 +94,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def _handle_output(self, response, result):
         for method in self._output_handlers:
             result = method(response, result)
-            if not self._isiterable(result):
+            if not _isiterable(result):
                 raise TypeError("Response handler must return an iterable object, got {0}".format(type(result)))
         return result
 
@@ -97,10 +107,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def _handle_start_requests(self, result):
         for method in self._start_requests_handlers:
             result = method(result)
-            if not self._isiterable(result):
+            if not _isiterable(result):
                 raise TypeError("Start requests handler must return an iterable object, got {0}".format(type(result)))
         return result
-
-    @staticmethod
-    def _isiterable(obj):
-        return hasattr(obj, "__iter__")

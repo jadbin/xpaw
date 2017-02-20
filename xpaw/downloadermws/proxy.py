@@ -31,7 +31,7 @@ class ProxyAgentMiddleware:
         return cls(config.get("proxy_agent_addr"),
                    config.get("proxy_update_interval", 30),
                    **kw,
-                   loop=config.get("_event_loop"))
+                   loop=config.get("downloader_loop"))
 
     async def handle_request(self, request):
         proxy = await self._pick_proxy()

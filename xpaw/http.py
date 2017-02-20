@@ -17,7 +17,7 @@ class HttpRequest:
         self.cookies = cookies or {}
         self.proxy = proxy
         self._meta = dict(meta) if meta else {}
-        if callback and inspect.isfunction(callback):
+        if callback and inspect.ismethod(callback):
             callback = callback.__name__
         self.callback = callback
 
@@ -27,7 +27,7 @@ class HttpRequest:
 
     def copy(self):
         kw = {}
-        for x in ["url", "method", "proxy", "headers", "body", "cookies", "meta"]:
+        for x in ["url", "method", "body", "headers", "cookies", "proxy", "meta", "callback"]:
             kw.setdefault(x, getattr(self, x))
         return HttpRequest(**kw)
 
@@ -54,6 +54,6 @@ class HttpResponse:
 
     def copy(self):
         kw = {}
-        for x in ["url", "status", "headers", "body", "cookies", "request"]:
+        for x in ["url", "status", "body", "headers", "cookies", "request"]:
             kw.setdefault(x, getattr(self, x))
         return HttpResponse(**kw)

@@ -1,6 +1,6 @@
 # coding=utf-8
 
-import os
+from os.path import join, isfile, abspath
 import logging.config
 
 from xpaw.errors import UsageError
@@ -32,13 +32,14 @@ class CrawlCommand(Command):
     def process_arguments(self, args):
         Command.process_arguments(self, args)
 
-        if not args.project:
-            raise UsageError()
-        if not os.path.isfile(os.path.join(args.project, "config.yaml")):
-            raise UsageError("Connot find 'config.yaml' in current working directory, "
-                             "please assign the task project directory")
-
     def run(self, args):
+        if not args.project_dir:
+            raise UsageError()
+        if not isfile(join(args.project_dir, "config.yaml")):
+            self.exitcode = 1
+            print("Error: Connot find 'config.yaml' in {}".format(abspath(args.project_dir)))
+            return
+        
         configure_logging(self.config)
-        cluster = LocalCluster(args.project)
+        cluster = LocalCluster(args.project_dir, self.config)
         cluster.start()

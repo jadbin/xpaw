@@ -8,6 +8,3 @@ dist
 docs/_build
 .coverage
 .idea
-.data
-.log
-.pid

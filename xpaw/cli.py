@@ -68,4 +68,5 @@ def main(argv=None):
             parser.print_help()
         sys.exit(2)
     else:
-        sys.exit(cmd.exitcode)
+        if cmd.exitcode:
+            sys.exit(cmd.exitcode)

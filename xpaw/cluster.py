@@ -23,10 +23,9 @@ class LocalCluster:
         self._downloader_loop = asyncio.new_event_loop()
         self._task_loop = asyncio.new_event_loop()
         self._downloader = Downloader(loop=self._downloader_loop)
-        self._task_loader = TaskLoader(proj_dir)
         task_id = "{0}".format(ObjectId())
         log.info("Please remember the task ID: {0}".format(task_id))
-        self._task_loader.config.set("task_id", task_id, "project")
+        self._task_loader = TaskLoader(proj_dir, task_id=task_id, downloader_loop=self._downloader_loop)
         self._is_running = False
 
     def start(self):
@@ -77,6 +76,8 @@ class LocalCluster:
         t.start()
 
     async def _pull_requests(self):
+        timeout = self._task_loader.config["downloader_timeout"]
+        task_finished_delay = 2 * timeout
         last_time = time.time()
         while self._is_running:
             if len(self._queue) > 0:
@@ -84,12 +85,11 @@ class LocalCluster:
                 req = pickle.loads(data)
                 log.debug("The request (url={0}) has been pulled".format(req.url))
                 result = await self._task_loader.downloadermw.download(self._downloader, req,
-                                                                       timeout=self._task_loader.config[
-                                                                           "downloader_timeout"])
+                                                                       timeout=timeout)
                 self._handle_result(req, result)
                 last_time = time.time()
             else:
-                if time.time() - last_time > 30:
+                if time.time() - last_time > task_finished_delay:
                     self._is_running = False
                     self._task_loop.call_soon_threadsafe(self._task_loop.stop)
                     self._downloader_loop.call_soon_threadsafe(self._downloader_loop.stop)

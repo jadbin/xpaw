@@ -26,7 +26,7 @@ class Command:
         return self.short_desc
 
     def add_arguments(self, parser):
-        parser.add_argument("-s", "--set", action="append", default=[], metavar="NAME=VALUE",
+        parser.add_argument("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE",
                             help="set/override setting (may be repeated)")
         parser.add_argument("-l", "--log-level", dest="log_level", metavar="LEVEL",
                             help="log level")
@@ -40,7 +40,7 @@ class Command:
 
         # logger
         if args.log_level:
-            self.config.set("log_level", args.loglevel, priority="cmdline")
+            self.config.set("log_level", args.log_level, priority="cmdline")
 
     def run(self, args):
         raise NotImplementedError

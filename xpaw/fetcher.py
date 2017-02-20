@@ -40,7 +40,8 @@ class Fetcher:
 
         self._task_config = TaskConfigManager(os.path.join(config["data_dir"] or ".", "task"),
                                               config["mongo_addr"],
-                                              config["mongo_dbname"])
+                                              config["mongo_dbname"],
+                                              self._downloader_loop)
         self._unikafka_client = UnikafkaClient.from_config(config)
         self._downloader = Downloader(loop=self._downloader_loop)
 
@@ -190,10 +191,11 @@ class Fetcher:
 
 
 class TaskConfigManager:
-    def __init__(self, task_dir, mongo_addr, mongo_dbname):
+    def __init__(self, task_dir, mongo_addr, mongo_dbname, downloader_loop):
         self._task_dir = task_dir
         self._mongo_client = MongoClient(mongo_addr)
         self._task_config_tbl = self._mongo_client[mongo_dbname]["task_config"]
+        self._downloader_loop = downloader_loop
         self._set = set()
         self._task_loaders = {}
         self._lock = threading.Lock()
@@ -239,7 +241,7 @@ class TaskConfigManager:
     def _load_task(self, task_id):
         code_dir = os.path.join(self._task_dir, task_id)
         self._unzip_task(task_id, code_dir)
-        t = TaskLoader(code_dir)
+        t = TaskLoader(code_dir, task_id=task_id, downloader_loop=self._downloader_loop)
         t.config.set("task_id", task_id, "project")
         self._task_loaders[task_id] = t
 

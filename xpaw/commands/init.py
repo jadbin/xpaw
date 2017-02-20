@@ -13,7 +13,7 @@ IGNORE = ignore_patterns("*.pyc")
 
 class InitCommand(Command):
     def __init__(self):
-        super(InitCommand, self).__init__()
+        super().__init__()
 
         self.steps_total = 1
         self.steps_count = 1
