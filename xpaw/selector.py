@@ -13,7 +13,7 @@ class Selector:
             raise ValueError("Selector needs either 'html' or 'root' argument")
         self._root = root
 
-    def select(self, xpath):
+    def xpath(self, xpath):
         try:
             res = self._root.xpath(xpath, smart_strings=False)
         except Exception:
@@ -42,10 +42,10 @@ class SelectorList(list):
         obj = super().__getitem__(item)
         return self.__class__(obj) if isinstance(item, slice) else obj
 
-    def select(self, xpath):
+    def xpath(self, xpath):
         res = self.__class__()
         for i in self:
-            res += i.select(xpath)
+            res += i.xpath(xpath)
         return res
 
     @property
