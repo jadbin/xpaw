@@ -14,7 +14,8 @@ downloader_middlewares:
   - xpaw.downloadermws.RetryMiddleware
 
 spider_middlewares:
-  - xpaw.spidermws.MongoDedupeMiddleware
+#  - xpaw.spidermws.MongoDedupeMiddleware
+  - xpaw.spidermws.LocalSetDedupeMiddleware
 
 spider: ${project_name}.spider.${ProjectName}Spider
 
