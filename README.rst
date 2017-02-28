@@ -14,23 +14,19 @@ XPaw
 Overview
 --------
 
-XPaw is a distributed web scraping framework, used to crawl web pages and extract structured data from them.
+XPaw is a web scraping framework, used to crawl web pages and extract structured data from them.
 
 
 Requirements
 ------------
 
 - Python >= 3.5
-- `MangoDB`_ as database backend
-- `Kafka`_ as request queue
 - `aiohttp`_
 - `pyyaml`_
 - `pymongo`_
 - `kafka-python`_
 - `lxml`_
 
-.. _MangoDB: https://www.mongodb.com/
-.. _Kafka: http://kafka.apache.org/
 .. _aiohttp: https://pypi.python.org/pypi/aiohttp
 .. _pyyaml: https://pypi.python.org/pypi/pyyaml
 .. _pymongo: https://pypi.python.org/pypi/pymongo

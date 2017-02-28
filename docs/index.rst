@@ -51,15 +51,7 @@ Configuration
     :caption: Configuration
     :hidden:
 
-    config/master
-    config/fetcher
     config/task
-
-:doc:`config/master`
-    List master configurations in detail.
-
-:doc:`config/fetcher`
-    List fetcher configurations in detail.
 
 :doc:`config/task`
     List task configurations in detail.
