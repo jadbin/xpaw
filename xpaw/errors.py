@@ -19,12 +19,6 @@ class ResponseNotMatch(Exception):
     """
 
 
-class RpcError(Exception):
-    """
-    RPC error.
-    """
-
-
 class UsageError(Exception):
     """
     CLI usage error.
