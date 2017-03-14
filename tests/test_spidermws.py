@@ -59,33 +59,34 @@ def mongo_client_patch(request, monkeypatch):
 
 class TestMongoDedupeMiddleware:
     task_id = "0123456789abcdef"
-    mongo_dedupe_addr = "mongodb://root:123456@127.0.0.1:27017"
+    mongo_dedupe = "mongodb://root:123456@127.0.0.1:27017"
     mongo_dedupe_db = "xpaw_dedupe"
     mongo_dedupe_tbl = "task_{0}".format(task_id)
     req1 = HttpRequest("http://127.0.0.1", "GET")
     req2 = HttpRequest("http://127.0.0.2", "GET")
+    req3 = HttpRequest("http://127.0.0.1", "POST")
     resp = HttpResponse("http://127.0.0.1", 200)
     req_list = [req1,
                 HttpRequest("http://127.0.0.1", "GET"),
                 req2,
-                HttpRequest("http://127.0.0.1", "POST"),
+                req3,
                 resp,
-                HttpRequest("http://127.0.0.2", "GET")]
-    res_list = [req1, req2, resp]
+                HttpRequest("http://127.0.0.1", "POST")]
+    res_list = [req1, req2, req3, resp]
 
     def test_handle_start_requests(self, mongo_client_patch):
-        mw = MongoDedupeMiddleware.from_config(dict(task_id=self.task_id, mongo_dedupe_addr=self.mongo_dedupe_addr))
+        mw = MongoDedupeMiddleware.from_config(dict(task_id=self.task_id, mongo_dedupe=self.mongo_dedupe))
         assert mw._dedupe_tbl.name == self.mongo_dedupe_tbl
         assert mw._dedupe_tbl.database.name == self.mongo_dedupe_db
-        assert mw._dedupe_tbl.database.client.mongo_addr == self.mongo_dedupe_addr
+        assert mw._dedupe_tbl.database.client.mongo_addr == self.mongo_dedupe
         res = [i for i in mw.handle_start_requests(self.req_list)]
         assert res == self.res_list
 
     def test_handle_output(self, mongo_client_patch):
-        mw = MongoDedupeMiddleware.from_config(dict(task_id=self.task_id, mongo_dedupe_addr=self.mongo_dedupe_addr))
+        mw = MongoDedupeMiddleware.from_config(dict(task_id=self.task_id, mongo_dedupe=self.mongo_dedupe))
         assert mw._dedupe_tbl.name == self.mongo_dedupe_tbl
         assert mw._dedupe_tbl.database.name == self.mongo_dedupe_db
-        assert mw._dedupe_tbl.database.client.mongo_addr == self.mongo_dedupe_addr
+        assert mw._dedupe_tbl.database.client.mongo_addr == self.mongo_dedupe
         res = [i for i in mw.handle_output(None, self.req_list)]
         assert res == self.res_list
 
