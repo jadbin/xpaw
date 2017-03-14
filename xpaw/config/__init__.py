@@ -52,6 +52,33 @@ class BaseConfig(MutableMapping):
     def get(self, name, default=None):
         return self[name] if self[name] is not None else default
 
+    def getbool(self, name, default=None):
+        v = self.get(name, default)
+        try:
+            return bool(int(v))
+        except ValueError:
+            if v in ("True", "true"):
+                return True
+            if v in ("False", "false"):
+                return False
+        return None
+
+    def getint(self, name, default=None):
+        v = self.get(name, default)
+        try:
+            return int(v)
+        except ValueError:
+            pass
+        return None
+
+    def getfloat(self, name, default=None):
+        v = self.get(name, default)
+        try:
+            return float(v)
+        except ValueError:
+            pass
+        return None
+
     def getpriority(self, name):
         if name not in self:
             return None
