@@ -53,7 +53,7 @@ class LocalCluster:
             if isinstance(res, HttpRequest):
                 self._push_request(res)
             elif isinstance(res, Exception):
-                log.warning("Unexpected error occurred when handle start requests", exc_info=res)
+                log.warning("Unexpected error occurred when handle start requests", exc_info=True)
 
     def _push_request(self, req):
         r = pickle.dumps(req)
@@ -109,6 +109,6 @@ class LocalCluster:
                     r = pickle.dumps(res)
                     self._queue.append(r)
                 elif isinstance(res, Exception):
-                    log.warning("Unexpected error occurred when parse response", exc_info=res)
+                    log.warning("Unexpected error occurred when parse response", exc_info=True)
         elif isinstance(result, Exception):
-            log.warn("Unexpected error occurred when request '{0}'".format(request.url), exc_info=result)
+            log.warning("Unexpected error occurred when request '{0}'".format(request.url), exc_info=True)
