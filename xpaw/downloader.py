@@ -82,10 +82,13 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         except Exception as e:
             try:
                 res = await self._handle_error(request, e)
-            except Exception as _e:
-                return _e
+            except Exception:
+                raise
             else:
-                return res or e
+                if res is not True:
+                    if res:
+                        return res
+                    raise e
         else:
             return res
 
@@ -108,10 +111,14 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 return res
 
     async def _handle_error(self, request, error):
+        handled = False
         for method in self._error_handlers:
             res = await method(request, error)
-            if not (res is None or isinstance(res, (HttpRequest, HttpResponse))):
-                raise TypeError("Exception handler must return None, HttpRequest or HttpResponse,"
+            if not (res is None or res is True or isinstance(res, (HttpRequest, HttpResponse))):
+                raise TypeError("Exception handler must return None, True, HttpRequest or HttpResponse,"
                                 " got {}".format(type(res)))
-            if res:
+            if res is True:
+                handled = True
+            elif res:
                 return res
+        return handled
