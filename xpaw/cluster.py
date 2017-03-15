@@ -64,7 +64,7 @@ class LocalCluster:
 
     async def _supervisor(self):
         timeout = self._task_loader.config["downloader_timeout"]
-        task_finished_delay = 5 * timeout
+        task_finished_delay = 2 * timeout
         self._last_request = time.time()
         while self._is_running:
             await asyncio.sleep(timeout, loop=self._downloader_loop)
