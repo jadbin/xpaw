@@ -21,6 +21,7 @@ class LocalCluster:
         self._config = config
         self._queue = deque()
         self._downloader_loop = asyncio.new_event_loop()
+        self._downloader_loop.set_exception_handler(self._handle_coro_error)
         self._downloader = Downloader(loop=self._downloader_loop)
         task_id = "{}".format(ObjectId())
         log.info("Please remember the task ID: {}".format(task_id))
@@ -31,6 +32,9 @@ class LocalCluster:
     def start(self):
         self._is_running = True
         self._start_downloader_loop()
+
+    def _handle_coro_error(self, loop, context):
+        log.error("Unexpected error occurred when run the event loop: {}".format(context["message"]))
 
     async def _push_start_requests(self):
         for res in self._task_loader.spidermw.start_requests(self._task_loader.spider):
@@ -80,9 +84,13 @@ class LocalCluster:
                 req = pickle.loads(data)
                 self._last_request = time.time()
                 log.debug("The request (url={}) has been pulled by coro[{}]".format(req.url, coro_id))
-                result = await self._task_loader.downloadermw.download(self._downloader, req,
-                                                                       timeout=timeout)
-                self._handle_result(req, result)
+                try:
+                    result = await self._task_loader.downloadermw.download(self._downloader, req,
+                                                                           timeout=timeout)
+                except Exception:
+                    log.warning("Unexpected error occurred when request '{}'".format(req.url), exc_info=True)
+                else:
+                    self._handle_result(req, result)
             else:
                 await asyncio.sleep(3, loop=self._downloader_loop)
 
@@ -93,12 +101,11 @@ class LocalCluster:
         elif isinstance(result, HttpResponse):
             # bind HttpRequest
             result.request = request
-            for res in self._task_loader.spidermw.parse(self._task_loader.spider,
-                                                        result):
-                if isinstance(res, HttpRequest):
-                    r = pickle.dumps(res)
-                    self._queue.append(r)
-                elif isinstance(res, Exception):
-                    log.warning("Unexpected error occurred when parse response", exc_info=True)
-        elif isinstance(result, Exception):
-            log.warning("Unexpected error occurred when request '{}'".format(request.url), exc_info=True)
+            try:
+                for res in self._task_loader.spidermw.parse(self._task_loader.spider,
+                                                            result):
+                    if isinstance(res, HttpRequest):
+                        r = pickle.dumps(res)
+                        self._queue.append(r)
+            except Exception:
+                log.warning("Unexpected error occurred when parse response", exc_info=True)
