@@ -56,7 +56,7 @@ class LocalSetDedupeMiddleware(DedupeMiddleware):
         self._url_set = set()
 
     def _is_dupe(self, request):
-        if url not in self._url_set:
+        if request.url not in self._url_set:
             self._url_set.add(request.method + " " + request.url)
             return False
         return True
