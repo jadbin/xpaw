@@ -21,39 +21,24 @@ class LocalCluster:
         self._config = config
         self._queue = deque()
         self._downloader_loop = asyncio.new_event_loop()
-        self._task_loop = asyncio.new_event_loop()
         self._downloader = Downloader(loop=self._downloader_loop)
         task_id = "{}".format(ObjectId())
         log.info("Please remember the task ID: {}".format(task_id))
         self._task_loader = TaskLoader(proj_dir, task_id=task_id, downloader_loop=self._downloader_loop)
         self._is_running = False
+        self._last_request = None
 
     def start(self):
         self._is_running = True
-        self._start_task_loop()
         self._start_downloader_loop()
 
-    def _start_task_loop(self):
-        def _start():
-            asyncio.set_event_loop(self._task_loop)
-            try:
-                self._task_loop.run_forever()
-            except Exception:
-                log.error("Unexpected error occurred when run loop", exc_info=True)
-                raise
-            finally:
-                self._task_loop.close()
-
-        t = threading.Thread(target=_start)
-        t.start()
-        self._task_loop.call_soon_threadsafe(self._push_start_requests)
-
-    def _push_start_requests(self):
+    async def _push_start_requests(self):
         for res in self._task_loader.spidermw.start_requests(self._task_loader.spider):
             if isinstance(res, HttpRequest):
                 self._push_request(res)
             elif isinstance(res, Exception):
                 log.warning("Unexpected error occurred when handle start requests", exc_info=True)
+            await asyncio.sleep(0.01, loop=self._downloader_loop)
 
     def _push_request(self, req):
         r = pickle.dumps(req)
@@ -70,31 +55,36 @@ class LocalCluster:
             finally:
                 self._downloader_loop.close()
 
+        asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
+        asyncio.ensure_future(self._supervisor(), loop=self._downloader_loop)
         for i in range(self._config["downloader_clients"]):
             asyncio.ensure_future(self._pull_requests(i), loop=self._downloader_loop)
         t = threading.Thread(target=_start)
         t.start()
 
+    async def _supervisor(self):
+        timeout = self._task_loader.config["downloader_timeout"]
+        task_finished_delay = 5 * timeout
+        self._last_request = time.time()
+        while self._is_running:
+            await asyncio.sleep(timeout, loop=self._downloader_loop)
+            if time.time() - self._last_request > task_finished_delay:
+                self._is_running = False
+                self._downloader_loop.stop()
+
     async def _pull_requests(self, coro_id):
         timeout = self._task_loader.config["downloader_timeout"]
-        task_finished_delay = 2 * timeout
-        last_time = time.time()
         while self._is_running:
             if len(self._queue) > 0:
                 data = self._queue.popleft()
                 req = pickle.loads(data)
+                self._last_request = time.time()
                 log.debug("The request (url={}) has been pulled by coro[{}]".format(req.url, coro_id))
                 result = await self._task_loader.downloadermw.download(self._downloader, req,
                                                                        timeout=timeout)
                 self._handle_result(req, result)
-                last_time = time.time()
             else:
-                if time.time() - last_time > task_finished_delay:
-                    self._is_running = False
-                    self._task_loop.call_soon_threadsafe(self._task_loop.stop)
-                    self._downloader_loop.call_soon_threadsafe(self._downloader_loop.stop)
-                else:
-                    await asyncio.sleep(3, loop=self._downloader_loop)
+                await asyncio.sleep(3, loop=self._downloader_loop)
 
     def _handle_result(self, request, result):
         if isinstance(result, HttpRequest):
