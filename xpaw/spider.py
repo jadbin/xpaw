@@ -48,7 +48,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 mw_list = [mw_list]
         else:
             mw_list = []
-        log.debug("Spider middleware list: {0}".format(mw_list))
+        log.debug("Spider middleware list: {}".format(mw_list))
         return mw_list
 
     def parse(self, spider, response):
@@ -89,24 +89,24 @@ class SpiderMiddlewareManager(MiddlewareManager):
         for method in self._input_handlers:
             res = method(response)
             if res is not None:
-                raise TypeError("Input handler must return None, got {0}".format(type(res)))
+                raise TypeError("Input handler must return None, got {}".format(type(res)))
 
     def _handle_output(self, response, result):
         for method in self._output_handlers:
             result = method(response, result)
             if not _isiterable(result):
-                raise TypeError("Response handler must return an iterable object, got {0}".format(type(result)))
+                raise TypeError("Response handler must return an iterable object, got {}".format(type(result)))
         return result
 
     def _handle_error(self, response, error):
         for method in self._error_handlers:
             res = method(response, error)
             if res is not None:
-                raise TypeError("Exception handler must return None, got {0}".format(type(res)))
+                raise TypeError("Exception handler must return None, got {}".format(type(res)))
 
     def _handle_start_requests(self, result):
         for method in self._start_requests_handlers:
             result = method(result)
             if not _isiterable(result):
-                raise TypeError("Start requests handler must return an iterable object, got {0}".format(type(result)))
+                raise TypeError("Start requests handler must return an iterable object, got {}".format(type(result)))
         return result

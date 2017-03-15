@@ -61,7 +61,7 @@ class TestMongoDedupeMiddleware:
     task_id = "0123456789abcdef"
     mongo_dedupe = "mongodb://root:123456@127.0.0.1:27017"
     mongo_dedupe_db = "xpaw_dedupe"
-    mongo_dedupe_tbl = "task_{0}".format(task_id)
+    mongo_dedupe_tbl = "task_{}".format(task_id)
     req1 = HttpRequest("http://127.0.0.1", "GET")
     req2 = HttpRequest("http://127.0.0.2", "GET")
     req3 = HttpRequest("http://127.0.0.1", "POST")

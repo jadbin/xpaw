@@ -14,6 +14,6 @@ class RequestHeadersMiddleware:
         return cls(config.get("request_headers"))
 
     async def handle_request(self, request):
-        log.debug("Assign headers to request (url={0}): {1}".format(request.url, self._headers))
+        log.debug("Assign headers to request (url={}): {}".format(request.url, self._headers))
         for i in self._headers:
             request.headers[i] = self._headers[i]

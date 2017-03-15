@@ -18,7 +18,7 @@ class Downloader:
         self._loop = loop or asyncio.get_event_loop()
 
     async def download(self, request, timeout=None):
-        log.debug("HTTP request: {0} {1}".format(request.method, request.url))
+        log.debug("HTTP request: {} {}".format(request.method, request.url))
         with aiohttp.ClientSession(cookies=request.cookies, loop=self._loop) as session:
             with async_timeout.timeout(timeout, loop=self._loop):
                 async with session.request(request.method,
@@ -59,7 +59,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 mw_list = [mw_list]
         else:
             mw_list = []
-        log.debug("Downloader middleware list: {0}".format(mw_list))
+        log.debug("Downloader middleware list: {}".format(mw_list))
         return mw_list
 
     async def download(self, downloader, request, timeout=None):
@@ -70,9 +70,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             if res is None:
                 try:
                     response = await downloader.download(request, timeout=timeout)
-                    log.debug("HTTP response: {0} {1}".format(response.url, response.status))
+                    log.debug("HTTP response: {} {}".format(response.url, response.status))
                 except Exception as e:
-                    log.debug("Network error {0}: {1}".format(type(e), e))
+                    log.debug("Network error {}: {}".format(type(e), e))
                     raise NetworkError(e)
                 else:
                     res = response
@@ -94,7 +94,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             res = await method(request)
             if not (res is None or isinstance(res, (HttpRequest, HttpResponse))):
                 raise TypeError("Request handler must return None, HttpRequest or HttpResponse,"
-                                " got {0}".format(type(res)))
+                                " got {}".format(type(res)))
             if res:
                 return res
 
@@ -102,8 +102,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         for method in self._response_handlers:
             res = await method(request, response)
             if not (res is None or isinstance(res, HttpRequest)):
-                raise TypeError("Response handler must return None or HttpRequest, "
-                                "got {0}".format(type(res)))
+                raise TypeError("Response handler must return None or HttpRequest,"
+                                " got {}".format(type(res)))
             if res:
                 return res
 
@@ -112,6 +112,6 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             res = await method(request, error)
             if not (res is None or isinstance(res, (HttpRequest, HttpResponse))):
                 raise TypeError("Exception handler must return None, HttpRequest or HttpResponse,"
-                                " got {0}".format(type(res)))
+                                " got {}".format(type(res)))
             if res:
                 return res

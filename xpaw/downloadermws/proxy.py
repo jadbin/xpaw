@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 class ProxyAgentMiddleware:
     def __init__(self, agent_addr, update_interval, *, update_timeout=20, loop=None):
         if not agent_addr.startswith("http://"):
-            agent_addr = "http://{0}".format(agent_addr)
+            agent_addr = "http://{}".format(agent_addr)
         self._agent_addr = agent_addr
         self._update_interval = update_interval
         self._update_timeout = update_timeout
@@ -35,9 +35,9 @@ class ProxyAgentMiddleware:
 
     async def handle_request(self, request):
         proxy = await self._pick_proxy()
-        log.debug("Assign proxy '{0}' to request (url={1})".format(proxy, request.url))
+        log.debug("Assign proxy '{}' to request (url={})".format(proxy, request.url))
         if not proxy.startswith("http://"):
-            proxy = "http://{0}".format(proxy)
+            proxy = "http://{}".format(proxy)
         request.proxy = proxy
 
     async def _pick_proxy(self):

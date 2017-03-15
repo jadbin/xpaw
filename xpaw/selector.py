@@ -7,7 +7,7 @@ class Selector:
     def __init__(self, html=None, root=None):
         if html is not None:
             if not isinstance(html, str):
-                raise TypeError("'html' argument should be of type {0}".format(str))
+                raise TypeError("'html' argument should be of type {}".format(str))
             root = etree.HTML(html)
         elif root is None:
             raise ValueError("Selector needs either 'html' or 'root' argument")

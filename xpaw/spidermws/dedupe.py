@@ -22,7 +22,7 @@ class DedupeMiddleware:
                 if not self._is_dupe(r):
                     yield r
                 else:
-                    log.debug("Find the request (method={0}, url={1}) is duplicated".format(r.method, r.url))
+                    log.debug("Find the request (method={}, url={}) is duplicated".format(r.method, r.url))
             else:
                 yield r
 
@@ -41,7 +41,7 @@ class MongoDedupeMiddleware(DedupeMiddleware):
         task_id = config.get("task_id")
         return cls(config.get("mongo_dedupe"),
                    "xpaw_dedupe",
-                   "task_{0}".format(task_id))
+                   "task_{}".format(task_id))
 
     def _is_dupe(self, request):
         res = self._dedupe_tbl.find_one({"request": request.method + " " + request.url})

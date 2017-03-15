@@ -18,4 +18,4 @@ class VersionCommand(Command):
         Command.add_arguments(self, parser)
 
     def run(self, args):
-        print("xpaw version {0}".format(xpaw.__version__))
+        print("xpaw version {}".format(xpaw.__version__))

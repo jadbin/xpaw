@@ -23,6 +23,6 @@ class DepthMiddleware:
                     r.meta["_current_depth"] = depth
                     yield r
                 else:
-                    log.debug("The request(url={0}) will be aborted as the depth of it is out of limit".format(r.url))
+                    log.debug("The request(url={}) will be aborted as the depth of it is out of limit".format(r.url))
             else:
                 yield r
