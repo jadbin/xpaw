@@ -11,6 +11,13 @@ class Spider:
     def __init__(self, config):
         self.config = config
 
+    @property
+    def logger(self):
+        return log
+
+    def log(self, message, level=logging.INFO, **kw):
+        self.logger.log(level, message, **kw)
+
     def parse(self, response):
         raise NotImplementedError
 

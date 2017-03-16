@@ -71,7 +71,7 @@ class LocalCluster:
         task_finished_delay = 2 * timeout
         self._last_request = time.time()
         while self._is_running:
-            await asyncio.sleep(timeout, loop=self._downloader_loop)
+            await asyncio.sleep(5, loop=self._downloader_loop)
             if time.time() - self._last_request > task_finished_delay:
                 self._is_running = False
         log.info("Event loop will be stopped after 5 seconds")
