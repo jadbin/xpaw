@@ -45,7 +45,7 @@ Our first Spider
             yield HttpRequest("http://news.qq.com", callback=self.parse)
 
         def parse(self, response):
-            selector = Selector(response.body.decode("gb2312"))
+            selector = Selector(response.body.decode("gb2312", errors="ignore"))
             major_news = selector.xpath("//div[@class='item major']//a[@class='linkto']/text()").text
             self.log("Major news:")
             for i in range(len(major_news)):
@@ -60,8 +60,7 @@ Our first Spider
   ``parse`` 函数同时可以返回新的请求，返回值可以为 ``None`` 或一个 ``HttpRequest`` 的可迭代对象。
 
 
-.. note:: ``HttpRequest`` 的 ``callback`` 参数可以指定该请求对应的 ``HttpResponse`` 由哪个函数处理，且这个函数必须是我们的爬虫类的成员函数。
-    如果 ``HttpRequest`` 没有指定 ``callback`` ，则由爬虫类默认的 ``parse`` 函数处理。
+.. note:: ``HttpRequest`` 的 ``callback`` 参数可以指定该请求对应的 ``HttpResponse`` 由哪个函数处理，且这个函数必须是我们的爬虫类的成员函数。如果 ``HttpRequest`` 没有指定 ``callback`` ，则由爬虫类默认的 ``parse`` 函数处理。
 
 
 How to run our Spider

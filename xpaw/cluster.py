@@ -7,8 +7,6 @@ import threading
 import logging.config
 from collections import deque
 
-from bson import ObjectId
-
 from xpaw.downloader import Downloader
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.loader import TaskLoader
@@ -23,13 +21,12 @@ class LocalCluster:
         self._downloader_loop = asyncio.new_event_loop()
         self._downloader_loop.set_exception_handler(self._handle_coro_error)
         self._downloader = Downloader(loop=self._downloader_loop)
-        task_id = "{}".format(ObjectId())
-        log.info("Please remember the task ID: {}".format(task_id))
-        self._task_loader = TaskLoader(proj_dir, task_id=task_id, downloader_loop=self._downloader_loop)
+        self._task_loader = TaskLoader(proj_dir, downloader_loop=self._downloader_loop)
         self._is_running = False
         self._last_request = None
 
     def start(self):
+        log.info("Task ID: {}".format(self._task_loader.config.get("task_id")))
         self._is_running = True
         self._start_downloader_loop()
 
