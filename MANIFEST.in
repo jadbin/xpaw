@@ -3,3 +3,4 @@ include LICENSE
 recursive-include xpaw/templates *
 recursive-include docs *.rst *.py
 recursive-include tests *.py
+global-exclude __pycache__ *.py[cod]

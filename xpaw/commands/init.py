@@ -1,7 +1,7 @@
 # coding=utf-8
 
 import os
-from os.path import exists, join, abspath, isdir
+from os.path import exists, join, abspath, isdir, basename
 from shutil import move, copy2, copystat, ignore_patterns
 
 from xpaw.commands import Command
@@ -15,8 +15,8 @@ class InitCommand(Command):
     def __init__(self):
         super().__init__()
 
-        self.steps_total = 1
-        self.steps_count = 1
+        self.steps_total = 0
+        self.steps_count = 0
 
     @property
     def syntax(self):
@@ -46,32 +46,26 @@ class InitCommand(Command):
         if not args.project_dir:
             raise UsageError()
 
-        if exists(join(args.project_dir, "config.yaml")):
-            self.exitcode = 1
-            print("Error: config.yaml already exists in {}".format(abspath(args.project_dir)))
-            return
+        project_dir = abspath(args.project_dir)
+        project_name = basename(project_dir)
 
-        # project name
-        project_name = self._read_project_name()
+        if exists(join(project_dir, "config.yaml")):
+            self.exitcode = 1
+            print("Error: config.yaml already exists in {}".format(project_dir))
+            return
 
         self._init_project(args.project_dir, project_name)
 
-    def _read_project_name(self):
-        print('({}/{}) What is the name of your project? (project)'.format(self.steps_count,
-                                                                           self.steps_total))
-        self.steps_count += 1
-        project_name = input().strip()
-        if not project_name:
-            project_name = "project"
-        return project_name
-
     def _init_project(self, project_dir, project_name):
         self._copytree(join(self.config["templates_dir"], "project"), project_dir)
-        print(join(project_dir, "module"), join(project_dir, project_name))
         move(join(project_dir, "module"), join(project_dir, project_name))
         self._render_files(project_dir,
                            lambda f: render_templatefile(f, project_name=project_name,
                                                          ProjectName=string_camelcase(project_name)))
+
+        print("New project '{}', created in:".format(project_name,
+                                                     self.config["templates_dir"]))
+        print("    {}".format(abspath(project_dir)))
 
     def _copytree(self, src, dst):
         if not exists(dst):
