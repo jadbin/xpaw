@@ -24,13 +24,11 @@ Requirements
 - `aiohttp`_
 - `pyyaml`_
 - `pymongo`_
-- `kafka-python`_
 - `lxml`_
 
 .. _aiohttp: https://pypi.python.org/pypi/aiohttp
 .. _pyyaml: https://pypi.python.org/pypi/pyyaml
 .. _pymongo: https://pypi.python.org/pypi/pymongo
-.. _kafka-python: https://github.com/dpkp/kafka-python
 .. _lxml: https://pypi.python.org/pypi/lxml
 
 
