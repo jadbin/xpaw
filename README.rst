@@ -1,4 +1,4 @@
-XPaw
+xpaw
 ====
 
 .. image:: https://travis-ci.org/jadbin/xpaw.svg?branch=master
@@ -14,7 +14,7 @@ XPaw
 Overview
 --------
 
-XPaw is a web scraping framework, used to crawl web pages and extract structured data from them.
+xpaw is a web scraping framework, used to crawl web pages and extract structured data from them.
 
 
 Requirements
@@ -35,6 +35,6 @@ Requirements
 Documentation
 -------------
 
-Full documentation and usage examples for XPaw can be found on `readthedocs`_.
+Full documentation and usage examples for xpaw can be found on `readthedocs`_.
 
 .. _readthedocs: http://xpaw.readthedocs.org/en/latest/
