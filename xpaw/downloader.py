@@ -45,11 +45,23 @@ class DownloaderMiddlewareManager(MiddlewareManager):
 
     def _add_middleware(self, middleware):
         if hasattr(middleware, "handle_request"):
-            self._request_handlers.append(middleware.handle_request)
+            self._request_handlers.append(self._coro_wrapper(middleware.handle_request))
         if hasattr(middleware, "handle_response"):
-            self._response_handlers.append(middleware.handle_response)
+            self._response_handlers.append(self._coro_wrapper(middleware.handle_response))
         if hasattr(middleware, "handle_error"):
-            self._error_handlers.append(middleware.handle_error)
+            self._error_handlers.append(self._coro_wrapper(middleware.handle_error))
+
+    def _coro_wrapper(self, func):
+        if asyncio.iscoroutinefunction(func):
+            return func
+
+        async def coro_wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            if asyncio.iscoroutine(result):
+                result = await result
+            return result
+
+        return coro_wrapper
 
     @classmethod
     def _middleware_list_from_config(cls, config):
