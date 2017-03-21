@@ -46,7 +46,7 @@ Our first Spider
 
         def parse(self, response):
             selector = Selector(response.body.decode("gb2312", errors="ignore"))
-            major_news = selector.xpath("//div[@class='item major']//a[@class='linkto']/text()").text
+            major_news = selector.xpath("//div[@class='item major']//a[@class='linkto']").text
             self.log("Major news:")
             for i in range(len(major_news)):
                 self.log("{}: {}".format(i + 1, major_news[i]))

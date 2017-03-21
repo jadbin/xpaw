@@ -25,14 +25,14 @@ class Selector:
     @property
     def html(self):
         try:
-            return etree.tostring(self._root, encoding="unicode", method="html")
+            return etree.tostring(self._root, encoding="unicode", method="html", with_tail=False)
         except TypeError:
             return str(self._root)
 
     @property
     def text(self):
         try:
-            return etree.tostring(self._root, encoding="unicode", method="text")
+            return etree.tostring(self._root, encoding="unicode", method="text", with_tail=False)
         except TypeError:
             return str(self._root)
 
