@@ -31,7 +31,6 @@ def main():
         raise RuntimeError("Python 3.5+ is required")
     install_requires = [
         "aiohttp",
-        "pymongo",
         "pyyaml",
         "lxml",
     ]

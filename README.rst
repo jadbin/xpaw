@@ -23,12 +23,10 @@ Requirements
 - Python >= 3.5
 - `aiohttp`_
 - `pyyaml`_
-- `pymongo`_
 - `lxml`_
 
 .. _aiohttp: https://pypi.python.org/pypi/aiohttp
 .. _pyyaml: https://pypi.python.org/pypi/pyyaml
-.. _pymongo: https://pypi.python.org/pypi/pymongo
 .. _lxml: https://pypi.python.org/pypi/lxml
 
 

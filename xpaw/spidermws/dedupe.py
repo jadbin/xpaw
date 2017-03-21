@@ -2,8 +2,6 @@
 
 import logging
 
-from pymongo import MongoClient
-
 from xpaw.http import HttpRequest
 
 log = logging.getLogger(__name__)
@@ -28,27 +26,6 @@ class DedupeMiddleware:
 
     def _is_dupe(self, request):
         raise NotImplementedError
-
-
-class MongoDedupeMiddleware(DedupeMiddleware):
-    def __init__(self, mongo_addr, mongo_db, mongo_tbl):
-        mongo_client = MongoClient(mongo_addr)
-        self._dedupe_tbl = mongo_client[mongo_db][mongo_tbl]
-        self._dedupe_tbl.create_index("request")
-
-    @classmethod
-    def from_config(cls, config):
-        task_id = config.get("task_id")
-        return cls(config.get("mongo_dedupe"),
-                   "xpaw_dedupe",
-                   "task_{}".format(task_id))
-
-    def _is_dupe(self, request):
-        res = self._dedupe_tbl.find_one({"request": request.method + " " + request.url})
-        if res is None:
-            self._dedupe_tbl.insert_one({"request": request.method + " " + request.url})
-            return False
-        return True
 
 
 class LocalSetDedupeMiddleware(DedupeMiddleware):
