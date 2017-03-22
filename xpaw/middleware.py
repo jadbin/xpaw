@@ -33,7 +33,6 @@ class MiddlewareManager:
 
     def _add_middleware(self, middleware):
         if hasattr(middleware, "open"):
-            log.info(middleware.__name__)
             self._open_handlers.append(middleware.open)
         if hasattr(middleware, "close"):
             self._close_handlers.append(middleware.close)
