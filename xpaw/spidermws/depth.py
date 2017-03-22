@@ -7,7 +7,7 @@ from xpaw.http import HttpRequest
 log = logging.getLogger(__name__)
 
 
-class DepthMiddleware:
+class MaxDepthMiddleware:
     def __init__(self, max_depth):
         self._max_depth = max_depth
 

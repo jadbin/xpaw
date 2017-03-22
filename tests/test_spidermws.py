@@ -16,7 +16,7 @@ class TestDepthMiddleware:
                 if depth is not None:
                     self.meta["_current_depth"] = depth
 
-        mw = DepthMiddleware.from_config(Config({"max_depth": 1}))
+        mw = MaxDepthMiddleware.from_config(Config({"max_depth": 1}))
         req = HttpRequest("http://127.0.0.1", "GET")
         resp = HttpResponse("http://127.0.0.1", 200)
         res = [i for i in mw.handle_output(R(), [req, resp])]
