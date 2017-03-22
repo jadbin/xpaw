@@ -16,7 +16,7 @@ class RetryMiddleware:
 
     @classmethod
     def from_config(cls, config):
-        return cls(config.get("max_retry_times"))
+        return cls(config.getint("max_retry_times", 3))
 
     async def handle_response(self, request, response):
         if response.status in self.RETRY_HTTP_STATUS:

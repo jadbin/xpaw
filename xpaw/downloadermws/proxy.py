@@ -8,11 +8,13 @@ import logging
 import aiohttp
 import async_timeout
 
+from xpaw.config import BaseConfig
+
 log = logging.getLogger(__name__)
 
 
 class ProxyAgentMiddleware:
-    def __init__(self, agent_addr, update_interval, *, update_timeout=20, loop=None):
+    def __init__(self, agent_addr, update_interval, update_timeout, loop=None):
         if not agent_addr.startswith("http://"):
             agent_addr = "http://{}".format(agent_addr)
         self._agent_addr = agent_addr
@@ -25,12 +27,13 @@ class ProxyAgentMiddleware:
 
     @classmethod
     def from_config(cls, config):
-        kw = {}
-        if "proxy_update_timeout" in config:
-            kw["update_timeout"] = config["proxy_update_timeout"]
-        return cls(config.get("proxy_agent_addr"),
-                   config.get("proxy_update_interval", 30),
-                   **kw,
+        c = config.get("proxy_agent")
+        if c is None:
+            c = {}
+        c = BaseConfig(c)
+        return cls(c.get("addr"),
+                   c.getfloat("update_interval", 60),
+                   c.getfloat("update_timeout", 20),
                    loop=config.get("downloader_loop"))
 
     async def handle_request(self, request):

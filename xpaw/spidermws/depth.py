@@ -13,7 +13,7 @@ class DepthMiddleware:
 
     @classmethod
     def from_config(cls, config):
-        return cls(config.get("max_depth", 0))
+        return cls(config.getint("max_depth", 0))
 
     def handle_output(self, response, result):
         depth = response.meta.get("_current_depth", 0) + 1

@@ -8,6 +8,7 @@ import threading
 import pytest
 from aiohttp import web
 
+from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
 from xpaw.errors import IgnoreRequest, ResponseNotMatch
@@ -81,7 +82,7 @@ class TestProxyAgentMiddleware:
         async def _pick_proxy():
             return "http://127.0.0.1"
 
-        mw = ProxyAgentMiddleware.from_config(dict(proxy_agent_addr="http://127.0.0.1:7340"))
+        mw = ProxyAgentMiddleware.from_config(Config({"proxy_agent": {"addr": "http://127.0.0.1:7340"}}))
         monkeypatch.setattr(mw, "_pick_proxy", _pick_proxy)
         req = HttpRequest("http://www.example.com")
         loop.run_until_complete(mw.handle_request(req))
@@ -96,7 +97,8 @@ class TestProxyAgentMiddleware:
         self.index = 0
         proxy_list = [[], ["127.0.0.1", "127.0.0.2"]]
         res = ["http://127.0.0.1", "http://127.0.0.2"]
-        mw = ProxyAgentMiddleware.from_config(dict(proxy_agent_addr="127.0.0.1:7340", proxy_update_interval=0.1))
+        mw = ProxyAgentMiddleware.from_config(
+            Config({"proxy_agent": {"addr": "127.0.0.1:7340", "update_interval": 0.1}}))
         monkeypatch.setattr(mw, "_update_proxy_list", _update_proxy_list)
         for i in range(len(res)):
             req = HttpRequest("http://www.example.com")
@@ -107,14 +109,16 @@ class TestProxyAgentMiddleware:
         async def _func():
             pass
 
-        mw = ProxyAgentMiddleware.from_config(dict(proxy_agent_addr="http://127.0.0.1:7340", proxy_update_interval=0.1))
+        mw = ProxyAgentMiddleware.from_config(
+            Config({"proxy_agent": {"addr": "http://127.0.0.1:7340", "update_interval": 0.1}}))
         mw._update_slot = 1
         monkeypatch.setattr(mw, "_update_slot_delay", _func)
         loop.run_until_complete(mw._update_proxy_list())
         assert mw._update_slot == 0 and mw._proxy_list == ["127.0.0.1:3128", "127.0.0.1:8080"]
 
     def test_update_slot_delay(self, loop):
-        mw = ProxyAgentMiddleware.from_config(dict(proxy_agent_addr="http://127.0.0.1:7340", proxy_update_interval=0.1))
+        mw = ProxyAgentMiddleware.from_config(
+            Config({"proxy_agent": {"addr": "http://127.0.0.1:7340", "update_interval": 0.1}}))
         mw._update_slot = 0
         t = time.time()
         loop.run_until_complete(mw._update_slot_delay())
@@ -130,7 +134,7 @@ class TestRetryMiddleware:
             assert isinstance(request, HttpRequest) and isinstance(reason, str)
             raise ErrorFlag
 
-        mw = RetryMiddleware.from_config({})
+        mw = RetryMiddleware.from_config(Config())
         monkeypatch.setattr(mw, "retry", _retry)
         req = HttpRequest("http://www.example.com")
         resp = HttpResponse("http://www.example.com", 400)
@@ -147,7 +151,7 @@ class TestRetryMiddleware:
             assert isinstance(request, HttpRequest) and isinstance(reason, str)
             raise ErrorFlag
 
-        mw = RetryMiddleware.from_config({})
+        mw = RetryMiddleware.from_config(Config())
         monkeypatch.setattr(mw, "retry", _retry)
         req = HttpRequest("http://www.example.com")
         err = ValueError()
@@ -158,7 +162,7 @@ class TestRetryMiddleware:
 
     def test_retry(self):
         max_retry_times = 2
-        mw = RetryMiddleware.from_config(dict(max_retry_times=max_retry_times))
+        mw = RetryMiddleware.from_config(Config({"max_retry_times": max_retry_times}))
         req = HttpRequest("http://www.example.com")
         for i in range(max_retry_times):
             req = mw.retry(req, "")
