@@ -155,7 +155,7 @@ class TestRetryMiddleware:
 
     def test_retry(self):
         max_retry_times = 2
-        mw = RetryMiddleware.from_config(Config({"max_retry_times": max_retry_times}))
+        mw = RetryMiddleware.from_config(Config({"retry": {"max_retry_times": max_retry_times}}))
         req = HttpRequest("http://www.example.com")
         for i in range(max_retry_times):
             req = mw.retry(req, "")

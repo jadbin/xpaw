@@ -2,6 +2,7 @@
 
 import logging
 
+from xpaw.config import BaseConfig
 from xpaw.errors import ResponseNotMatch, IgnoreRequest, NetworkError
 
 log = logging.getLogger(__name__)
@@ -11,16 +12,47 @@ class RetryMiddleware:
     RETRY_ERRORS = (NetworkError, ResponseNotMatch)
     RETRY_HTTP_STATUS = (500, 502, 503, 504, 408)
 
-    def __init__(self, max_retry_times):
+    def __init__(self, max_retry_times, http_status):
         self._max_retry_times = max_retry_times
+        self._http_status = http_status
 
     @classmethod
     def from_config(cls, config):
-        return cls(config.getint("max_retry_times", 3))
+        c = config.get("retry")
+        if c is None:
+            c = {}
+        c = BaseConfig(c)
+        return cls(c.getint("max_retry_times", 3),
+                   c.getlist("http_status", cls.RETRY_HTTP_STATUS))
 
     async def handle_response(self, request, response):
-        if response.status in self.RETRY_HTTP_STATUS:
-            return self.retry(request, "http status={}".format(response.status))
+        for p in self._http_status:
+            if self.match_status(p, response.status):
+                return self.retry(request, "http status={}".format(response.status))
+
+    @staticmethod
+    def match_status(pattern, status):
+        if isinstance(pattern, int):
+            return pattern == status
+        verse = False
+        if pattern.startswith("!") or pattern.startswith("~"):
+            verse = True
+            pattern = pattern[1:]
+        s = str(status)
+        n = len(s)
+        match = True
+        if len(pattern) != n:
+            match = False
+        else:
+            i = 0
+            while i < n:
+                if pattern[i] != "x" and pattern[i] != "X" and pattern[i] != s[i]:
+                    match = False
+                    break
+                i += 1
+        if verse:
+            match = not match
+        return match
 
     async def handle_error(self, request, error):
         if isinstance(error, self.RETRY_ERRORS):
