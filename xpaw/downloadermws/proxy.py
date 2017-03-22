@@ -22,9 +22,8 @@ class ProxyAgentMiddleware:
         self._update_timeout = update_timeout
         self._loop = loop or asyncio.get_event_loop()
         self._proxy_list = None
-        self._update_slot = 1
         self._update_lock = asyncio.Lock(loop=self._loop)
-        self._delay_future = None
+        self._update_future = None
 
     @classmethod
     def from_config(cls, config):
@@ -46,20 +45,19 @@ class ProxyAgentMiddleware:
 
     async def _pick_proxy(self):
         while True:
-            await self._update_proxy_list()
-            if self._proxy_list:
-                break
+            async with self._update_lock:
+                if self._proxy_list and len(self._proxy_list) > 0:
+                    break
             await asyncio.sleep(self._update_interval, loop=self._loop)
         n = len(self._proxy_list)
         i = random.randint(0, n - 1)
         return self._proxy_list[i]
 
     async def _update_proxy_list(self):
-        async with self._update_lock:
-            if self._update_slot > 0:
-                self._update_slot -= 1
-                log.debug("Update proxy list")
-                try:
+        while True:
+            log.debug("Update proxy list")
+            try:
+                async with self._update_lock:
                     async with aiohttp.ClientSession(loop=self._loop) as session:
                         with async_timeout.timeout(self._update_timeout, loop=self._loop):
                             async with session.get(self._agent_addr) as resp:
@@ -67,17 +65,13 @@ class ProxyAgentMiddleware:
                                 proxy_list = json.loads(body.decode(encoding="utf-8"))
                                 if proxy_list:
                                     self._proxy_list = proxy_list
-                except Exception:
-                    log.warning("Unexpected error occurred when updating proxy list", exc_info=True)
-                finally:
-                    self._delay_future = asyncio.ensure_future(self._update_slot_delay(), loop=self._loop)
+            except Exception:
+                log.warning("Unexpected error occurred when updating proxy list", exc_info=True)
+            await asyncio.sleep(self._update_interval, loop=self._loop)
 
-    async def _update_slot_delay(self):
-        await asyncio.sleep(self._update_interval, loop=self._loop)
-        async with self._update_lock:
-            self._update_slot += 1
-        self._delay_future = None
+    def open(self):
+        self._update_future = asyncio.ensure_future(self._update_proxy_list(), loop=self._loop)
 
     def close(self):
-        if self._delay_future:
-            self._delay_future.cancel()
+        if self._update_future:
+            self._update_future.cancel()

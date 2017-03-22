@@ -64,10 +64,7 @@ def agent(request):
             loop.close()
 
     def stop_loop():
-        def _stop(loop):
-            loop.stop()
-
-        loop.call_soon_threadsafe(_stop, loop)
+        loop.call_soon_threadsafe(loop.stop)
 
     loop = asyncio.new_event_loop()
     loop.set_exception_handler(handle_error)
@@ -90,7 +87,8 @@ class TestProxyAgentMiddleware:
 
     def test_pick_proxy(self, loop, monkeypatch):
         async def _update_proxy_list():
-            if self.index < 2:
+            while self.index < 2:
+                await asyncio.sleep(0.1)
                 self.index += 1
                 mw._proxy_list = proxy_list[self.index - 1]
 
@@ -100,29 +98,24 @@ class TestProxyAgentMiddleware:
         mw = ProxyAgentMiddleware.from_config(
             Config({"proxy_agent": {"addr": "127.0.0.1:7340", "update_interval": 0.1}}))
         monkeypatch.setattr(mw, "_update_proxy_list", _update_proxy_list)
+        mw.open()
         for i in range(len(res)):
             req = HttpRequest("http://www.example.com")
             loop.run_until_complete(mw.handle_request(req))
             assert req.proxy in res
 
-    def test_update_proxy_list(self, loop, monkeypatch, agent):
+    def test_update_proxy_list(self, loop, agent):
         async def _func():
-            pass
+            while mw._proxy_list is None:
+                await asyncio.sleep(0.1)
 
         mw = ProxyAgentMiddleware.from_config(
             Config({"proxy_agent": {"addr": "http://127.0.0.1:7340", "update_interval": 0.1}}))
-        mw._update_slot = 1
-        monkeypatch.setattr(mw, "_update_slot_delay", _func)
-        loop.run_until_complete(mw._update_proxy_list())
-        assert mw._update_slot == 0 and mw._proxy_list == ["127.0.0.1:3128", "127.0.0.1:8080"]
-
-    def test_update_slot_delay(self, loop):
-        mw = ProxyAgentMiddleware.from_config(
-            Config({"proxy_agent": {"addr": "http://127.0.0.1:7340", "update_interval": 0.1}}))
-        mw._update_slot = 0
-        t = time.time()
-        loop.run_until_complete(mw._update_slot_delay())
-        assert mw._update_slot == 1 and time.time() - t < 0.5
+        mw.open()
+        loop.run_until_complete(_func())
+        assert mw._proxy_list == ["127.0.0.1:3128", "127.0.0.1:8080"]
+        mw.close()
+        loop.run_until_complete(asyncio.sleep(0.1))
 
 
 class TestRetryMiddleware:
