@@ -44,3 +44,11 @@ class TaskLoader:
         task_config = base_config or Config()
         task_config.update(c, priority="project")
         return task_config
+
+    def open_spider(self):
+        self.spidermw.open()
+        self.downloadermw.open()
+
+    def close_spider(self):
+        self.downloadermw.close()
+        self.spidermw.close()

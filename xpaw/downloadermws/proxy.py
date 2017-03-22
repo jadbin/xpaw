@@ -24,6 +24,7 @@ class ProxyAgentMiddleware:
         self._proxy_list = None
         self._update_slot = 1
         self._update_lock = asyncio.Lock(loop=self._loop)
+        self._delay_future = None
 
     @classmethod
     def from_config(cls, config):
@@ -69,9 +70,14 @@ class ProxyAgentMiddleware:
                 except Exception:
                     log.warning("Unexpected error occurred when updating proxy list", exc_info=True)
                 finally:
-                    asyncio.ensure_future(self._update_slot_delay(), loop=self._loop)
+                    self._delay_future = asyncio.ensure_future(self._update_slot_delay(), loop=self._loop)
 
     async def _update_slot_delay(self):
         await asyncio.sleep(self._update_interval, loop=self._loop)
         async with self._update_lock:
             self._update_slot += 1
+        self._delay_future = None
+
+    def close(self):
+        if self._delay_future:
+            self._delay_future.cancel()

@@ -28,6 +28,7 @@ class LocalCluster:
     def start(self):
         log.info("Task ID: {}".format(self._task_loader.config.get("task_id")))
         self._is_running = True
+        self._task_loader.open_spider()
         self._start_downloader_loop()
 
     def _handle_coro_error(self, loop, context):
@@ -71,6 +72,10 @@ class LocalCluster:
             await asyncio.sleep(5, loop=self._downloader_loop)
             if time.time() - self._last_request > task_finished_delay:
                 self._is_running = False
+        try:
+            self._task_loader.close_spider()
+        except Exception:
+            log.warning("Unexpected error occurred when close spider", exc_info=True)
         log.info("Event loop will be stopped after 5 seconds")
         await asyncio.sleep(5, loop=self._downloader_loop)
         self._downloader_loop.stop()

@@ -35,9 +35,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self._output_handlers = []
         self._error_handlers = []
         self._start_requests_handlers = []
-        super().__init__(self, *middlewares)
+        super().__init__(*middlewares)
 
     def _add_middleware(self, middleware):
+        super()._add_middleware(middleware)
         if hasattr(middleware, "handle_input"):
             self._input_handlers.append(middleware.handle_input)
         if hasattr(middleware, "handle_output"):
