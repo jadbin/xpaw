@@ -16,17 +16,17 @@ log = logging.getLogger(__name__)
 
 
 class TaskLoader:
-    def __init__(self, proj_dir, **kwargs):
+    def __init__(self, proj_dir, base_config=None, **kwargs):
         # add project path
         sys.path.append(proj_dir)
         # copy sys.modules
         modules_keys = set(sys.modules.keys())
-        self.config = self._load_task_config(proj_dir)
+        self.config = self._load_task_config(proj_dir, base_config)
         for k, v in kwargs.items():
             self.config.set(k, v, "project")
         # task id
         if "task_id" not in self.config:
-            self.config.set("task_id",  "{}".format(ObjectId()), "project")
+            self.config.set("task_id", "{}".format(ObjectId()), "project")
         self.downloadermw = DownloaderMiddlewareManager.from_config(self.config)
         self.spider = load_object(self.config["spider"])(self.config)
         self.spidermw = SpiderMiddlewareManager.from_config(self.config)
@@ -38,9 +38,9 @@ class TaskLoader:
         # remove project path
         sys.path.remove(proj_dir)
 
-    def _load_task_config(self, proj_dir):
+    def _load_task_config(self, proj_dir, base_config=None):
         c = load_config_file(os.path.join(proj_dir, "config.yaml"))
         log.debug("Project specific configuration: {}".format(c))
-        task_config = Config()
+        task_config = base_config or Config()
         task_config.update(c, priority="project")
         return task_config

@@ -21,7 +21,7 @@ class LocalCluster:
         self._downloader_loop = asyncio.new_event_loop()
         self._downloader_loop.set_exception_handler(self._handle_coro_error)
         self._downloader = Downloader(loop=self._downloader_loop)
-        self._task_loader = TaskLoader(proj_dir, downloader_loop=self._downloader_loop)
+        self._task_loader = TaskLoader(proj_dir, base_config=self._config, downloader_loop=self._downloader_loop)
         self._is_running = False
         self._last_request = None
 
@@ -58,13 +58,13 @@ class LocalCluster:
 
         asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
         asyncio.ensure_future(self._supervisor(), loop=self._downloader_loop)
-        for i in range(self._config["downloader_clients"]):
+        for i in range(self._config.getint("downloader_clients")):
             asyncio.ensure_future(self._pull_requests(i), loop=self._downloader_loop)
         t = threading.Thread(target=_start)
         t.start()
 
     async def _supervisor(self):
-        timeout = self._task_loader.config["downloader_timeout"]
+        timeout = self._task_loader.config.getfloat("downloader_timeout")
         task_finished_delay = 2 * timeout
         self._last_request = time.time()
         while self._is_running:
@@ -76,7 +76,7 @@ class LocalCluster:
         self._downloader_loop.stop()
 
     async def _pull_requests(self, coro_id):
-        timeout = self._task_loader.config["downloader_timeout"]
+        timeout = self._task_loader.config.getfloat("downloader_timeout")
         while self._is_running:
             if len(self._queue) > 0:
                 data = self._queue.popleft()
@@ -107,4 +107,4 @@ class LocalCluster:
                         r = pickle.dumps(res)
                         self._queue.append(r)
             except Exception:
-                log.warning("Unexpected error occurred when parse response", exc_info=True)
+                log.warning("Unexpected error occurred when parse response of '{}'".format(request.url), exc_info=True)
