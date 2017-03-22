@@ -13,6 +13,29 @@ from xpaw.config import BaseConfig
 log = logging.getLogger(__name__)
 
 
+class ProxyMiddleware:
+    def __init__(self, proxies):
+        if not proxies or len(proxies) <= 0:
+            raise ValueError("proxies cannot be empty")
+        self._proxies = proxies
+        self._n = len(proxies)
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(config.getlist("proxies"))
+
+    async def handle_request(self, request):
+        proxy = self._pick_proxy()
+        log.debug("Assign proxy '{}' to request (url={})".format(proxy, request.url))
+        if not proxy.startswith("http://"):
+            proxy = "http://{}".format(proxy)
+        request.proxy = proxy
+
+    def _pick_proxy(self):
+        i = random.randint(0, self._n - 1)
+        return self._proxies[i]
+
+
 class ProxyAgentMiddleware:
     def __init__(self, agent_addr, update_interval, update_timeout, loop=None):
         if not agent_addr.startswith("http://"):
