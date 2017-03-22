@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import copy
+import inspect
 from collections import MutableMapping
 
 from . import defaultconfig
@@ -78,6 +79,14 @@ class BaseConfig(MutableMapping):
         except ValueError:
             pass
         return None
+
+    def getlist(self, name, default=None):
+        v = self.get(name, default or [])
+        if isinstance(v, str):
+            v = v.split(",")
+        elif not hasattr(v, "__iter__"):
+            v = [v]
+        return list(v)
 
     def getpriority(self, name):
         if name not in self:
