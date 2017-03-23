@@ -19,7 +19,7 @@ class Downloader:
 
     async def download(self, request, timeout=None):
         log.debug("HTTP request: {} {}".format(request.method, request.url))
-        with aiohttp.ClientSession(cookies=request.cookies, loop=self._loop) as session:
+        async with aiohttp.ClientSession(cookies=request.cookies, loop=self._loop) as session:
             with async_timeout.timeout(timeout, loop=self._loop):
                 async with session.request(request.method,
                                            request.url,
