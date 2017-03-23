@@ -1,7 +1,6 @@
 # coding=utf-8
 
 import re
-import time
 import asyncio
 import threading
 
@@ -55,7 +54,7 @@ def agent(request):
     def start_loop():
         app = web.Application(loop=loop)
         app.router.add_resource("/").add_route("GET", handle_request)
-        loop.run_until_complete(loop.create_server(app.make_handler(access_log=None), "0.0.0.0", 7340))
+        loop.run_until_complete(loop.create_server(app.make_handler(access_log=None, loop=loop), "0.0.0.0", 7340))
         try:
             loop.run_forever()
         except Exception:
