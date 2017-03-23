@@ -2,6 +2,8 @@
 
 import inspect
 
+from xpaw.utils.web import get_encoding_from_header, get_encoding_from_content
+
 
 class HttpRequest:
     def __init__(self, url, method="GET",
@@ -45,6 +47,35 @@ class HttpResponse:
         self.headers = headers
         self.cookies = cookies
         self.request = request
+
+    @property
+    def encoding(self):
+        if hasattr(self, "_encoding"):
+            return self._encoding
+        encoding = get_encoding_from_header(self.headers.get("content-type"))
+        if not encoding and self.body:
+            encoding = get_encoding_from_content(self.body)
+        self._encoding = encoding or "utf-8"
+        return self._encoding
+
+    @encoding.setter
+    def encoding(self, value):
+        self._encoding = value
+
+    @property
+    def text(self):
+        if hasattr(self, "_text") and self._text:
+            return self._text
+        if not self.body:
+            return ""
+        encoding = self.encoding
+        content = ""
+        try:
+            content = self.body.decode(encoding, errors="replace")
+        except LookupError:
+            content = self.body.decode(encoding, errors="replace")
+        self._text = content
+        return self._text
 
     @property
     def meta(self):

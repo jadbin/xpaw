@@ -47,7 +47,7 @@ Our first Spider
             yield HttpRequest("http://news.qq.com", callback=self.parse)
 
         def parse(self, response):
-            selector = Selector(response.body.decode("gb2312", errors="ignore"))
+            selector = Selector(response.text)
             major_news = selector.xpath("//div[@class='item major']//a[@class='linkto']").text
             self.log("Major news:")
             for i in range(len(major_news)):
