@@ -22,12 +22,11 @@ class LocalCluster:
         self._downloader_loop.set_exception_handler(self._handle_coro_error)
         self._downloader = Downloader(loop=self._downloader_loop)
         self._task_loader = TaskLoader(proj_dir, base_config=self._config, downloader_loop=self._downloader_loop)
-        self._is_running = False
         self._last_request = None
+        self._futures = None
 
     def start(self):
         log.info("Task ID: {}".format(self._task_loader.config.get("task_id")))
-        self._is_running = True
         self._task_loader.open_spider()
         self._start_downloader_loop()
 
@@ -57,10 +56,13 @@ class LocalCluster:
             finally:
                 self._downloader_loop.close()
 
-        asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
+        self._futures = []
+        f = asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
+        self._futures.append(f)
         asyncio.ensure_future(self._supervisor(), loop=self._downloader_loop)
         for i in range(self._config.getint("downloader_clients")):
-            asyncio.ensure_future(self._pull_requests(i), loop=self._downloader_loop)
+            f = asyncio.ensure_future(self._pull_requests(i), loop=self._downloader_loop)
+            self._futures.append(f)
         t = threading.Thread(target=_start)
         t.start()
 
@@ -68,21 +70,25 @@ class LocalCluster:
         timeout = self._task_loader.config.getfloat("downloader_timeout")
         task_finished_delay = 2 * timeout
         self._last_request = time.time()
-        while self._is_running:
+        while True:
             await asyncio.sleep(5, loop=self._downloader_loop)
             if time.time() - self._last_request > task_finished_delay:
-                self._is_running = False
+                break
         try:
             self._task_loader.close_spider()
         except Exception:
             log.warning("Unexpected error occurred when close spider", exc_info=True)
-        log.info("Event loop will be stopped after 5 seconds")
-        await asyncio.sleep(5, loop=self._downloader_loop)
+        if self._futures:
+            for f in self._futures:
+                f.cancel()
+            self._futures = None
+        log.info("Event loop will be stopped after 1 seconds")
+        await asyncio.sleep(1, loop=self._downloader_loop)
         self._downloader_loop.stop()
 
     async def _pull_requests(self, coro_id):
         timeout = self._task_loader.config.getfloat("downloader_timeout")
-        while self._is_running:
+        while True:
             if len(self._queue) > 0:
                 data = self._queue.popleft()
                 req = pickle.loads(data)
