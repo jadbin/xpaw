@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import re
 import logging
 
 from xpaw.config import BaseConfig
@@ -68,3 +69,34 @@ class RetryMiddleware:
             log.info("The request(url={}) has been retried {} times,"
                      " and it will be aborted.".format(request.url, self._max_retry_times))
             raise IgnoreRequest()
+
+
+class ResponseMatchMiddleware:
+    def __init__(self, url_pattern, body_pattern, encoding):
+        if not url_pattern:
+            raise ValueError("url pattern is none")
+        if not body_pattern:
+            raise ValueError("body pattern is none")
+        self._url_pattern = re.compile(url_pattern)
+        self._body_pattern = re.compile(body_pattern)
+        self._encoding = encoding
+
+    @classmethod
+    def from_config(cls, config):
+        c = config.get("response_match")
+        if c is None:
+            c = {}
+        c = BaseConfig(c)
+        return cls(c.get("url_pattern"),
+                   c.get("body_pattern"),
+                   c.get("encoding"))
+
+    async def handle_response(self, request, response):
+        if response.body:
+            if self._url_pattern.search(request.url):
+                if self._encoding:
+                    text = response.body.decode(self._encoding, errors="replace")
+                else:
+                    text = response.text
+                if not self._body_pattern.search(text):
+                    raise ResponseNotMatch("Response body does not fit the pattern")
