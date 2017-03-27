@@ -43,7 +43,7 @@ class TestRequestHeadersMiddleware:
         assert headers == req.headers
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def agent(request):
     async def handle_request(request):
         return web.Response(body=b'["127.0.0.1:3128", "127.0.0.1:8080"]')
@@ -71,6 +71,14 @@ def agent(request):
     t.start()
     wait_server_start("127.0.0.1:7340")
     request.addfinalizer(stop_loop)
+
+
+class TestProxyMiddleware:
+    def test_hanle_request(self, loop):
+        mw = ProxyMiddleware(["127.0.0.1"])
+        req = HttpRequest("http://www.example.com")
+        loop.run_until_complete(mw.handle_request(req))
+        assert req.proxy == "http://127.0.0.1"
 
 
 class TestProxyAgentMiddleware:
@@ -160,4 +168,27 @@ class TestRetryMiddleware:
             req = mw.retry(req, "")
             assert isinstance(req, HttpRequest)
         with pytest.raises(IgnoreRequest):
-            req = mw.retry(req, "")
+            mw.retry(req, "")
+
+    def test_match_status(self):
+        assert RetryMiddleware.match_status("200", 200) is True
+        assert RetryMiddleware.match_status(200, 200) is True
+        assert RetryMiddleware.match_status("2xX", 201) is True
+        assert RetryMiddleware.match_status("40x", 403) is True
+        assert RetryMiddleware.match_status("40X", 403) is True
+        assert RetryMiddleware.match_status("50x", 403) is False
+        assert RetryMiddleware.match_status("~20X", 200) is False
+        assert RetryMiddleware.match_status("!20x", 400) is True
+
+
+class TestResponseMatchMiddleware:
+    def test_handle_response(self, loop):
+        req = HttpRequest("http://www.baidu.com")
+        resp = HttpResponse("http://www.baidu.com", 200, body="<title>百度一下，你就知道</title>".encode("utf-8"))
+        wrong_resp = HttpResponse("http://www.qq.com", 200, body="<title>腾讯QQ</title>".encode("utf-8"))
+        mw = ResponseMatchMiddleware.from_config(Config({"response_match": {"url_pattern": "www\\.baidu\\.com",
+                                                                            "body_pattern": "百度",
+                                                                            "encoding": "utf-8"}}))
+        loop.run_until_complete(mw.handle_response(req, resp))
+        with pytest.raises(ResponseNotMatch):
+            loop.run_until_complete(mw.handle_response(req, wrong_resp))
