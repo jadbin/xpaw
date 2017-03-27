@@ -1,15 +1,14 @@
 # coding=utf-8
 
 import time
-import pickle
 import asyncio
 import threading
-import logging.config
-from collections import deque
+import logging
 
 from xpaw.downloader import Downloader
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.loader import TaskLoader
+from xpaw.utils.project import load_object
 
 log = logging.getLogger(__name__)
 
@@ -17,7 +16,7 @@ log = logging.getLogger(__name__)
 class LocalCluster:
     def __init__(self, proj_dir, config):
         self._config = config
-        self._queue = deque()
+        self._queue = load_object(self._config.get("queue_cls"))()
         self._downloader_loop = asyncio.new_event_loop()
         self._downloader_loop.set_exception_handler(self._handle_coro_error)
         self._downloader = Downloader(loop=self._downloader_loop)
@@ -36,14 +35,10 @@ class LocalCluster:
     async def _push_start_requests(self):
         for res in self._task_loader.spidermw.start_requests(self._task_loader.spider):
             if isinstance(res, HttpRequest):
-                self._push_request(res)
+                self._queue.push(res)
             elif isinstance(res, Exception):
                 log.warning("Unexpected error occurred when handle start requests", exc_info=True)
             await asyncio.sleep(0.01, loop=self._downloader_loop)
-
-    def _push_request(self, req):
-        r = pickle.dumps(req)
-        self._queue.append(r)
 
     def _start_downloader_loop(self):
         def _start():
@@ -82,16 +77,15 @@ class LocalCluster:
             for f in self._futures:
                 f.cancel()
             self._futures = None
-        log.info("Event loop will be stopped after 1 seconds")
-        await asyncio.sleep(1, loop=self._downloader_loop)
+        log.info("Event loop will be stopped after 3 seconds")
+        await asyncio.sleep(3, loop=self._downloader_loop)
         self._downloader_loop.stop()
 
     async def _pull_requests(self, coro_id):
         timeout = self._task_loader.config.getfloat("downloader_timeout")
         while True:
-            if len(self._queue) > 0:
-                data = self._queue.popleft()
-                req = pickle.loads(data)
+            req = self._queue.pop()
+            if req:
                 self._last_request = time.time()
                 log.debug("The request (url={}) has been pulled by coro[{}]".format(req.url, coro_id))
                 try:
@@ -106,8 +100,7 @@ class LocalCluster:
 
     def _handle_result(self, request, result):
         if isinstance(result, HttpRequest):
-            r = pickle.dumps(result)
-            self._queue.append(r)
+            self._queue.push(result)
         elif isinstance(result, HttpResponse):
             # bind HttpRequest
             result.request = request
@@ -115,7 +108,6 @@ class LocalCluster:
                 for res in self._task_loader.spidermw.parse(self._task_loader.spider,
                                                             result):
                     if isinstance(res, HttpRequest):
-                        r = pickle.dumps(res)
-                        self._queue.append(r)
+                        self._queue.push(res)
             except Exception:
                 log.warning("Unexpected error occurred when parse response of '{}'".format(request.url), exc_info=True)
