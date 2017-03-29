@@ -192,3 +192,11 @@ class TestResponseMatchMiddleware:
         loop.run_until_complete(mw.handle_response(req, resp))
         with pytest.raises(ResponseNotMatch):
             loop.run_until_complete(mw.handle_response(req, wrong_resp))
+
+
+class TestCookieJarMiddleware:
+    def test_handle_request(self, loop):
+        mw = CookieJarMiddleware.from_config(Config({"downloader_loop": loop}))
+        req = HttpRequest("http://www.example.com")
+        loop.run_until_complete(mw.handle_request(req))
+        assert req.meta.get("cookie_jar") is mw._cookie_jar
