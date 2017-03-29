@@ -14,12 +14,18 @@ log = logging.getLogger(__name__)
 
 
 class Downloader:
-    def __init__(self, loop=None):
+    def __init__(self, timeout=None, loop=None):
+        self._timeout = timeout
         self._loop = loop or asyncio.get_event_loop()
 
-    async def download(self, request, timeout=None):
+    async def download(self, request):
         log.debug("HTTP request: {} {}".format(request.method, request.url))
-        async with aiohttp.ClientSession(cookies=request.cookies, loop=self._loop) as session:
+        timeout = request.meta.get("timeout")
+        if not timeout:
+            timeout = self._timeout
+        async with aiohttp.ClientSession(cookies=request.cookies,
+                                         loop=self._loop,
+                                         cookie_jar=request.meta.get("cookie_jar")) as session:
             with async_timeout.timeout(timeout, loop=self._loop):
                 async with session.request(request.method,
                                            request.url,
@@ -75,14 +81,14 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         log.debug("Downloader middleware list: {}".format(mw_list))
         return mw_list
 
-    async def download(self, downloader, request, timeout=None):
+    async def download(self, downloader, request):
         try:
             res = await self._handle_request(request)
             if isinstance(res, HttpRequest):
                 return res
             if res is None:
                 try:
-                    response = await downloader.download(request, timeout=timeout)
+                    response = await downloader.download(request)
                     log.debug("HTTP response: {} {}".format(response.url, response.status))
                 except Exception as e:
                     log.debug("Network error {}: {}".format(type(e), e))

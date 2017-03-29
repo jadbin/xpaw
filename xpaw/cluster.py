@@ -19,7 +19,8 @@ class LocalCluster:
         self._queue = load_object(self._config.get("queue_cls"))()
         self._downloader_loop = asyncio.new_event_loop()
         self._downloader_loop.set_exception_handler(self._handle_coro_error)
-        self._downloader = Downloader(loop=self._downloader_loop)
+        self._downloader = Downloader(timeout=self._config.getfloat("downloader_timeout"),
+                                      loop=self._downloader_loop)
         self._task_loader = TaskLoader(proj_dir, base_config=self._config, downloader_loop=self._downloader_loop)
         self._last_request = None
         self._futures = None
@@ -55,7 +56,7 @@ class LocalCluster:
         f = asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
         self._futures.append(f)
         asyncio.ensure_future(self._supervisor(), loop=self._downloader_loop)
-        for i in range(self._config.getint("downloader_clients")):
+        for i in range(self._task_loader.config.getint("downloader_clients")):
             f = asyncio.ensure_future(self._pull_requests(i), loop=self._downloader_loop)
             self._futures.append(f)
         t = threading.Thread(target=_start)
@@ -82,15 +83,13 @@ class LocalCluster:
         self._downloader_loop.stop()
 
     async def _pull_requests(self, coro_id):
-        timeout = self._task_loader.config.getfloat("downloader_timeout")
         while True:
             req = self._queue.pop()
             if req:
                 self._last_request = time.time()
                 log.debug("The request (url={}) has been pulled by coro[{}]".format(req.url, coro_id))
                 try:
-                    result = await self._task_loader.downloadermw.download(self._downloader, req,
-                                                                           timeout=timeout)
+                    result = await self._task_loader.downloadermw.download(self._downloader, req)
                 except Exception:
                     log.warning("Unexpected error occurred when request '{}'".format(req.url), exc_info=True)
                 else:
