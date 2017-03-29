@@ -6,8 +6,8 @@ from xpaw.utils.web import get_encoding_from_header, get_encoding_from_content
 
 
 class HttpRequest:
-    def __init__(self, url, method="GET",
-                 body=None, headers=None, cookies=None, proxy=None,
+    def __init__(self, url, method="GET", body=None,
+                 headers=None, cookies=None, proxy=None,
                  meta=None, callback=None):
         """
         Construct an HTTP request.
