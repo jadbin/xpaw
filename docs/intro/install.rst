@@ -20,3 +20,14 @@ Installing xpaw
 如果安装过程中遇到lxml安装失败的情况，可参考 `lxml installation`_ 。
 
 .. _lxml installation: http://lxml.de/installation.html
+
+Requirements
+============
+
+- `aiohttp`_
+- `pyyaml`_
+- `lxml`_
+
+.. _aiohttp: https://pypi.python.org/pypi/aiohttp
+.. _pyyaml: https://pypi.python.org/pypi/pyyaml
+.. _lxml: https://pypi.python.org/pypi/lxml
