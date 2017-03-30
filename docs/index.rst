@@ -8,6 +8,23 @@
 xpaw |version| documentation
 ============================
 
+Overview
+========
+
+xpaw is a web scraping framework, used to crawl web pages and extract structured data from them.
+
+Requirements
+============
+
+- Python >= 3.5
+- `aiohttp`_
+- `pyyaml`_
+- `lxml`_
+
+.. _aiohttp: https://pypi.python.org/pypi/aiohttp
+.. _pyyaml: https://pypi.python.org/pypi/pyyaml
+.. _lxml: https://pypi.python.org/pypi/lxml
+
 Getting started
 ===============
 
@@ -15,7 +32,7 @@ Getting started
    :maxdepth: 2
 
    intro/install
-   intro/tutorial
+   intro/quickstart
 
 All the rest
 ============
@@ -24,10 +41,3 @@ All the rest
    :maxdepth: 1
 
    changelog
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

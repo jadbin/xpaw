@@ -1,8 +1,8 @@
-.. _intro-tutorial:
+.. _intro-quickstart:
 
-========
-Tutorial
-========
+===========
+Quick start
+===========
 
 Creating a project
 ==================

@@ -3,6 +3,19 @@
 Change log
 ==========
 
+0.6.2 (2017-03-?)
+------------------
+
+New features
+~~~~~~~~~~~~
+
+- HttpResponse新增 ``encoding`` 和 ``text`` 字段，分别用于获取网页的编码及字符串形式的内容
+- 新增ResponseMatchMiddleware，用于初步判断得到的页面是否符合要求
+- 新增CookieJarMiddleware，用于维护请求过程中产生的cookie，同时HttpRequest的meta中新增系统项 ``cookie_jar`` 作为发起请求时使用的cookie jar
+- HttpRequest的meta中新增系统项 ``timeout`` ，用于精确控制某个请求的超时时间
+- 系统配置新增 ``queue_cls`` 项，用于替换默认的请求队列
+
+
 0.6.1 (2017-03-23)
 ------------------
 
