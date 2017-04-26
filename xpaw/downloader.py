@@ -39,6 +39,7 @@ class Downloader:
                                 headers=resp.headers,
                                 body=body,
                                 cookies=cookies)
+        log.debug("HTTP response: {} {}".format(response.url, response.status))
         return response
 
 
@@ -89,7 +90,6 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             if res is None:
                 try:
                     response = await downloader.download(request)
-                    log.debug("HTTP response: {} {}".format(response.url, response.status))
                 except Exception as e:
                     log.debug("Network error {}: {}".format(type(e), e))
                     raise NetworkError(e)

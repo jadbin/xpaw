@@ -8,7 +8,7 @@ LOG_LEVEL = "INFO"
 LOG_FORMAT = "%(asctime)s %(name)s [%(levelname)s]: %(message)s"
 LOG_DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 
-TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
+TEMPLATES_DIR = abspath(join(dirname(__file__), "..", "templates"))
 
 DOWNLOADER_CLIENTS = 100
 DOWNLOADER_TIMEOUT = 20

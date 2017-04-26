@@ -3,8 +3,8 @@
 import logging
 
 
-def configure_logging(config):
-    logger = logging.getLogger("xpaw")
+def configure_logging(name, config):
+    logger = logging.getLogger(name)
     logger.setLevel(config["log_level"])
     log_stream_handler = logging.StreamHandler()
     log_stream_handler.setLevel(config["log_level"])

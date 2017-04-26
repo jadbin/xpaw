@@ -40,6 +40,6 @@ class CrawlCommand(Command):
             print("Error: Connot find 'config.yaml' in {}".format(abspath(args.project_dir)))
             return
         
-        configure_logging(self.config)
+        configure_logging("xpaw", self.config)
         cluster = LocalCluster(args.project_dir, self.config)
         cluster.start()
