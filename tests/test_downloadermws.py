@@ -6,6 +6,7 @@ import threading
 
 import pytest
 from aiohttp import web
+from yarl import URL
 
 from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
@@ -137,10 +138,10 @@ class TestRetryMiddleware:
         mw = RetryMiddleware.from_config(Config())
         monkeypatch.setattr(mw, "retry", _retry)
         req = HttpRequest("http://www.example.com")
-        resp = HttpResponse("http://www.example.com", 400)
+        resp = HttpResponse(URL("http://www.example.com"), 400)
         loop.run_until_complete(mw.handle_response(req, resp))
         with pytest.raises(ErrorFlag):
-            resp = HttpResponse("http://www.example.com", 503)
+            resp = HttpResponse(URL("http://www.example.com"), 503)
             loop.run_until_complete(mw.handle_response(req, resp))
 
     def test_handle_error(self, loop, monkeypatch):
@@ -184,8 +185,8 @@ class TestRetryMiddleware:
 class TestResponseMatchMiddleware:
     def test_handle_response(self, loop):
         req = HttpRequest("http://www.baidu.com")
-        resp = HttpResponse("http://www.baidu.com", 200, body="<title>百度一下，你就知道</title>".encode("utf-8"))
-        wrong_resp = HttpResponse("http://www.qq.com", 200, body="<title>腾讯QQ</title>".encode("utf-8"))
+        resp = HttpResponse(URL("http://www.baidu.com"), 200, body="<title>百度一下，你就知道</title>".encode("utf-8"))
+        wrong_resp = HttpResponse(URL("http://www.qq.com"), 200, body="<title>腾讯QQ</title>".encode("utf-8"))
         mw = ResponseMatchMiddleware.from_config(Config({"response_match": {"url_pattern": "www\\.baidu\\.com",
                                                                             "body_pattern": "百度",
                                                                             "encoding": "utf-8"}}))

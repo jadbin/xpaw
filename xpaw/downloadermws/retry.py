@@ -92,8 +92,9 @@ class ResponseMatchMiddleware:
                    c.get("encoding"))
 
     async def handle_response(self, request, response):
+        req_url = str(request.url)
         if response.body:
-            if self._url_pattern.search(request.url):
+            if self._url_pattern.search(req_url):
                 if self._encoding:
                     text = response.body.decode(self._encoding, errors="replace")
                 else:
