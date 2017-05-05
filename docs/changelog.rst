@@ -3,6 +3,20 @@
 Change log
 ==========
 
+0.6.4 (2017-05-05)
+------------------
+
+Bug fixes
+~~~~~~~~~
+
+- HttpResponse中的 ``url`` 字段源于aiohttp返回的ClientResponse中的 ``url`` 字段，实际应为 ``URL`` 对象
+
+Incompatible update
+~~~~~~~~~~~~~~~~~~~
+
+- LocalCluster启动时不再新建一个线程
+
+
 0.6.3 (2017-05-01)
 ------------------
 
