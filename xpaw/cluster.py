@@ -2,7 +2,6 @@
 
 import time
 import asyncio
-import threading
 import logging
 
 from xpaw.downloader import Downloader
@@ -42,16 +41,6 @@ class LocalCluster:
             await asyncio.sleep(0.01, loop=self._downloader_loop)
 
     def _start_downloader_loop(self):
-        def _start():
-            asyncio.set_event_loop(self._downloader_loop)
-            try:
-                self._downloader_loop.run_forever()
-            except Exception:
-                log.error("Unexpected error occurred when run loop", exc_info=True)
-                raise
-            finally:
-                self._downloader_loop.close()
-
         self._futures = []
         f = asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
         self._futures.append(f)
@@ -59,8 +48,16 @@ class LocalCluster:
         for i in range(self._task_loader.config.getint("downloader_clients")):
             f = asyncio.ensure_future(self._pull_requests(i), loop=self._downloader_loop)
             self._futures.append(f)
-        t = threading.Thread(target=_start)
-        t.start()
+
+        asyncio.set_event_loop(self._downloader_loop)
+        try:
+            self._downloader_loop.run_forever()
+        except Exception:
+            log.error("Unexpected error occurred when run loop", exc_info=True)
+            raise
+        finally:
+            log.info("Close event loop")
+            self._downloader_loop.close()
 
     async def _supervisor(self):
         timeout = self._task_loader.config.getfloat("downloader_timeout")
