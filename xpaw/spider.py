@@ -42,11 +42,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
         if hasattr(middleware, "handle_input"):
             self._input_handlers.append(middleware.handle_input)
         if hasattr(middleware, "handle_output"):
-            self._output_handlers.append(middleware.handle_output)
+            self._output_handlers.insert(0, middleware.handle_output)
         if hasattr(middleware, "handle_error"):
-            self._error_handlers.append(middleware.handle_error)
+            self._error_handlers.insert(0, middleware.handle_error)
         if hasattr(middleware, "handle_start_requests"):
-            self._start_requests_handlers.append(middleware.handle_start_requests)
+            self._start_requests_handlers.insert(0, middleware.handle_start_requests)
 
     @classmethod
     def _middleware_list_from_config(cls, config):
