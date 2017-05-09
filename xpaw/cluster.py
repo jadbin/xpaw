@@ -25,7 +25,6 @@ class LocalCluster:
         self._futures = None
 
     def start(self):
-        log.info("Task ID: {}".format(self._task_loader.config.get("task_id")))
         self._task_loader.open_spider()
         self._start_downloader_loop()
 
@@ -52,6 +51,7 @@ class LocalCluster:
 
         asyncio.set_event_loop(self._downloader_loop)
         try:
+            log.info("Start event loop")
             self._downloader_loop.run_forever()
         except Exception:
             log.error("Error while running event loop", exc_info=True)

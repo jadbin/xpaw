@@ -4,8 +4,6 @@ import os
 import sys
 import logging
 
-from bson import ObjectId
-
 from xpaw.config import Config
 from xpaw.utils.project import load_object
 from xpaw.downloader import DownloaderMiddlewareManager
@@ -24,9 +22,6 @@ class TaskLoader:
         self.config = self._load_task_config(proj_dir, base_config)
         for k, v in kwargs.items():
             self.config.set(k, v, "project")
-        # task id
-        if "task_id" not in self.config:
-            self.config.set("task_id", "{}".format(ObjectId()), "project")
         self.downloadermw = DownloaderMiddlewareManager.from_config(self.config)
         self.spider = load_object(self.config["spider"])(self.config)
         self.spidermw = SpiderMiddlewareManager.from_config(self.config)
