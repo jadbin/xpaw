@@ -71,6 +71,24 @@ class RetryMiddleware:
 
 
 class ResponseMatchMiddleware:
+    def __init__(self, patterns):
+        self._patterns = patterns
+
+    @classmethod
+    def from_config(cls, config):
+        c = config.getlist("response_match")
+        return cls([_ResponseMatchPattern(i.get("url_pattern"),
+                                          i.get("body_pattern"),
+                                          i.get("encoding"))
+                    for i in c])
+
+    async def handle_response(self, request, response):
+        for p in self._patterns:
+            if p.not_match(request, response):
+                raise ResponseNotMatch("Response body does not fit the pattern")
+
+
+class _ResponseMatchPattern:
     def __init__(self, url_pattern, body_pattern, encoding):
         if not url_pattern:
             raise ValueError("url pattern is none")
@@ -80,17 +98,7 @@ class ResponseMatchMiddleware:
         self._body_pattern = re.compile(body_pattern)
         self._encoding = encoding
 
-    @classmethod
-    def from_config(cls, config):
-        c = config.get("response_match")
-        if c is None:
-            c = {}
-        c = BaseConfig(c)
-        return cls(c.get("url_pattern"),
-                   c.get("body_pattern"),
-                   c.get("encoding"))
-
-    async def handle_response(self, request, response):
+    def not_match(self, request, response):
         req_url = str(request.url)
         if response.body:
             if self._url_pattern.search(req_url):
@@ -99,4 +107,5 @@ class ResponseMatchMiddleware:
                 else:
                     text = response.text
                 if not self._body_pattern.search(text):
-                    raise ResponseNotMatch("Response body does not fit the pattern")
+                    return True
+        return False

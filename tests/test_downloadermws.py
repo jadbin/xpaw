@@ -184,15 +184,17 @@ class TestRetryMiddleware:
 
 class TestResponseMatchMiddleware:
     def test_handle_response(self, loop):
-        req = HttpRequest("http://www.baidu.com")
-        resp = HttpResponse(URL("http://www.baidu.com"), 200, body="<title>百度一下，你就知道</title>".encode("utf-8"))
-        wrong_resp = HttpResponse(URL("http://www.qq.com"), 200, body="<title>腾讯QQ</title>".encode("utf-8"))
-        mw = ResponseMatchMiddleware.from_config(Config({"response_match": {"url_pattern": "www\\.baidu\\.com",
-                                                                            "body_pattern": "百度",
-                                                                            "encoding": "utf-8"}}))
-        loop.run_until_complete(mw.handle_response(req, resp))
+        req_baidu = HttpRequest("http://www.baidu.com")
+        req_qq = HttpRequest("http://www.qq.com")
+        resp_baidu = HttpResponse(URL("http://www.baidu.com"), 200, body="<title>百度一下，你就知道</title>".encode("utf-8"))
+        resp_qq = HttpResponse(URL("http://www.qq.com"), 200, body="<title>腾讯QQ</title>".encode("utf-8"))
+        mw = ResponseMatchMiddleware.from_config(Config({"response_match": [{"url_pattern": "baidu\\.com",
+                                                                             "body_pattern": "百度",
+                                                                             "encoding": "utf-8"}]}))
+        loop.run_until_complete(mw.handle_response(req_baidu, resp_baidu))
         with pytest.raises(ResponseNotMatch):
-            loop.run_until_complete(mw.handle_response(req, wrong_resp))
+            loop.run_until_complete(mw.handle_response(req_baidu, resp_qq))
+        loop.run_until_complete(mw.handle_response(req_qq, resp_qq))
 
 
 class TestCookieJarMiddleware:
