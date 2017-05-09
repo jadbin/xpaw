@@ -2,6 +2,12 @@
 xpaw
 ====
 
+.. image:: https://travis-ci.org/jadbin/xpaw.svg?branch=master
+    :target: https://travis-ci.org/jadbin/xpaw
+
+.. image:: https://coveralls.io/repos/jadbin/xpaw/badge.svg?branch=master&service=github
+    :target: https://coveralls.io/github/jadbin/xpaw?branch=master
+
 .. image:: https://img.shields.io/badge/license-Apache 2-blue.svg
     :target: https://github.com/jadbin/xpaw/blob/master/LICENSE
 
