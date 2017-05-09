@@ -3,6 +3,26 @@
 Change log
 ==========
 
+0.6.5 (2017-05-09)
+------------------
+
+New features
+~~~~~~~~~~~~
+
+- HttpRequest新增 ``errback`` 字段，表示无法正常获取到HttpResponse时触发的函数
+
+Bug fixes
+~~~~~~~~~
+
+- ResponseMatchMiddleware的配置修改为列表
+
+Incompatible changes
+~~~~~~~~~~~~~~~~~~~~
+
+- middleware的顺序修改为依次向downloader/spider靠近，层层包裹
+- 移除任务配置中随机生成的 ``task_id``
+
+
 0.6.4 (2017-05-05)
 ------------------
 
@@ -11,8 +31,8 @@ Bug fixes
 
 - HttpResponse中的 ``url`` 字段源于aiohttp返回的ClientResponse中的 ``url`` 字段，实际应为 ``URL`` 对象
 
-Incompatible update
-~~~~~~~~~~~~~~~~~~~
+Incompatible changes
+~~~~~~~~~~~~~~~~~~~~
 
 - LocalCluster启动时不再新建一个线程
 
@@ -20,8 +40,8 @@ Incompatible update
 0.6.3 (2017-05-01)
 ------------------
 
-Incompatible update
-~~~~~~~~~~~~~~~~~~~
+Incompatible changes
+~~~~~~~~~~~~~~~~~~~~
 
 - 优化日志工具中设置日志的接口
 
@@ -50,8 +70,8 @@ New features
 - 新增SpeedLimitMiddleware，用于爬虫限速
 - 新增ProxyMiddleware，用于为请求添加指定代理
 
-Incompatible update
-~~~~~~~~~~~~~~~~~~~
+Incompatible changes
+~~~~~~~~~~~~~~~~~~~~
 
 - 移除MongoDedupeMiddleware及对pymongo的依赖
 - 修改ProxyAgentMiddleware、RetryMiddleware在配置文件中的参数格式
