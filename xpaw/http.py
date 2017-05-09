@@ -8,7 +8,7 @@ from xpaw.utils.web import get_encoding_from_header, get_encoding_from_content
 class HttpRequest:
     def __init__(self, url, method="GET", body=None,
                  headers=None, cookies=None, proxy=None,
-                 meta=None, callback=None):
+                 meta=None, callback=None, errback=None):
         """
         Construct an HTTP request.
         """
@@ -22,6 +22,9 @@ class HttpRequest:
         if callback and inspect.ismethod(callback):
             callback = callback.__name__
         self.callback = callback
+        if errback and inspect.ismethod(errback):
+            errback = errback.__name__
+        self.errback = errback
 
     @property
     def meta(self):
@@ -29,7 +32,7 @@ class HttpRequest:
 
     def copy(self):
         kw = {}
-        for x in ["url", "method", "body", "headers", "cookies", "proxy", "meta", "callback"]:
+        for x in ["url", "method", "body", "headers", "cookies", "proxy", "meta", "callback", "errback"]:
             kw.setdefault(x, getattr(self, x))
         return HttpRequest(**kw)
 

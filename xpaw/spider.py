@@ -73,13 +73,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
             for i in r:
                 yield i
         except Exception as e:
-            try:
-                handled = self._handle_error(response, e)
-            except Exception:
-                raise
-            else:
-                if handled is not True:
-                    raise e
+            handled = self._handle_error(response, e)
+            if handled is not True:
+                raise e
+
+    def handle_error(self, spider, request, error):
+        if request and request.errback:
+            getattr(spider, request.errback)(request, error)
 
     def start_requests(self, spider):
         try:
@@ -91,7 +91,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             for i in r:
                 yield i
         except Exception as e:
-            yield e
+            raise e
 
     def _handle_input(self, response):
         for method in self._input_handlers:
@@ -107,14 +107,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
         return result
 
     def _handle_error(self, response, error):
-        handled = False
         for method in self._error_handlers:
             res = method(response, error)
             if not (res is None or res is True):
                 raise TypeError("Exception handler must return None or True, got {}".format(type(res)))
-            if res is True:
-                handled = True
-        return handled
+            if res is not None:
+                return res
 
     def _handle_start_requests(self, result):
         for method in self._start_requests_handlers:

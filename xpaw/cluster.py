@@ -30,15 +30,16 @@ class LocalCluster:
         self._start_downloader_loop()
 
     def _handle_coro_error(self, loop, context):
-        log.error("Unexpected error occurred when run the event loop: {}".format(context["message"]))
+        log.error("Error while running event loop: {}".format(context["message"]))
 
     async def _push_start_requests(self):
-        for res in self._task_loader.spidermw.start_requests(self._task_loader.spider):
-            if isinstance(res, HttpRequest):
-                self._queue.push(res)
-            elif isinstance(res, Exception):
-                log.warning("Unexpected error occurred when handle start requests", exc_info=True)
-            await asyncio.sleep(0.01, loop=self._downloader_loop)
+        try:
+            for res in self._task_loader.spidermw.start_requests(self._task_loader.spider):
+                if isinstance(res, HttpRequest):
+                    self._queue.push(res)
+                await asyncio.sleep(0.01, loop=self._downloader_loop)
+        except Exception:
+            log.warning("Error while handling start requests", exc_info=True)
 
     def _start_downloader_loop(self):
         self._futures = []
@@ -53,7 +54,7 @@ class LocalCluster:
         try:
             self._downloader_loop.run_forever()
         except Exception:
-            log.error("Unexpected error occurred when run loop", exc_info=True)
+            log.error("Error while running event loop", exc_info=True)
             raise
         finally:
             log.info("Close event loop")
@@ -70,7 +71,7 @@ class LocalCluster:
         try:
             self._task_loader.close_spider()
         except Exception:
-            log.warning("Unexpected error occurred when close spider", exc_info=True)
+            log.warning("Error while closing spider", exc_info=True)
         if self._futures:
             for f in self._futures:
                 f.cancel()
@@ -87,8 +88,12 @@ class LocalCluster:
                 log.debug("The request (url={}) has been pulled by coro[{}]".format(req.url, coro_id))
                 try:
                     result = await self._task_loader.downloadermw.download(self._downloader, req)
-                except Exception:
-                    log.warning("Unexpected error occurred when request '{}'".format(req.url), exc_info=True)
+                except Exception as e:
+                    log.warning("Error while processing request '{}'".format(req.url), exc_info=True)
+                    try:
+                        self._task_loader.spidermw.handle_error(self._task_loader.spider, req, e)
+                    except Exception:
+                        log.warn("Another error while handling error", exc_info=True)
                 else:
                     self._handle_result(req, result)
             else:
@@ -101,9 +106,8 @@ class LocalCluster:
             # bind HttpRequest
             result.request = request
             try:
-                for res in self._task_loader.spidermw.parse(self._task_loader.spider,
-                                                            result):
+                for res in self._task_loader.spidermw.parse(self._task_loader.spider, result):
                     if isinstance(res, HttpRequest):
                         self._queue.push(res)
             except Exception:
-                log.warning("Unexpected error occurred when parse response of '{}'".format(request.url), exc_info=True)
+                log.warning("Error while processing response of '{}'".format(request.url), exc_info=True)

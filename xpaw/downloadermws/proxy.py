@@ -89,7 +89,7 @@ class ProxyAgentMiddleware:
                                 if proxy_list:
                                     self._proxy_list = proxy_list
             except Exception:
-                log.warning("Unexpected error occurred when updating proxy list", exc_info=True)
+                log.warning("Error while updating proxy list", exc_info=True)
             await asyncio.sleep(self._update_interval, loop=self._loop)
 
     def open(self):
