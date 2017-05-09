@@ -35,9 +35,9 @@ class SpeedLimitMiddleware:
 
     async def _update_value(self):
         while True:
-            log.debug("Update speed limit semaphore")
             d = self._burst - self._value
             if d > 0:
+                log.debug("Update speed limit semaphore +{}".format(d))
                 self._value += d
                 i = 0
                 while i < d:
