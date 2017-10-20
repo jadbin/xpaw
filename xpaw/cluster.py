@@ -38,7 +38,7 @@ class LocalCluster:
                     self._queue.push(res)
                 await asyncio.sleep(0.01, loop=self._downloader_loop)
         except Exception:
-            log.warning("Error while handling start requests", exc_info=True)
+            log.warning("Error occurred while handling start requests", exc_info=True)
 
     def _start_downloader_loop(self):
         self._futures = []
@@ -54,7 +54,7 @@ class LocalCluster:
             log.info("Start event loop")
             self._downloader_loop.run_forever()
         except Exception:
-            log.error("Error while running event loop", exc_info=True)
+            log.error("Error occurred while running event loop", exc_info=True)
             raise
         finally:
             log.info("Close event loop")

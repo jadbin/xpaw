@@ -34,7 +34,7 @@ def main():
         "pyyaml",
         "lxml",
     ]
-    tests_requires = install_requires + ["pytest"]
+    tests_requires = install_requires + ["pytest", "pytest-aiohttp"]
     setup(
         name="xpaw",
         version=read_version(),

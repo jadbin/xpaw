@@ -12,3 +12,4 @@ del _patch
 from xpaw.spider import Spider
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.selector import Selector
+from xpaw.downloader import Downloader
