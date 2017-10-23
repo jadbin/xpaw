@@ -31,8 +31,7 @@ def main():
         raise RuntimeError("Python 3.5+ is required")
     install_requires = [
         "aiohttp>=2.0.1",
-        "pyyaml",
-        "lxml",
+        "lxml"
     ]
     tests_requires = install_requires + ["pytest", "pytest-aiohttp"]
     setup(
@@ -60,7 +59,7 @@ def main():
             "Programming Language :: Python :: 3",
             "Programming Language :: Python :: 3.5",
             "Topic :: Internet :: WWW/HTTP",
-            "Topic :: Software Development :: Libraries :: Application Frameworks",
+            "Topic :: Software Development :: Libraries :: Application Frameworks"
         ],
     )
 

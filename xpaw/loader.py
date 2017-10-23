@@ -3,12 +3,12 @@
 import os
 import sys
 import logging
+import types
 
 from xpaw.config import Config
 from xpaw.utils.project import load_object
 from xpaw.downloader import DownloaderMiddlewareManager
 from xpaw.spider import SpiderMiddlewareManager
-from xpaw.utils.config import load_config_file
 
 log = logging.getLogger(__name__)
 
@@ -34,10 +34,13 @@ class TaskLoader:
         sys.path.remove(proj_dir)
 
     def _load_task_config(self, proj_dir, base_config=None):
-        c = load_config_file(os.path.join(proj_dir, "config.yaml"))
-        log.debug("Project specific configuration: {}".format(c))
         task_config = base_config or Config()
-        task_config.update(c, priority="project")
+        module = load_object(os.path.join(proj_dir, "config.py"))
+        for key in dir(module):
+            if not key.startswith("_"):
+                value = getattr(module, key)
+                if not isinstance(value, (types.FunctionType, types.ModuleType)):
+                    task_config.set(key.lower(), value, "project")
         return task_config
 
     def open_spider(self):

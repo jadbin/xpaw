@@ -2,15 +2,15 @@
 
 from os.path import abspath, join, dirname
 
-LOG_FILE = None
-LOG_ENCODING = "utf-8"
-LOG_LEVEL = "INFO"
-LOG_FORMAT = "%(asctime)s %(name)s [%(levelname)s]: %(message)s"
-LOG_DATEFORMAT = "%Y-%m-%d %H:%M:%S"
+log_file = None
+log_encoding = "utf-8"
+log_level = "INFO"
+log_format = "%(asctime)s %(name)s [%(levelname)s]: %(message)s"
+log_dateformat = "%Y-%m-%d %H:%M:%S"
 
-TEMPLATES_DIR = abspath(join(dirname(__file__), "..", "templates"))
+templates_dir = abspath(join(dirname(__file__), "..", "templates"))
 
-DOWNLOADER_CLIENTS = 100
-DOWNLOADER_TIMEOUT = 20
+downloader_clients = 100
+downloader_timeout = 20
 
-QUEUE_CLS = "xpaw.queue.RequestDequeue"
+queue_cls = "xpaw.queue.RequestDequeue"

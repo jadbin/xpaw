@@ -49,9 +49,9 @@ class InitCommand(Command):
         project_dir = abspath(args.project_dir)
         project_name = basename(project_dir)
 
-        if exists(join(project_dir, "config.yaml")):
+        if exists(join(project_dir, "config.py")):
             self.exitcode = 1
-            print("Error: config.yaml already exists in {}".format(project_dir))
+            print("Error: config.py already exists in {}".format(project_dir))
             return
 
         self._init_project(args.project_dir, project_name)

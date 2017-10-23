@@ -16,7 +16,7 @@ Creating a project
 工程目录具有如下的结构::
 
     tutorial/
-        config.yaml           # 工程配置文件
+        config.py             # 工程配置文件
 
         tutorial/             # 工程的Python模块目录，在该目录下编写Python代码
             __init__.py

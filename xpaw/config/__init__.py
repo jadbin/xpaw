@@ -2,14 +2,14 @@
 
 import copy
 from collections import MutableMapping
+import types
 
 from . import defaultconfig
 
 CONFIG_PRIORITIES = {
     "default": 0,
-    "module": 10,
-    "project": 20,
-    "cmdline": 30
+    "project": 10,
+    "cmdline": 20
 }
 
 
@@ -136,6 +136,8 @@ class Config(BaseConfig):
     def __init__(self, values=None, priority="project"):
         super().__init__()
         for key in dir(defaultconfig):
-            if key.isupper():
-                self.set(key.lower(), getattr(defaultconfig, key), "default")
+            if not key.startswith("_"):
+                value = getattr(defaultconfig, key)
+                if not isinstance(value, (types.FunctionType, types.ModuleType)):
+                    self.set(key.lower(),value, "default")
         self.update(values, priority)
