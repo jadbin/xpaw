@@ -19,21 +19,12 @@ class TaskLoader:
     def __init__(self, proj_dir, base_config=None, **kwargs):
         # add project path
         sys.path.append(proj_dir)
-        # copy sys.modules
-        modules_keys = set(sys.modules.keys())
         self.config = self._load_task_config(proj_dir, base_config)
         for k, v in kwargs.items():
             self.config.set(k, v, "project")
         self.downloadermw = DownloaderMiddlewareManager.from_config(self.config)
         self.spider = load_object(self.config["spider"])(self.config)
         self.spidermw = SpiderMiddlewareManager.from_config(self.config)
-        # recover sys.modules
-        keys = list(sys.modules.keys())
-        for k in keys:
-            if k not in modules_keys:
-                del sys.modules[k]
-        # remove project path
-        sys.path.remove(proj_dir)
 
     def _load_task_config(self, project_dir, base_config=None):
         task_config = base_config or Config()
