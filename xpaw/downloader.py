@@ -91,7 +91,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 try:
                     response = await downloader.download(request)
                 except Exception as e:
-                    log.debug("Network error {}: {}".format(type(e), e))
+                    log.debug("Network error, {}: {}".format(type(e).__name__, e))
                     raise NetworkError(e)
                 else:
                     res = response
@@ -111,7 +111,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         for method in self._request_handlers:
             res = await method(request)
             assert res is None or isinstance(res, (HttpRequest, HttpResponse)), \
-                "Request handler must return None, HttpRequest or HttpResponse, got {}".format(type(res))
+                "Request handler must return None, HttpRequest or HttpResponse, got {}".format(type(res).__name__)
             if res:
                 return res
 
@@ -119,7 +119,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         for method in self._response_handlers:
             res = await method(request, response)
             assert res is None or isinstance(res, HttpRequest), \
-                "Response handler must return None or HttpRequest, got {}".format(type(res))
+                "Response handler must return None or HttpRequest, got {}".format(type(res).__name__)
             if res:
                 return res
 
@@ -127,7 +127,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         for method in self._error_handlers:
             res = await method(request, error)
             assert res is None or isinstance(res, (HttpRequest, HttpResponse)), \
-                "Exception handler must return None, HttpRequest or HttpResponse, got {}".format(type(res))
+                "Exception handler must return None, HttpRequest or HttpResponse, got {}".format(type(res).__name__)
             if res:
                 return res
         return error

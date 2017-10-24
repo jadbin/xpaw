@@ -57,7 +57,7 @@ class RetryMiddleware:
 
     async def handle_error(self, request, error):
         if isinstance(error, self.RETRY_ERRORS):
-            return self.retry(request, "{}: {}".format(type(error), error))
+            return self.retry(request, "{}: {}".format(type(error).__name__, error))
 
     def retry(self, request, reason):
         retry_times = request.meta.get("_retry_times", 0) + 1

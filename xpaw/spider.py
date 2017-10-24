@@ -93,20 +93,20 @@ class SpiderMiddlewareManager(MiddlewareManager):
         for method in self._input_handlers:
             res = method(response)
             assert res is None, \
-                "Input handler must return None, got {}".format(type(res))
+                "Input handler must return None, got {}".format(type(res).__name__)
 
     def _handle_output(self, response, result):
         for method in self._output_handlers:
             result = method(response, result)
             assert _isiterable(result), \
-                "Response handler must return an iterable object, got {}".format(type(result))
+                "Response handler must return an iterable object, got {}".format(type(result).__name__)
         return result
 
     def _handle_error(self, response, error):
         for method in self._error_handlers:
             res = method(response, error)
             assert res is None or _isiterable(res), \
-                "Exception handler must return None or an iterable object, got {}".format(type(res))
+                "Exception handler must return None or an iterable object, got {}".format(type(res).__name__)
             if res:
                 return res
         return error
@@ -115,5 +115,5 @@ class SpiderMiddlewareManager(MiddlewareManager):
         for method in self._start_requests_handlers:
             result = method(result)
             assert _isiterable(result), \
-                "Start requests handler must return an iterable object, got {}".format(type(result))
+                "Start requests handler must return an iterable object, got {}".format(type(result).__name__)
         return result
