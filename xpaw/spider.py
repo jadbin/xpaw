@@ -68,14 +68,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 r = spider.parse(response)
             if r:
                 r = self._handle_output(response, r)
-            if r is None:
-                return ()
-            for i in r:
-                yield i
+            return r or ()
         except Exception as e:
-            handled = self._handle_error(response, e)
-            if handled is not True:
-                raise e
+            res = self._handle_error(response, e)
+            if isinstance(res, Exception):
+                raise res
+            if res:
+                return res
 
     def handle_error(self, spider, request, error):
         if request and request.errback:
@@ -86,37 +85,35 @@ class SpiderMiddlewareManager(MiddlewareManager):
             r = spider.start_requests()
             if r:
                 r = self._handle_start_requests(r)
-            if r is None:
-                return ()
-            for i in r:
-                yield i
+            return r or ()
         except Exception as e:
             raise e
 
     def _handle_input(self, response):
         for method in self._input_handlers:
             res = method(response)
-            if res is not None:
-                raise TypeError("Input handler must return None, got {}".format(type(res)))
+            assert res is None, \
+                "Input handler must return None, got {}".format(type(res))
 
     def _handle_output(self, response, result):
         for method in self._output_handlers:
             result = method(response, result)
-            if not _isiterable(result):
-                raise TypeError("Response handler must return an iterable object, got {}".format(type(result)))
+            assert _isiterable(result), \
+                "Response handler must return an iterable object, got {}".format(type(result))
         return result
 
     def _handle_error(self, response, error):
         for method in self._error_handlers:
             res = method(response, error)
-            if not (res is None or res is True):
-                raise TypeError("Exception handler must return None or True, got {}".format(type(res)))
-            if res is not None:
+            assert res is None or _isiterable(res), \
+                "Exception handler must return None or an iterable object, got {}".format(type(res))
+            if res:
                 return res
+        return error
 
     def _handle_start_requests(self, result):
         for method in self._start_requests_handlers:
             result = method(result)
-            if not _isiterable(result):
-                raise TypeError("Start requests handler must return an iterable object, got {}".format(type(result)))
+            assert _isiterable(result), \
+                "Start requests handler must return an iterable object, got {}".format(type(result))
         return result

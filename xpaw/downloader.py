@@ -100,36 +100,34 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 res = _res
         except Exception as e:
             res = await self._handle_error(request, e)
-            if res is not True:
-                if res:
-                    return res
-                raise e
+            if isinstance(res, Exception):
+                raise res
+            if res:
+                return res
         else:
             return res
 
     async def _handle_request(self, request):
         for method in self._request_handlers:
             res = await method(request)
-            if not (res is None or isinstance(res, (HttpRequest, HttpResponse))):
-                raise TypeError("Request handler must return None, HttpRequest or HttpResponse,"
-                                " got {}".format(type(res)))
+            assert res is None or isinstance(res, (HttpRequest, HttpResponse)), \
+                "Request handler must return None, HttpRequest or HttpResponse, got {}".format(type(res))
             if res:
                 return res
 
     async def _handle_response(self, request, response):
         for method in self._response_handlers:
             res = await method(request, response)
-            if not (res is None or isinstance(res, HttpRequest)):
-                raise TypeError("Response handler must return None or HttpRequest,"
-                                " got {}".format(type(res)))
+            assert res is None or isinstance(res, HttpRequest), \
+                "Response handler must return None or HttpRequest, got {}".format(type(res))
             if res:
                 return res
 
     async def _handle_error(self, request, error):
         for method in self._error_handlers:
             res = await method(request, error)
-            if not (res is None or res is True or isinstance(res, (HttpRequest, HttpResponse))):
-                raise TypeError("Exception handler must return None, True, HttpRequest or HttpResponse,"
-                                " got {}".format(type(res)))
-            if res is not None:
+            assert res is None or isinstance(res, (HttpRequest, HttpResponse)), \
+                "Exception handler must return None, HttpRequest or HttpResponse, got {}".format(type(res))
+            if res:
                 return res
+        return error

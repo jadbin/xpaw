@@ -66,8 +66,9 @@ class RetryMiddleware:
             request.meta["_retry_times"] = retry_times
             return request.copy()
         else:
-            raise IgnoreRequest("The request(url={}) has been retried {} times,"
-                                " and it will be aborted.".format(request.url, self._max_retry_times))
+            log.info("The request(url={}) has been retried {} times,"
+                     " and it will be aborted.".format(request.url, self._max_retry_times))
+            raise IgnoreRequest
 
 
 class ResponseMatchMiddleware:
