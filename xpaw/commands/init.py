@@ -49,9 +49,9 @@ class InitCommand(Command):
         project_dir = abspath(args.project_dir)
         project_name = basename(project_dir)
 
-        if exists(join(project_dir, "config.py")):
+        if exists(join(project_dir, "setup.cfg")):
             self.exitcode = 1
-            print("Error: config.py already exists in {}".format(project_dir))
+            print("Error: setup.cfg already exists in {}".format(project_dir))
             return
 
         self._init_project(args.project_dir, project_name)

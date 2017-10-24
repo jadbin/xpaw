@@ -138,6 +138,6 @@ class Config(BaseConfig):
         for key in dir(defaultconfig):
             if not key.startswith("_"):
                 value = getattr(defaultconfig, key)
-                if not isinstance(value, (types.FunctionType, types.ModuleType)):
+                if not isinstance(value, (types.FunctionType, types.ModuleType, type)):
                     self.set(key.lower(),value, "default")
         self.update(values, priority)

@@ -16,11 +16,10 @@ Creating a project
 工程目录具有如下的结构::
 
     tutorial/
-        config.py             # 工程配置文件
-
+        setup.cfg             # 部署配置文件
         tutorial/             # 工程的Python模块目录，在该目录下编写Python代码
             __init__.py
-
+            config.py         # 工程配置文件
             spider.py         # 默认生成的爬虫文件
 
 Our first Spider

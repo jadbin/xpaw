@@ -1,9 +1,11 @@
 # coding=utf-8
 
-import os
+from os.path import join
 import sys
 import logging
 import types
+from configparser import ConfigParser
+from importlib import import_module
 
 from xpaw.config import Config
 from xpaw.utils.project import load_object
@@ -33,13 +35,17 @@ class TaskLoader:
         # remove project path
         sys.path.remove(proj_dir)
 
-    def _load_task_config(self, proj_dir, base_config=None):
+    def _load_task_config(self, project_dir, base_config=None):
         task_config = base_config or Config()
-        module = load_object(os.path.join(proj_dir, "config.py"))
+        config_parser = ConfigParser()
+        config_parser.read(join(project_dir, "setup.cfg"))
+        config_path = config_parser.get("config", "default")
+        log.debug('Default project configuration: {}'.format(config_path))
+        module = import_module(config_path)
         for key in dir(module):
             if not key.startswith("_"):
                 value = getattr(module, key)
-                if not isinstance(value, (types.FunctionType, types.ModuleType)):
+                if not isinstance(value, (types.FunctionType, types.ModuleType, type)):
                     task_config.set(key.lower(), value, "project")
         return task_config
 

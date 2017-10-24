@@ -35,9 +35,9 @@ class CrawlCommand(Command):
     def run(self, args):
         if not args.project_dir:
             raise UsageError()
-        if not isfile(join(args.project_dir, "config.py")):
+        if not isfile(join(args.project_dir, "setup.cfg")):
             self.exitcode = 1
-            print("Error: Connot find 'config.py' in {}".format(abspath(args.project_dir)))
+            print("Error: Connot find 'setup.cfg' in {}".format(abspath(args.project_dir)))
             return
         
         configure_logging("xpaw", self.config)
