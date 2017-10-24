@@ -14,3 +14,9 @@ downloader_clients = 100
 downloader_timeout = 20
 
 queue_cls = "xpaw.queue.RequestDequeue"
+
+dupefilter_cls = "xpaw.dupefilter.SetDupeFilter"
+
+downloader_middlewares = []
+
+spider_middlewares = []

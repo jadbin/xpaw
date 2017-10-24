@@ -15,7 +15,6 @@ downloader_middlewares = [
 ]
 
 spider_middlewares = [
-    'xpaw.spidermws.LocalSetDedupeMiddleware'
 ]
 
 spider = 'tutorial.spider.TutorialSpider'

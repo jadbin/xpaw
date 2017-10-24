@@ -16,7 +16,8 @@ log = logging.getLogger(__name__)
 class LocalCluster:
     def __init__(self, proj_dir, config):
         self._config = config
-        self._queue = load_object(self._config.get("queue_cls"))()
+        self._queue = self._new_object_from_config(self._config.get("queue_cls"), config)
+        self._dupefilter = self._new_object_from_config(self._config.get("dupefilter_cls"), config)
         self._downloader_loop = asyncio.new_event_loop()
         self._downloader_loop.set_exception_handler(self._handle_coro_error)
         self._downloader = Downloader(timeout=self._config.getfloat("downloader_timeout"),
@@ -27,6 +28,8 @@ class LocalCluster:
         self._futures_down = set()
 
     def start(self):
+        self._dupefilter.open()
+        self._queue.open()
         self._task_loader.open_spider()
         self._start_downloader_loop()
 
@@ -37,7 +40,7 @@ class LocalCluster:
         try:
             for res in self._task_loader.spidermw.start_requests(self._task_loader.spider):
                 if isinstance(res, HttpRequest):
-                    self._queue.push(res)
+                    self._push_without_duplicated(res)
                 await asyncio.sleep(0.01, loop=self._downloader_loop)
         except Exception:
             log.warning("Error occurred while handling start requests", exc_info=True)
@@ -80,11 +83,19 @@ class LocalCluster:
         try:
             self._task_loader.close_spider()
         except Exception:
-            log.warning("Error while closing spider", exc_info=True)
+            log.warning("Error occurred when close spider", exc_info=True)
         if self._futures:
             for f in self._futures:
                 f.cancel()
             self._futures = None
+        try:
+            self._queue.close()
+        except Exception:
+            log.warning("Error occurred when close queue", exc_info=True)
+        try:
+            self._dupefilter.close()
+        except Exception:
+            log.warning("Error occurred when close dupefilter", exc_info=True)
         log.info("Event loop will be stopped after 3 seconds")
         await asyncio.sleep(3, loop=self._downloader_loop)
         self._downloader_loop.stop()
@@ -97,6 +108,7 @@ class LocalCluster:
                 log.debug("The request (url={}) has been pulled by coro[{}]".format(req.url, coro_id))
                 try:
                     result = await self._task_loader.downloadermw.download(self._downloader, req)
+                    self._handle_result(req, result)
                 except Exception as e:
                     if not isinstance(e, IgnoreRequest):
                         log.warning("Unexpected error occurred while processing request '{}'".format(req.url),
@@ -105,21 +117,32 @@ class LocalCluster:
                         self._task_loader.spidermw.handle_error(self._task_loader.spider, req, e)
                     except Exception:
                         log.warning("Unexpected error occurred in error callback", exc_info=True)
-                else:
-                    self._handle_result(req, result)
             else:
                 await asyncio.sleep(3, loop=self._downloader_loop)
 
     def _handle_result(self, request, result):
         if isinstance(result, HttpRequest):
-            self._queue.push(result)
+            self._push_without_duplicated(result)
         elif isinstance(result, HttpResponse):
             # bind HttpRequest
             result.request = request
             try:
                 for res in self._task_loader.spidermw.parse(self._task_loader.spider, result):
                     if isinstance(res, HttpRequest):
-                        self._queue.push(res)
+                        self._push_without_duplicated(res)
             except Exception:
                 log.warning("Unexpected error occurred while processing response of '{}'".format(request.url),
                             exc_info=True)
+
+    @staticmethod
+    def _new_object_from_config(cls_path, config):
+        obj_cls = load_object(cls_path)
+        if hasattr(obj_cls, "from_config"):
+            obj = obj_cls.from_config(config)
+        else:
+            obj = obj_cls()
+        return obj
+
+    def _push_without_duplicated(self, request):
+        if not self._dupefilter.is_duplicated(request):
+            self._queue.push(request)

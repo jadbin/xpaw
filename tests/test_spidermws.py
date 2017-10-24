@@ -2,7 +2,7 @@
 
 from xpaw.config import Config
 from xpaw.spidermws import *
-from xpaw.http import HttpRequest, HttpResponse
+from xpaw.http import HttpRequest
 
 
 class TestDepthMiddleware:
@@ -17,11 +17,10 @@ class TestDepthMiddleware:
                     self.meta["_current_depth"] = depth
 
         mw = MaxDepthMiddleware.from_config(Config({"max_depth": 1}))
-        req = HttpRequest("http://127.0.0.1", "GET")
-        resp = HttpResponse("http://127.0.0.1", 200)
-        res = [i for i in mw.handle_output(R(), [req, resp])]
-        assert res == [req, resp] and req.meta[self.key] == 1
-        res = [i for i in mw.handle_output(R(0), [req, resp])]
-        assert res == [req, resp] and req.meta[self.key] == 1
-        res = [i for i in mw.handle_output(R(1), [req, resp])]
-        assert res == [resp]
+        req = HttpRequest("http://httpbin.org", "GET")
+        res = [i for i in mw.handle_output(R(), [req, None])]
+        assert res == [req, None] and req.meta[self.key] == 1
+        res = [i for i in mw.handle_output(R(0), [req, None])]
+        assert res == [req, None] and req.meta[self.key] == 1
+        res = [i for i in mw.handle_output(R(1), [req, None])]
+        assert res == [None]
