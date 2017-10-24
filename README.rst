@@ -12,12 +12,17 @@ xpaw
     :target: https://github.com/jadbin/xpaw/blob/master/LICENSE
 
 
-Overview
-========
+Key Features
+============
 
-xpaw is a web scraping framework, used to crawl web pages and extract structured data from them.
+- Provides a web scraping framework used to crawl web pages.
+- Provides data extraction tools used to extract structured data from web pages.
 
-Documentation: http://xpaw.readthedocs.org/en/latest/
+
+Documentation
+=============
+
+http://xpaw.readthedocs.org/en/latest/
 
 
 Requirements
