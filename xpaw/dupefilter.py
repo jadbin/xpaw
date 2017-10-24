@@ -2,7 +2,7 @@
 
 import logging
 
-from xpaw.utils.request import request_fingerprint
+from xpaw.utils.http import request_fingerprint
 
 log = logging.getLogger(__name__)
 

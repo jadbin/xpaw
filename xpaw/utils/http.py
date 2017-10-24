@@ -2,6 +2,7 @@
 
 import re
 import cgi
+import hashlib
 
 
 def get_encoding_from_header(content_type):
@@ -29,3 +30,19 @@ def get_encoding_from_content(content):
     s = _xml_re.search(content)
     if s:
         return s.group(1).strip()
+
+
+def request_fingerprint(request):
+    sha1 = hashlib.sha1()
+    sha1.update(to_types(request.method))
+    sha1.update(to_types(str(request.url)))
+    sha1.update(request.body or b'')
+    return sha1.hexdigest()
+
+
+def to_types(data, encoding=None):
+    if isinstance(data, bytes):
+        return data
+    if isinstance(data, str):
+        return data.encode(encoding or "utf-8")
+    raise TypeError("Need bytes or str, got {}".format(type(data).__name__))
