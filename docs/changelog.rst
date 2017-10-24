@@ -9,18 +9,18 @@ Change log
 New features
 ~~~~~~~~~~~~
 
-- 使用继承Dupefilter的去重过滤器来实现去重功能，系统配置新增``dupefilter_cls``项，用于替换默认的去重过滤器
-- ``xpaw.utils.run``模块中新增``run_crawler``函数，便于在python代码中控制开启爬虫
+- 使用继承Dupefilter的去重过滤器来实现去重功能，系统配置新增 ``dupefilter_cls`` 项，用于替换默认的去重过滤器
+- ``xpaw.utils.run`` 模块中新增 ``run_crawler`` 函数，便于在python代码中控制开启爬虫
 
 Update
 ~~~~~~
 
 - 使用config.py替代config.yaml作为配置文件，移除对pyyaml的依赖
-- ForwardedForMiddleware移动到``xpaw.downloadermws.headers``模块下
+- ForwardedForMiddleware移动到 ``xpaw.downloadermws.headers`` 模块下
 - 修改aiohttp的版本限制到>=2.2.0
 - 更新了中间件的错误处理机制
 - 不再采用中间件的形式实现请求的去重功能，并移除相关的中间件
-- ProxyAgentMiddleware的``proxy_agnet``配置下面``addr``字段更名为``agent_addr``
+- ProxyAgentMiddleware的 ``proxy_agnet`` 配置下面 ``addr`` 字段更名为 ``agent_addr``
 
 
 0.6.5 (2017-05-09)

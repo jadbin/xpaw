@@ -4,8 +4,8 @@
 Installation guide
 ==================
 
-Installing xpaw
-===============
+Installation
+============
 
 安装xpaw需要Python 3.5及更高版本的环境支持。
 

@@ -8,10 +8,11 @@
 xpaw |version| documentation
 ============================
 
-Overview
-========
+Key Features
+============
 
-xpaw is a web scraping framework, used to crawl web pages and extract structured data from them.
+- Provides a web scraping framework used to crawl web pages.
+- Provides data extraction tools used to extract structured data from web pages.
 
 Getting started
 ===============
