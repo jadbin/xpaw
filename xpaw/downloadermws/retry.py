@@ -3,7 +3,6 @@
 import re
 import logging
 
-from xpaw.config import BaseConfig
 from xpaw.errors import ResponseNotMatch, IgnoreRequest, NetworkError
 
 log = logging.getLogger(__name__)
@@ -13,7 +12,7 @@ class RetryMiddleware:
     RETRY_ERRORS = (NetworkError, ResponseNotMatch)
     RETRY_HTTP_STATUS = (500, 502, 503, 504, 408)
 
-    def __init__(self, max_retry_times, http_status):
+    def __init__(self, max_retry_times=3, http_status=RETRY_HTTP_STATUS):
         self._max_retry_times = max_retry_times
         self._http_status = http_status
 
@@ -22,9 +21,7 @@ class RetryMiddleware:
         c = config.get("retry")
         if c is None:
             c = {}
-        c = BaseConfig(c)
-        return cls(c.getint("max_retry_times", 3),
-                   c.getlist("http_status", cls.RETRY_HTTP_STATUS))
+        return cls(**c)
 
     async def handle_response(self, request, response):
         for p in self._http_status:

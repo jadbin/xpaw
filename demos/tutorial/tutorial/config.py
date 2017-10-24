@@ -24,7 +24,7 @@ spider = 'tutorial.spider.TutorialSpider'
 # ===================================================================
 
 proxy_agent = {
-    'addr': 'http://<address>:<port><path>'
+    'agent_addr': 'http://<address>:<port><path>'
 }
 
 request_headers = {

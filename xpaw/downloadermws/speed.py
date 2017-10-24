@@ -3,13 +3,11 @@
 import logging
 import asyncio
 
-from xpaw.config import BaseConfig
-
 log = logging.getLogger(__name__)
 
 
 class SpeedLimitMiddleware:
-    def __init__(self, span, burst, loop=None):
+    def __init__(self, span=1, burst=1, loop=None):
         if span <= 0:
             raise ValueError("span must greater than 0")
         self._span = span
@@ -24,10 +22,7 @@ class SpeedLimitMiddleware:
         c = config.get("speed_limit")
         if c is None:
             c = {}
-        c = BaseConfig(c)
-        return cls(c.getfloat("span", 1),
-                   c.getint("burst", 1),
-                   loop=config.get("downloader_loop"))
+        return cls(**c, loop=config.get("downloader_loop"))
 
     async def handle_request(self, request):
         await self._semaphore.acquire()

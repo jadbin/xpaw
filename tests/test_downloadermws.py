@@ -79,11 +79,11 @@ class TestProxyAgentMiddleware:
     async def test_handle_request(self, monkeypatch, test_server, loop):
         monkeypatch.setattr(random, 'randint', Random().randint)
         server = await make_proxy_agent(test_server)
-        mw = ProxyAgentMiddleware.from_config(Config({"proxy_agent":
-                                                          {"addr": "http://{}:{}".format(server.host, server.port)},
-                                                      "downloader_loop": loop}))
+        mw = ProxyAgentMiddleware.from_config(
+            Config({"proxy_agent":
+                        {"agent_addr": "http://{}:{}".format(server.host, server.port)},
+                    "downloader_loop": loop}))
         mw.open()
-        await asyncio.sleep(0.1, loop=loop)
         req = HttpRequest("http://httpbin.org")
         target_list = make_proxy_list() * 2
         for i in range(len(target_list)):
@@ -94,7 +94,7 @@ class TestProxyAgentMiddleware:
     async def test_update_proxy_list(self, test_server, loop):
         server = await make_proxy_agent(test_server)
         mw = ProxyAgentMiddleware.from_config(
-            Config({"proxy_agent": {"addr": "http://{}:{}".format(server.host, server.port),
+            Config({"proxy_agent": {"agent_addr": "http://{}:{}".format(server.host, server.port),
                                     "update_interval": 0.05},
                     "downloader_loop": loop}))
         mw.open()
