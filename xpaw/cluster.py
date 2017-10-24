@@ -24,6 +24,7 @@ class LocalCluster:
         self._task_loader = TaskLoader(proj_dir, base_config=self._config, downloader_loop=self._downloader_loop)
         self._last_request = None
         self._futures = None
+        self._futures_down = set()
 
     def start(self):
         self._task_loader.open_spider()
@@ -42,12 +43,11 @@ class LocalCluster:
             log.warning("Error occurred while handling start requests", exc_info=True)
 
     def _start_downloader_loop(self):
-        self._futures = []
-        f = asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
-        self._futures.append(f)
+        asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
         asyncio.ensure_future(self._supervisor(), loop=self._downloader_loop)
         downloader_clients = self._task_loader.config.getint("downloader_clients")
         log.debug("Downloader clients: {}".format(downloader_clients))
+        self._futures = []
         for i in range(downloader_clients):
             f = asyncio.ensure_future(self._pull_requests(i), loop=self._downloader_loop)
             self._futures.append(f)
@@ -71,6 +71,12 @@ class LocalCluster:
             await asyncio.sleep(5, loop=self._downloader_loop)
             if time.time() - self._last_request > task_finished_delay:
                 break
+            for i in range(len(self._futures)):
+                f = self._futures[i]
+                if f.done():
+                    if i not in self._futures_down:
+                        self._futures_down.add(i)
+                        log.error("Coro[{}] is shut down".format(i))
         try:
             self._task_loader.close_spider()
         except Exception:
