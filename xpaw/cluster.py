@@ -8,6 +8,7 @@ from xpaw.downloader import Downloader
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.loader import TaskLoader
 from xpaw.utils.project import load_object
+from xpaw.errors import IgnoreRequest
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +46,9 @@ class LocalCluster:
         f = asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
         self._futures.append(f)
         asyncio.ensure_future(self._supervisor(), loop=self._downloader_loop)
-        for i in range(self._task_loader.config.getint("downloader_clients")):
+        downloader_clients = self._task_loader.config.getint("downloader_clients")
+        log.debug("Downloader clients: {}".format(downloader_clients))
+        for i in range(downloader_clients):
             f = asyncio.ensure_future(self._pull_requests(i), loop=self._downloader_loop)
             self._futures.append(f)
 
@@ -89,11 +92,13 @@ class LocalCluster:
                 try:
                     result = await self._task_loader.downloadermw.download(self._downloader, req)
                 except Exception as e:
-                    log.warning("Error while processing request '{}'".format(req.url), exc_info=True)
+                    if not isinstance(e, IgnoreRequest):
+                        log.warning("Unexpected error occurred while processing request '{}'".format(req.url),
+                                    exc_info=True)
                     try:
                         self._task_loader.spidermw.handle_error(self._task_loader.spider, req, e)
                     except Exception:
-                        log.warn("Another error while handling error", exc_info=True)
+                        log.warning("Unexpected error occurred in error callback", exc_info=True)
                 else:
                     self._handle_result(req, result)
             else:
@@ -110,4 +115,5 @@ class LocalCluster:
                     if isinstance(res, HttpRequest):
                         self._queue.push(res)
             except Exception:
-                log.warning("Error while processing response of '{}'".format(request.url), exc_info=True)
+                log.warning("Unexpected error occurred while processing response of '{}'".format(request.url),
+                            exc_info=True)
