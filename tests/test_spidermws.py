@@ -5,6 +5,12 @@ from xpaw.spidermws import *
 from xpaw.http import HttpRequest
 
 
+class Cluster:
+    def __init__(self, loop=None, **kwargs):
+        self.loop = loop
+        self.config = Config(kwargs)
+
+
 class TestDepthMiddleware:
     max_depth = 1
     key = "_current_depth"
@@ -16,7 +22,7 @@ class TestDepthMiddleware:
                 if depth is not None:
                     self.meta["_current_depth"] = depth
 
-        mw = MaxDepthMiddleware.from_config(Config({"max_depth": 1}))
+        mw = MaxDepthMiddleware.from_cluster(Cluster(max_depth=1))
         req = HttpRequest("http://httpbin.org", "GET")
         res = [i for i in mw.handle_output(R(), [req, None])]
         assert res == [req, None] and req.meta[self.key] == 1

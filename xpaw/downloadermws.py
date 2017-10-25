@@ -24,8 +24,8 @@ class RetryMiddleware:
         self._http_status = http_status
 
     @classmethod
-    def from_config(cls, config):
-        c = config.get("retry")
+    def from_cluster(cls, cluster):
+        c = cluster.config.get("retry")
         if c is None:
             c = {}
         return cls(**c)
@@ -82,8 +82,8 @@ class ResponseMatchMiddleware:
         self._patterns = patterns
 
     @classmethod
-    def from_config(cls, config):
-        c = config.getlist("response_match")
+    def from_cluster(cls, cluster):
+        c = cluster.config.getlist("response_match")
         return cls([_ResponseMatchPattern(i.get("url_pattern"),
                                           i.get("body_pattern"),
                                           i.get("encoding"))
@@ -123,8 +123,8 @@ class RequestHeadersMiddleware:
         self._headers = headers or {}
 
     @classmethod
-    def from_config(cls, config):
-        return cls(config.get("request_headers"))
+    def from_cluster(cls, cluster):
+        return cls(cluster.config.get("request_headers"))
 
     async def handle_request(self, request):
         log.debug("Assign headers to request (url={}): {}".format(request.url, self._headers))
@@ -145,8 +145,8 @@ class CookieJarMiddleware:
         self._cookie_jar = CookieJar(loop=self._loop)
 
     @classmethod
-    def from_config(cls, config):
-        return cls(loop=config.get("downloader_loop"))
+    def from_cluster(cls, cluster):
+        return cls(loop=cluster.loop)
 
     async def handle_request(self, request):
         log.debug("Assign cookie jar to request (url={})".format(request.url))
@@ -161,8 +161,8 @@ class ProxyMiddleware:
         self._n = len(proxies)
 
     @classmethod
-    def from_config(cls, config):
-        return cls(config.getlist("proxies"))
+    def from_cluster(cls, cluster):
+        return cls(cluster.config.getlist("proxies"))
 
     async def handle_request(self, request):
         proxy = self._pick_proxy()
@@ -189,11 +189,11 @@ class ProxyAgentMiddleware:
         self._update_future = None
 
     @classmethod
-    def from_config(cls, config):
-        c = config.get("proxy_agent")
+    def from_cluster(cls, cluster):
+        c = cluster.config.get("proxy_agent")
         if c is None:
             c = {}
-        return cls(**c, loop=config.get("downloader_loop"))
+        return cls(**c, loop=cluster.loop)
 
     async def handle_request(self, request):
         proxy = await self.get_proxy()
@@ -251,11 +251,11 @@ class SpeedLimitMiddleware:
         self._update_future = None
 
     @classmethod
-    def from_config(cls, config):
-        c = config.get("speed_limit")
+    def from_cluster(cls, cluster):
+        c = cluster.config.get("speed_limit")
         if c is None:
             c = {}
-        return cls(**c, loop=config.get("downloader_loop"))
+        return cls(**c, loop=cluster.loop)
 
     async def handle_request(self, request):
         await self._semaphore.acquire()

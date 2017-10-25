@@ -55,8 +55,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
             self._start_requests_handlers.insert(0, middleware.handle_start_requests)
 
     @classmethod
-    def _middleware_list_from_config(cls, config):
-        mw_list = config.get("spider_middlewares")
+    def _middleware_list_from_cluster(cls, cluster):
+        mw_list = cluster.config.get("spider_middlewares")
         if mw_list:
             if not isinstance(mw_list, list):
                 mw_list = [mw_list]

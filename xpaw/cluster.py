@@ -23,17 +23,17 @@ log = logging.getLogger(__name__)
 class LocalCluster:
     def __init__(self, proj_dir=None, config=None):
         self.config = self._load_task_config(proj_dir, config)
-        self.downloader_loop = asyncio.new_event_loop()
-        self.downloader_loop.set_exception_handler(self._handle_coro_error)
+        self.loop = asyncio.new_event_loop()
+        self.loop.set_exception_handler(self._handle_coro_error)
         self.queue = self._new_object_from_cluster(self.config.get("queue_cls"), self)
         self.dupefilter = self._new_object_from_cluster(self.config.get("dupefilter_cls"), self)
         self.downloader = Downloader(timeout=self.config.getfloat("downloader_timeout"),
-                                     loop=self.downloader_loop)
+                                     loop=self.loop)
         self.spider = load_object(self.config["spider"])(self.config)
         log.debug("Spider: {}".format(".".join((type(self.spider).__module__,
                                                 type(self.spider).__name__))))
-        self.downloadermw = DownloaderMiddlewareManager.from_config(self.config)
-        self.spidermw = SpiderMiddlewareManager.from_config(self.config)
+        self.downloadermw = DownloaderMiddlewareManager.from_cluster(self.config)
+        self.spidermw = SpiderMiddlewareManager.from_cluster(self.config)
         self._last_request = None
         self._job_futures = None
         self._job_futures_done = set()
@@ -46,7 +46,7 @@ class LocalCluster:
         self.spider.open()
         self.spidermw.open()
         self.downloadermw.open()
-        self._start_downloader_loop()
+        self._start_loop()
 
     def _handle_coro_error(self, loop, context):
         log.error("Error occurred while running event loop: {}".format(context["message"]))
@@ -61,39 +61,39 @@ class LocalCluster:
                 for res in self.spidermw.start_requests(self.spider):
                     if isinstance(res, HttpRequest):
                         self._push_without_duplicated(res)
-                    await asyncio.sleep(0.01, loop=self.downloader_loop)
+                    await asyncio.sleep(0.01, loop=self.loop)
                 if tick <= 0:
                     break
-                await asyncio.sleep(tick, loop=self.downloader_loop)
+                await asyncio.sleep(tick, loop=self.loop)
         except Exception:
             log.warning("Error occurred when handle start requests", exc_info=True)
 
-    def _start_downloader_loop(self):
-        self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.downloader_loop)
-        self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.downloader_loop)
+    def _start_loop(self):
+        self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
+        self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.loop)
         downloader_clients = self.config.getint("downloader_clients")
         log.debug("Downloader clients: {}".format(downloader_clients))
         self._job_futures = []
         for i in range(downloader_clients):
-            f = asyncio.ensure_future(self._pull_requests(i), loop=self.downloader_loop)
+            f = asyncio.ensure_future(self._pull_requests(i), loop=self.loop)
             self._job_futures.append(f)
 
-        asyncio.set_event_loop(self.downloader_loop)
+        asyncio.set_event_loop(self.loop)
         try:
             log.info("Start event loop")
-            self.downloader_loop.run_forever()
+            self.loop.run_forever()
         except Exception:
             log.error("Fatal error occurred while running event loop", exc_info=True)
         finally:
             log.info("Close event loop")
-            self.downloader_loop.close()
+            self.loop.close()
 
     async def _supervisor(self):
         timeout = self.config.getfloat("downloader_timeout")
         task_finished_delay = 2 * timeout
         self._last_request = time.time()
         while True:
-            await asyncio.sleep(5, loop=self.downloader_loop)
+            await asyncio.sleep(5, loop=self.loop)
             if self._start_future.done() and time.time() - self._last_request > task_finished_delay:
                 break
             for i in range(len(self._job_futures)):
@@ -133,8 +133,8 @@ class LocalCluster:
         except Exception:
             log.warning("Error occurred when close dupefilter", exc_info=True)
         log.info("Event loop will be stopped after 3 seconds")
-        await asyncio.sleep(3, loop=self.downloader_loop)
-        self.downloader_loop.stop()
+        await asyncio.sleep(3, loop=self.loop)
+        self.loop.stop()
 
     async def _pull_requests(self, coro_id):
         while True:
@@ -154,7 +154,7 @@ class LocalCluster:
                     except Exception:
                         log.warning("Unexpected error occurred in error callback", exc_info=True)
             else:
-                await asyncio.sleep(3, loop=self.downloader_loop)
+                await asyncio.sleep(3, loop=self.loop)
 
     def _handle_result(self, request, result):
         if isinstance(result, HttpRequest):

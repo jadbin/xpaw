@@ -1,10 +1,5 @@
 # coding=utf-8
 
-import re
-import json
-import random
-import asyncio
-
 import pytest
 from aiohttp import web
 from yarl import URL
@@ -13,6 +8,12 @@ from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
 from xpaw.errors import IgnoreRequest, ResponseNotMatch
+
+
+class Cluster:
+    def __init__(self, loop=None, **kwargs):
+        self.loop = loop
+        self.config = Config(kwargs)
 
 
 class TestForwardedForMiddleware:
@@ -26,7 +27,7 @@ class TestForwardedForMiddleware:
 class TestRequestHeadersMiddleware:
     async def test_handle_request(self):
         headers = {"Content-Type": "text/html", "User-Agent": "xpaw", "Connection": "keep-alive"}
-        mw = RequestHeadersMiddleware.from_config(dict(request_headers=headers))
+        mw = RequestHeadersMiddleware.from_cluster(Cluster(request_headers=headers))
         req = HttpRequest("http://httpbin.org")
         await mw.handle_request(req)
         assert headers == req.headers
@@ -79,10 +80,9 @@ class TestProxyAgentMiddleware:
     async def test_handle_request(self, monkeypatch, test_server, loop):
         monkeypatch.setattr(random, 'randint', Random().randint)
         server = await make_proxy_agent(test_server)
-        mw = ProxyAgentMiddleware.from_config(
-            Config({"proxy_agent":
-                        {"agent_addr": "http://{}:{}".format(server.host, server.port)},
-                    "downloader_loop": loop}))
+        mw = ProxyAgentMiddleware.from_cluster(
+            Cluster(proxy_agent={"agent_addr": "http://{}:{}".format(server.host, server.port)},
+                    loop=loop))
         mw.open()
         req = HttpRequest("http://httpbin.org")
         target_list = make_proxy_list() * 2
@@ -93,10 +93,10 @@ class TestProxyAgentMiddleware:
 
     async def test_update_proxy_list(self, test_server, loop):
         server = await make_proxy_agent(test_server)
-        mw = ProxyAgentMiddleware.from_config(
-            Config({"proxy_agent": {"agent_addr": "http://{}:{}".format(server.host, server.port),
-                                    "update_interval": 0.05},
-                    "downloader_loop": loop}))
+        mw = ProxyAgentMiddleware.from_cluster(
+            Cluster(proxy_agent={"agent_addr": "http://{}:{}".format(server.host, server.port),
+                                 "update_interval": 0.05},
+                    loop=loop))
         mw.open()
         await asyncio.sleep(0.1, loop=loop)
         assert mw._proxy_list == make_proxy_list()
@@ -115,7 +115,7 @@ class TestRetryMiddleware:
             assert isinstance(request, HttpRequest) and isinstance(reason, str)
             raise ErrorFlag
 
-        mw = RetryMiddleware.from_config(Config({"downloader_loop": loop}))
+        mw = RetryMiddleware.from_cluster(Cluster(loop=loop))
         monkeypatch.setattr(mw, "retry", _retry)
         req = HttpRequest("http://httpbin.org")
         resp = HttpResponse(URL("http://httpbin.org"), 400)
@@ -132,7 +132,7 @@ class TestRetryMiddleware:
             assert isinstance(request, HttpRequest) and isinstance(reason, str)
             raise ErrorFlag
 
-        mw = RetryMiddleware.from_config(Config({"downloader_loop": loop}))
+        mw = RetryMiddleware.from_cluster(Cluster(loop=loop))
         monkeypatch.setattr(mw, "retry", _retry)
         req = HttpRequest("http://httpbin.org")
         err = ValueError()
@@ -143,8 +143,8 @@ class TestRetryMiddleware:
 
     async def test_retry(self, loop):
         max_retry_times = 2
-        mw = RetryMiddleware.from_config(Config({"retry": {"max_retry_times": max_retry_times},
-                                                 "downloader_loop": loop}))
+        mw = RetryMiddleware.from_cluster(Cluster(retry={"max_retry_times": max_retry_times},
+                                                  loop=loop))
         req = HttpRequest("http://httpbin.org")
         for i in range(max_retry_times):
             req = mw.retry(req, "")
@@ -170,10 +170,10 @@ class TestResponseMatchMiddleware:
         req_qq = HttpRequest("http://www.qq.com")
         resp_baidu = HttpResponse(URL("http://www.baidu.com"), 200, body="<title>百度一下，你就知道</title>".encode("utf-8"))
         resp_qq = HttpResponse(URL("http://www.qq.com"), 200, body="<title>腾讯QQ</title>".encode("utf-8"))
-        mw = ResponseMatchMiddleware.from_config(Config({"response_match": [{"url_pattern": "baidu\\.com",
-                                                                             "body_pattern": "百度",
-                                                                             "encoding": "utf-8"}],
-                                                         "downloader_loop": loop}))
+        mw = ResponseMatchMiddleware.from_cluster(Cluster(response_match=[{"url_pattern": "baidu\\.com",
+                                                                           "body_pattern": "百度",
+                                                                           "encoding": "utf-8"}],
+                                                          loop=loop))
         await mw.handle_response(req_baidu, resp_baidu)
         with pytest.raises(ResponseNotMatch):
             await mw.handle_response(req_baidu, resp_qq)
@@ -182,7 +182,7 @@ class TestResponseMatchMiddleware:
 
 class TestCookieJarMiddleware:
     async def test_handle_request(self, loop):
-        mw = CookieJarMiddleware.from_config(Config({"downloader_loop": loop}))
+        mw = CookieJarMiddleware.from_cluster(Cluster(loop=loop))
         req = HttpRequest("http://httpbin.org")
         await mw.handle_request(req)
         assert req.meta.get("cookie_jar") is mw._cookie_jar

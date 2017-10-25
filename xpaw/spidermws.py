@@ -12,8 +12,8 @@ class MaxDepthMiddleware:
         self._max_depth = max_depth
 
     @classmethod
-    def from_config(cls, config):
-        return cls(config.getint("max_depth", 0))
+    def from_cluster(cls, cluster):
+        return cls(cluster.config.getint("max_depth", 0))
 
     def handle_output(self, response, result):
         depth = response.meta.get("_current_depth", 0) + 1

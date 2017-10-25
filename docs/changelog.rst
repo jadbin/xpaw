@@ -3,6 +3,19 @@
 Change log
 ==========
 
+0.7.2 (2017-?-?)
+----------------
+
+New features
+~~~~~~~~~~~~
+
+
+Update
+~~~~~~
+
+- 实例化中间件的classmethod ``from_config`` 更改为 ``from_cluster`` ，原先的 ``config`` 参数可以通过 ``cluster.config`` 获取
+
+
 0.7.1 (2017-10-25)
 ------------------
 

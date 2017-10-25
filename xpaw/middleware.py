@@ -15,17 +15,17 @@ class MiddlewareManager:
             self._add_middleware(middleware)
 
     @classmethod
-    def _middleware_list_from_config(cls, config):
+    def _middleware_list_from_cluster(cls, cluster):
         raise NotImplementedError
 
     @classmethod
-    def from_config(cls, config):
-        mw_list = cls._middleware_list_from_config(config)
+    def from_cluster(cls, cluster):
+        mw_list = cls._middleware_list_from_cluster(cluster)
         mws = []
         for cls_path in mw_list:
             mw_cls = load_object(cls_path)
-            if hasattr(mw_cls, "from_config"):
-                mw = mw_cls.from_config(config)
+            if hasattr(mw_cls, "from_cluster"):
+                mw = mw_cls.from_cluster(cluster)
             else:
                 mw = mw_cls()
             mws.append(mw)
