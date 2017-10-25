@@ -4,9 +4,6 @@ from xpaw import Spider, HttpRequest, Selector
 
 
 class TutorialSpider(Spider):
-    def __init__(self, config):
-        super().__init__(config)
-
     def start_requests(self):
         yield HttpRequest("http://news.qq.com", callback=self.parse)
 

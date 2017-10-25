@@ -46,9 +46,6 @@ Creating a Spider
 
 
     class TutorialSpider(Spider):
-        def __init__(self, config):
-            super().__init__(config)
-
         def start_requests(self):
             yield HttpRequest("http://news.qq.com", callback=self.parse)
 
@@ -106,9 +103,6 @@ How to Run a Single Spider
 
 
     class TutorialSpider(Spider):
-        def __init__(self, config):
-            super().__init__(config)
-
         def start_requests(self):
             yield HttpRequest("http://news.qq.com", callback=self.parse)
 
