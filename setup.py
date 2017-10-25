@@ -38,7 +38,7 @@ def main():
         name="xpaw",
         version=read_version(),
         url="https://github.com/jadbin/xpaw",
-        description="A web scraping framework",
+        description="Async web scraping framework",
         long_description=long_description,
         author="jadbin",
         author_email="jadbin.com@hotmail.com",

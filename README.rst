@@ -22,7 +22,7 @@ Key Features
 Documentation
 =============
 
-http://xpaw.readthedocs.org/en/latest/
+http://xpaw.readthedocs.io/
 
 
 Requirements
