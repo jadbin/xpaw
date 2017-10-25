@@ -3,10 +3,12 @@
 import os
 from os.path import exists, join, abspath, isdir, basename
 from shutil import move, copy2, copystat, ignore_patterns
+from datetime import datetime
 
 from xpaw.commands import Command
 from xpaw.errors import UsageError
 from xpaw.utils.template import string_camelcase, render_templatefile
+from xpaw.version import __version__
 
 IGNORE = ignore_patterns("*.pyc")
 
@@ -60,7 +62,9 @@ class InitCommand(Command):
         self._copytree(join(self.config["templates_dir"], "project"), project_dir)
         move(join(project_dir, "module"), join(project_dir, project_name))
         self._render_files(project_dir,
-                           lambda f: render_templatefile(f, project_name=project_name,
+                           lambda f: render_templatefile(f, version=__version__,
+                                                         datetime_now=datetime.now().strftime("%b %d %Y %H:%M:%S"),
+                                                         project_name=project_name,
                                                          ProjectName=string_camelcase(project_name)))
 
         print("New project '{}', created in:".format(project_name,
