@@ -14,7 +14,7 @@ Update
 ~~~~~~
 
 - ``xpaw.utils.run`` 模块中 ``run_crawler`` 函数移动至 ``xpaw.run`` 模块
-- 合并utils为一个模块
+- 原utils, commands, downloadersmws, spidermws各合并为一个模块
 
 
 0.7.0 (2017-10-24)
