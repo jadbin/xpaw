@@ -8,8 +8,14 @@ log = logging.getLogger(__name__)
 
 
 class Spider:
-    def __init__(self, config):
+    def __init__(self, config=None, **kwargs):
         self.config = config
+
+    @classmethod
+    def from_cluster(cls, cluster):
+        spider = cls(config=cluster.config)
+        spider.cluster = cluster
+        return spider
 
     @property
     def logger(self):

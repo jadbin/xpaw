@@ -29,11 +29,11 @@ class LocalCluster:
         self.dupefilter = self._new_object_from_cluster(self.config.get("dupefilter_cls"), self)
         self.downloader = Downloader(timeout=self.config.getfloat("downloader_timeout"),
                                      loop=self.loop)
-        self.spider = load_object(self.config["spider"])(self.config)
+        self.spider = self._new_object_from_cluster(self.config.get("spider"), self)
         log.debug("Spider: {}".format(".".join((type(self.spider).__module__,
                                                 type(self.spider).__name__))))
-        self.downloadermw = DownloaderMiddlewareManager.from_cluster(self.config)
-        self.spidermw = SpiderMiddlewareManager.from_cluster(self.config)
+        self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
+        self.spidermw = SpiderMiddlewareManager.from_cluster(self)
         self._last_request = None
         self._job_futures = None
         self._job_futures_done = set()
