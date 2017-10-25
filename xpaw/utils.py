@@ -7,11 +7,7 @@ import hashlib
 import logging
 from importlib import import_module
 from pkgutil import iter_modules
-from os.path import isfile, join, abspath
 import string
-
-from xpaw.config import Config
-from xpaw.cluster import LocalCluster
 
 
 def load_object(path):
@@ -107,13 +103,3 @@ _camelcase_invalid_chars = re.compile('[^a-zA-Z\d]')
 
 def string_camelcase(s):
     return _camelcase_invalid_chars.sub('', s.title())
-
-
-def run_crawler(project_dir, **kwargs):
-    if not isfile(join(project_dir, "setup.cfg")):
-        raise FileNotFoundError("Cannot find 'setup.cfg' in {}".format(abspath(project_dir)))
-
-    config = Config(kwargs, priority="project")
-    configure_logging("xpaw", config)
-    cluster = LocalCluster(project_dir, config)
-    cluster.start()

@@ -3,6 +3,20 @@
 Change log
 ==========
 
+0.7.1 (2017-?-?)
+----------------
+
+New features
+~~~~~~~~~~~~
+
+
+Update
+~~~~~~
+
+- ``xpaw.utils.run`` 模块中 ``run_crawler`` 函数移动至 ``xpaw.run`` 模块
+- 合并utils为一个模块
+
+
 0.7.0 (2017-10-24)
 ------------------
 
@@ -10,7 +24,7 @@ New features
 ~~~~~~~~~~~~
 
 - 使用继承Dupefilter的去重过滤器来实现去重功能，系统配置新增 ``dupefilter_cls`` 项，用于替换默认的去重过滤器
-- ``xpaw.utils`` 模块中新增 ``run_crawler`` 函数，便于在python代码中控制开启爬虫
+- ``xpaw.utils.run`` 模块中新增 ``run_crawler`` 函数，便于在python代码中控制开启爬虫
 
 Update
 ~~~~~~

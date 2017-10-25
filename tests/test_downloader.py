@@ -3,7 +3,7 @@
 import json
 import random
 
-from xpaw import HttpRequest
+from xpaw.http import HttpRequest
 from xpaw.downloader import Downloader, DownloaderMiddlewareManager
 from xpaw.downloadermws import CookieJarMiddleware
 
