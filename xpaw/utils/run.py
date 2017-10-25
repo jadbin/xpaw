@@ -9,7 +9,7 @@ from xpaw.cluster import LocalCluster
 
 def run_crawler(project_dir, **kwargs):
     if not isfile(join(project_dir, "setup.cfg")):
-        raise FileNotFoundError("Connot find 'setup.cfg' in {}".format(abspath(project_dir)))
+        raise FileNotFoundError("Cannot find 'setup.cfg' in {}".format(abspath(project_dir)))
 
     config = Config(kwargs, priority="project")
     configure_logging("xpaw", config)
