@@ -24,6 +24,12 @@ class Spider:
     def start_requests(self):
         raise NotImplementedError
 
+    def open(self):
+        pass
+
+    def close(self):
+        pass
+
 
 def _isiterable(obj):
     return hasattr(obj, "__iter__")

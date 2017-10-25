@@ -8,6 +8,7 @@ import logging
 from importlib import import_module
 from pkgutil import iter_modules
 import string
+import asyncio
 
 
 def load_object(path):
@@ -105,3 +106,14 @@ _camelcase_invalid_chars = re.compile('[^a-zA-Z\d]')
 
 def string_camelcase(s):
     return _camelcase_invalid_chars.sub('', s.title())
+
+
+def coro_wrapper(func):
+    if asyncio.iscoroutinefunction(func):
+        return func
+
+    async def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result
+
+    return wrapper

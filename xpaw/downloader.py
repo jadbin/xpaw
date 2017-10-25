@@ -9,6 +9,7 @@ import async_timeout
 from xpaw.middleware import MiddlewareManager
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.errors import NetworkError
+from xpaw.utils import coro_wrapper
 
 log = logging.getLogger(__name__)
 
@@ -53,23 +54,11 @@ class DownloaderMiddlewareManager(MiddlewareManager):
     def _add_middleware(self, middleware):
         super()._add_middleware(middleware)
         if hasattr(middleware, "handle_request"):
-            self._request_handlers.append(self._coro_wrapper(middleware.handle_request))
+            self._request_handlers.append(coro_wrapper(middleware.handle_request))
         if hasattr(middleware, "handle_response"):
-            self._response_handlers.insert(0, self._coro_wrapper(middleware.handle_response))
+            self._response_handlers.insert(0, coro_wrapper(middleware.handle_response))
         if hasattr(middleware, "handle_error"):
-            self._error_handlers.insert(0, self._coro_wrapper(middleware.handle_error))
-
-    def _coro_wrapper(self, func):
-        if asyncio.iscoroutinefunction(func):
-            return func
-
-        async def coro_wrapper(*args, **kwargs):
-            result = func(*args, **kwargs)
-            if asyncio.iscoroutine(result):
-                result = await result
-            return result
-
-        return coro_wrapper
+            self._error_handlers.insert(0, coro_wrapper(middleware.handle_error))
 
     @classmethod
     def _middleware_list_from_config(cls, config):
