@@ -2,18 +2,16 @@
 
 import sys
 import argparse
-import inspect
 
 from xpaw.errors import UsageError
-from xpaw.utils import walk_modules
+from xpaw import commands
 from xpaw.commands import Command
 
 
 def _iter_command_classes():
-    for module in walk_modules("xpaw.commands"):
-        for obj in vars(module).values():
-            if inspect.isclass(obj) and issubclass(obj, Command) and obj.__module__ == module.__name__:
-                yield obj
+    for obj in vars(commands).values():
+        if isinstance(obj, type) and issubclass(obj, Command) and obj is not Command:
+            yield obj
 
 
 def _get_commands_from_module():

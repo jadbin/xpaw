@@ -1,16 +1,98 @@
 # coding=utf-8
 
 import os
-from os.path import exists, join, abspath, isdir, basename
+from os.path import exists, join, abspath, isfile, isdir, basename
 from shutil import move, copy2, copystat, ignore_patterns
 from datetime import datetime
+import logging.config
 
-from xpaw.commands import Command
 from xpaw.errors import UsageError
+from xpaw.config import Config
 from xpaw.utils import string_camelcase, render_templatefile
 from xpaw.version import __version__
+from xpaw.cluster import LocalCluster
+from xpaw.utils import configure_logging
 
-IGNORE = ignore_patterns("*.pyc")
+log = logging.getLogger(__name__)
+
+
+class Command:
+    def __init__(self):
+        self.config = Config()
+        self.exitcode = 0
+
+    @property
+    def name(self):
+        return ""
+
+    @property
+    def syntax(self):
+        return ""
+
+    @property
+    def short_desc(self):
+        return ""
+
+    @property
+    def long_desc(self):
+        return self.short_desc
+
+    def add_arguments(self, parser):
+        parser.add_argument("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE",
+                            help="set/override setting (may be repeated)")
+        parser.add_argument("-l", "--log-level", dest="log_level", metavar="LEVEL",
+                            help="log level")
+
+    def process_arguments(self, args):
+        # setting
+        try:
+            self.config.update(dict(x.split("=", 1) for x in args.set), priority="cmdline")
+        except ValueError:
+            raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
+
+        # logger
+        if args.log_level:
+            self.config.set("log_level", args.log_level, priority="cmdline")
+
+    def run(self, args):
+        raise NotImplementedError
+
+
+class CrawlCommand(Command):
+    @property
+    def syntax(self):
+        return "<project_dir>"
+
+    @property
+    def name(self):
+        return "crawl"
+
+    @property
+    def short_desc(self):
+        return "Start to crawl web pages"
+
+    def add_arguments(self, parser):
+        Command.add_arguments(self, parser)
+
+        parser.add_argument("project_dir", metavar="project_dir", nargs="?", help="project directory")
+
+    def process_arguments(self, args):
+        Command.process_arguments(self, args)
+
+    def run(self, args):
+        if not args.project_dir:
+            raise UsageError()
+        if not isfile(join(args.project_dir, "setup.cfg")):
+            self.exitcode = 1
+            print("Error: Cannot find 'setup.cfg' in {}".format(abspath(args.project_dir)))
+            return
+
+        configure_logging("xpaw", self.config)
+        cluster = LocalCluster(args.project_dir, self.config)
+        cluster.start()
+
+
+_ignore_file_type = ignore_patterns("*.pyc")
 
 
 class InitCommand(Command):
@@ -76,7 +158,7 @@ class InitCommand(Command):
             os.makedirs(dst)
         copystat(src, dst)
         names = os.listdir(src)
-        ignored_names = IGNORE(src, names)
+        ignored_names = _ignore_file_type(src, names)
         for name in names:
             if name in ignored_names:
                 continue
@@ -95,3 +177,19 @@ class InitCommand(Command):
                 self._render_files(srcname, render)
             else:
                 render(srcname)
+
+
+class VersionCommand(Command):
+    @property
+    def name(self):
+        return "version"
+
+    @property
+    def short_desc(self):
+        return "Print the version"
+
+    def add_arguments(self, parser):
+        Command.add_arguments(self, parser)
+
+    def run(self, args):
+        print("xpaw version {}".format(__version__))
