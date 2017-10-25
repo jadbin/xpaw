@@ -17,6 +17,8 @@ queue_cls = "xpaw.queue.RequestDequeue"
 
 dupefilter_cls = "xpaw.dupefilter.SetDupeFilter"
 
-downloader_middlewares = []
+downloader_middlewares = [
+    "xpaw.downloadermws.RetryMiddleware"
+]
 
 spider_middlewares = []

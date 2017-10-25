@@ -11,10 +11,12 @@ import string
 
 
 def load_object(path):
-    dot = path.rindex(".")
-    module, name = path[:dot], path[dot + 1:]
-    mod = import_module(module)
-    return getattr(mod, name)
+    if isinstance(path, str):
+        dot = path.rindex(".")
+        module, name = path[:dot], path[dot + 1:]
+        mod = import_module(module)
+        return getattr(mod, name)
+    return path
 
 
 def walk_modules(path):

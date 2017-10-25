@@ -23,7 +23,8 @@ class LocalCluster:
         self._downloader_loop.set_exception_handler(self._handle_coro_error)
         self._downloader = Downloader(timeout=self._config.getfloat("downloader_timeout"),
                                       loop=self._downloader_loop)
-        self._task_loader = TaskLoader(proj_dir, base_config=self._config, downloader_loop=self._downloader_loop)
+        self._task_loader = TaskLoader(proj_dir=proj_dir, base_config=self._config,
+                                       downloader_loop=self._downloader_loop)
         self._last_request = None
         self._job_futures = None
         self._job_futures_done = set()

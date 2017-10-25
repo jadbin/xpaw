@@ -15,3 +15,11 @@ def run_crawler(project_dir, **kwargs):
     configure_logging("xpaw", config)
     cluster = LocalCluster(project_dir, config)
     cluster.start()
+
+
+def run_spider(spider, **kwargs):
+    config = Config(kwargs, priority="project")
+    config.set("spider", spider, priority="project")
+    configure_logging("xpaw", config)
+    cluster = LocalCluster(None, config)
+    cluster.start()
