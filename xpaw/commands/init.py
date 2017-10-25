@@ -7,7 +7,7 @@ from datetime import datetime
 
 from xpaw.commands import Command
 from xpaw.errors import UsageError
-from xpaw.utils.template import string_camelcase, render_templatefile
+from xpaw.utils import string_camelcase, render_templatefile
 from xpaw.version import __version__
 
 IGNORE = ignore_patterns("*.pyc")

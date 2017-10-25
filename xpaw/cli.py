@@ -5,7 +5,7 @@ import argparse
 import inspect
 
 from xpaw.errors import UsageError
-from xpaw.utils.project import walk_modules
+from xpaw.utils import walk_modules
 from xpaw.commands import Command
 
 

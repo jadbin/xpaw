@@ -7,7 +7,7 @@ import logging
 from xpaw.downloader import Downloader
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.loader import TaskLoader
-from xpaw.utils.project import load_object
+from xpaw.utils import load_object
 from xpaw.errors import IgnoreRequest
 
 log = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class LocalCluster:
         self._start_downloader_loop()
 
     def _handle_coro_error(self, loop, context):
-        log.error("Error while running event loop: {}".format(context["message"]))
+        log.error("Error occurred while running event loop: {}".format(context["message"]))
 
     async def _push_start_requests(self):
         try:
@@ -43,7 +43,7 @@ class LocalCluster:
                     self._push_without_duplicated(res)
                 await asyncio.sleep(0.01, loop=self._downloader_loop)
         except Exception:
-            log.warning("Error occurred while handling start requests", exc_info=True)
+            log.warning("Error occurred when handle start requests", exc_info=True)
 
     def _start_downloader_loop(self):
         asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
@@ -60,7 +60,7 @@ class LocalCluster:
             log.info("Start event loop")
             self._downloader_loop.run_forever()
         except Exception:
-            log.error("Error occurred while running event loop", exc_info=True)
+            log.error("Fatal error occurred while running event loop", exc_info=True)
             raise
         finally:
             log.info("Close event loop")

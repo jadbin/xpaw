@@ -8,7 +8,7 @@ from configparser import ConfigParser
 from importlib import import_module
 
 from xpaw.config import Config
-from xpaw.utils.project import load_object
+from xpaw.utils import load_object
 from xpaw.downloader import DownloaderMiddlewareManager
 from xpaw.spider import SpiderMiddlewareManager
 

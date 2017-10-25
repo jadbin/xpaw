@@ -6,7 +6,7 @@ import logging.config
 from xpaw.errors import UsageError
 from xpaw.commands import Command
 from xpaw.cluster import LocalCluster
-from xpaw.utils.log import configure_logging
+from xpaw.utils import configure_logging
 
 log = logging.getLogger(__name__)
 

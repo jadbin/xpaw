@@ -2,7 +2,7 @@
 
 import logging
 
-from xpaw.utils.project import load_object
+from xpaw.utils import load_object
 
 log = logging.getLogger(__name__)
 
