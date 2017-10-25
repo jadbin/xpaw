@@ -9,6 +9,9 @@ Change log
 New features
 ~~~~~~~~~~~~
 
+- 通过 ``xpaw.handler.every`` 实现定时任务功能
+- HttpRequest新增 ``dont_filter`` 字段，为 ``True`` 时表示该请求不会被过滤
+- ``xpaw.run`` 模块中新增 ``run_spider`` 函数，便于在python代码中直接运行Spider类
 
 Update
 ~~~~~~

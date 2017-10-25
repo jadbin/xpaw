@@ -14,16 +14,46 @@ Key Features
 - Provides a web scraping framework used to crawl web pages.
 - Provides data extraction tools used to extract structured data from web pages.
 
-Getting started
-===============
+Installation
+============
+
+安装xpaw需要Python 3.5及更高版本的环境支持。
+
+可以直接使用如下命令通过PyPI安装:
+
+.. code-block:: bash
+
+    $ pip install xpaw
+
+也可使用如下命令通过源码安装:
+
+.. code-block:: bash
+
+    $ python setup.py install
+
+如果安装过程中遇到lxml安装失败的情况，可参考 `lxml installation`_ 。
+
+.. _lxml installation: http://lxml.de/installation.html
+
+Requirements
+============
+
+- `aiohttp`_
+- `lxml`_
+
+.. _aiohttp: https://pypi.python.org/pypi/aiohttp
+.. _lxml: https://pypi.python.org/pypi/lxml
+
+Contents
+========
 
 .. toctree::
    :maxdepth: 2
 
-   intro/install
-   intro/quickstart
+   quickstart
+   usage
 
-All the rest
+All the Rest
 ============
 
 .. toctree::
