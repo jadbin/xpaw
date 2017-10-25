@@ -67,8 +67,10 @@ class RetryMiddleware:
         retry_times = request.meta.get("_retry_times", 0) + 1
         if retry_times <= self._max_retry_times:
             log.debug("We will retry the request(url={}) because of {}".format(request.url, reason))
-            request.meta["_retry_times"] = retry_times
-            return request.copy()
+            retry_req = request.copy()
+            retry_req.meta["_retry_times"] = retry_times
+            retry_req.dont_filter = True
+            return retry_req
         else:
             log.info("The request(url={}) has been retried {} times,"
                      " and it will be aborted.".format(request.url, self._max_retry_times))
