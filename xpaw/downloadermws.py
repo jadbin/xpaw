@@ -271,7 +271,7 @@ class SpeedLimitMiddleware:
                 while i < d:
                     self._semaphore.release()
                     i += 1
-            await asyncio.sleep(self._span)
+            await asyncio.sleep(self._span, loop=self._loop)
 
     def open(self):
         self._update_future = asyncio.ensure_future(self._update_value(), loop=self._loop)
