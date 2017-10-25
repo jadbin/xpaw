@@ -9,13 +9,14 @@ from xpaw.http import HttpRequest, HttpResponse
 from xpaw.loader import TaskLoader
 from xpaw.utils import load_object
 from xpaw.errors import IgnoreRequest
+from xpaw.config import Config
 
 log = logging.getLogger(__name__)
 
 
 class LocalCluster:
-    def __init__(self, proj_dir, config):
-        self._config = config
+    def __init__(self, proj_dir=None, config=None):
+        self._config = config or Config()
         self._queue = self._new_object_from_config(self._config.get("queue_cls"), config)
         self._dupefilter = self._new_object_from_config(self._config.get("dupefilter_cls"), config)
         self._downloader_loop = asyncio.new_event_loop()
@@ -24,8 +25,10 @@ class LocalCluster:
                                       loop=self._downloader_loop)
         self._task_loader = TaskLoader(proj_dir, base_config=self._config, downloader_loop=self._downloader_loop)
         self._last_request = None
-        self._futures = None
-        self._futures_down = set()
+        self._job_futures = None
+        self._job_futures_done = set()
+        self._start_future = None
+        self._supervisor_future = None
 
     def start(self):
         self._dupefilter.open()
@@ -38,22 +41,31 @@ class LocalCluster:
 
     async def _push_start_requests(self):
         try:
-            for res in self._task_loader.spidermw.start_requests(self._task_loader.spider):
-                if isinstance(res, HttpRequest):
-                    self._push_without_duplicated(res)
-                await asyncio.sleep(0.01, loop=self._downloader_loop)
+            spider = self._task_loader.spider
+            if hasattr(spider.start_requests, "cron_job"):
+                tick = spider.start_requests.cron_tick
+            else:
+                tick = 0
+            while True:
+                for res in self._task_loader.spidermw.start_requests(self._task_loader.spider):
+                    if isinstance(res, HttpRequest):
+                        self._push_without_duplicated(res)
+                    await asyncio.sleep(0.01, loop=self._downloader_loop)
+                if tick <= 0:
+                    break
+                await asyncio.sleep(tick, loop=self._downloader_loop)
         except Exception:
             log.warning("Error occurred when handle start requests", exc_info=True)
 
     def _start_downloader_loop(self):
-        asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
-        asyncio.ensure_future(self._supervisor(), loop=self._downloader_loop)
+        self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self._downloader_loop)
+        self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self._downloader_loop)
         downloader_clients = self._task_loader.config.getint("downloader_clients")
         log.debug("Downloader clients: {}".format(downloader_clients))
-        self._futures = []
+        self._job_futures = []
         for i in range(downloader_clients):
             f = asyncio.ensure_future(self._pull_requests(i), loop=self._downloader_loop)
-            self._futures.append(f)
+            self._job_futures.append(f)
 
         asyncio.set_event_loop(self._downloader_loop)
         try:
@@ -72,22 +84,28 @@ class LocalCluster:
         self._last_request = time.time()
         while True:
             await asyncio.sleep(5, loop=self._downloader_loop)
-            if time.time() - self._last_request > task_finished_delay:
+            if self._start_future.done() and time.time() - self._last_request > task_finished_delay:
                 break
-            for i in range(len(self._futures)):
-                f = self._futures[i]
+            for i in range(len(self._job_futures)):
+                f = self._job_futures[i]
                 if f.done():
-                    if i not in self._futures_down:
-                        self._futures_down.add(i)
+                    if i not in self._job_futures_done:
+                        self._job_futures_done.add(i)
                         log.error("Coro[{}] is shut down".format(i))
+        asyncio.ensure_future(self.shutdown())
+
+    async def shutdown(self):
+        if self._job_futures:
+            for f in self._job_futures:
+                f.cancel()
+        if self._start_future:
+            self._start_future.cancel()
+        if self._supervisor_future:
+            self._supervisor_future.cancel()
         try:
             self._task_loader.close_spider()
         except Exception:
             log.warning("Error occurred when close spider", exc_info=True)
-        if self._futures:
-            for f in self._futures:
-                f.cancel()
-            self._futures = None
         try:
             self._queue.close()
         except Exception:

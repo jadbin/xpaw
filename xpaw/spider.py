@@ -81,13 +81,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
             getattr(spider, request.errback)(request, error)
 
     def start_requests(self, spider):
-        try:
-            r = spider.start_requests()
-            if r:
-                r = self._handle_start_requests(r)
-            return r or ()
-        except Exception as e:
-            raise e
+        r = spider.start_requests()
+        if r:
+            r = self._handle_start_requests(r)
+        return r or ()
 
     def _handle_input(self, response):
         for method in self._input_handlers:

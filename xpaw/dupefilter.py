@@ -23,6 +23,8 @@ class SetDupeFilter(Dupefilter):
         self.hash = set()
 
     def is_duplicated(self, request):
+        if request.dont_filter:
+            return False
         h = request_fingerprint(request)
         if h in self.hash:
             log.debug("Find the request (method={}, url={}) is duplicated".format(request.method, request.url))
