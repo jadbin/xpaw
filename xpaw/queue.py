@@ -1,13 +1,17 @@
 # coding=utf-8
 
+import logging
 from collections import deque
+from asyncio import Semaphore
+
+log = logging.getLogger(__name__)
 
 
 class RequestQueue:
-    def push(self, request):
+    async def push(self, request):
         raise NotImplementedError
 
-    def pop(self):
+    async def pop(self):
         raise NotImplementedError
 
     def open(self):
@@ -18,12 +22,18 @@ class RequestQueue:
 
 
 class RequestDequeue(RequestQueue):
-    def __init__(self):
+    def __init__(self, loop=None):
         self._queue = deque()
+        self._semaphore = Semaphore(0, loop=loop)
 
-    def push(self, request):
+    @classmethod
+    def from_cluster(cls, cluster):
+        return cls(loop=cluster.loop)
+
+    async def push(self, request):
         self._queue.append(request)
+        self._semaphore.release()
 
-    def pop(self):
-        if len(self._queue) > 0:
-            return self._queue.popleft()
+    async def pop(self):
+        await self._semaphore.acquire()
+        return self._queue.popleft()

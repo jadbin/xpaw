@@ -2,6 +2,7 @@
 
 import logging
 import asyncio
+import inspect
 
 import aiohttp
 import async_timeout
@@ -9,7 +10,6 @@ import async_timeout
 from xpaw.middleware import MiddlewareManager
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.errors import NetworkError
-from xpaw.utils import coro_wrapper
 
 log = logging.getLogger(__name__)
 
@@ -54,11 +54,11 @@ class DownloaderMiddlewareManager(MiddlewareManager):
     def _add_middleware(self, middleware):
         super()._add_middleware(middleware)
         if hasattr(middleware, "handle_request"):
-            self._request_handlers.append(coro_wrapper(middleware.handle_request))
+            self._request_handlers.append(middleware.handle_request)
         if hasattr(middleware, "handle_response"):
-            self._response_handlers.insert(0, coro_wrapper(middleware.handle_response))
+            self._response_handlers.insert(0, middleware.handle_response)
         if hasattr(middleware, "handle_error"):
-            self._error_handlers.insert(0, coro_wrapper(middleware.handle_error))
+            self._error_handlers.insert(0, middleware.handle_error)
 
     @classmethod
     def _middleware_list_from_cluster(cls, cluster):
@@ -98,7 +98,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
 
     async def _handle_request(self, request):
         for method in self._request_handlers:
-            res = await method(request)
+            res = method(request)
+            if inspect.iscoroutine(res):
+                res = await res
             assert res is None or isinstance(res, (HttpRequest, HttpResponse)), \
                 "Request handler must return None, HttpRequest or HttpResponse, got {}".format(type(res).__name__)
             if res:
@@ -106,7 +108,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
 
     async def _handle_response(self, request, response):
         for method in self._response_handlers:
-            res = await method(request, response)
+            res = method(request, response)
+            if inspect.iscoroutine(res):
+                res = await res
             assert res is None or isinstance(res, HttpRequest), \
                 "Response handler must return None or HttpRequest, got {}".format(type(res).__name__)
             if res:
@@ -114,7 +118,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
 
     async def _handle_error(self, request, error):
         for method in self._error_handlers:
-            res = await method(request, error)
+            res = method(request, error)
+            if inspect.iscoroutine(res):
+                res = await res
             assert res is None or isinstance(res, (HttpRequest, HttpResponse)), \
                 "Exception handler must return None, HttpRequest or HttpResponse, got {}".format(type(res).__name__)
             if res:

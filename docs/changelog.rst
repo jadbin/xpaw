@@ -3,17 +3,20 @@
 Change log
 ==========
 
-0.7.2 (2017-?-?)
+0.8.0 (2017-?-?)
 ----------------
 
 New features
 ~~~~~~~~~~~~
 
+- spider的 ``start_requests`` 和 ``parse`` 函数支持async类型和python 3.6中的async generator类型
+- spider中间件的handle_*函数支持async类型
 
 Update
 ~~~~~~
 
 - 实例化中间件的classmethod ``from_config`` 更改为 ``from_cluster`` ，原先的 ``config`` 参数可以通过 ``cluster.config`` 获取
+- queue组件的 ``push`` , ``pop`` 函数，以及dupefilter组件的 ``is_duplicated`` 函数改为async类型
 
 
 0.7.1 (2017-10-25)

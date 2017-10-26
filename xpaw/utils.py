@@ -3,12 +3,15 @@
 import os
 import re
 import cgi
+import sys
 import hashlib
 import logging
 from importlib import import_module
 from pkgutil import iter_modules
 import string
-import asyncio
+
+PY35 = sys.version_info >= (3, 5)
+PY36 = sys.version_info >= (3, 6)
 
 
 def load_object(path):
@@ -108,12 +111,18 @@ def string_camelcase(s):
     return _camelcase_invalid_chars.sub('', s.title())
 
 
-def coro_wrapper(func):
-    if asyncio.iscoroutinefunction(func):
-        return func
+class AsyncGenWrapper:
+    def __init__(self, gen):
+        if hasattr(gen, "__next__"):
+            self.iter = gen
+        else:
+            self.iter = iter(gen)
 
-    async def wrapper(*args, **kwargs):
-        result = func(*args, **kwargs)
-        return result
+    async def __aiter__(self):
+        return self
 
-    return wrapper
+    async def __anext__(self):
+        try:
+            return next(self.iter)
+        except StopIteration:
+            raise StopAsyncIteration

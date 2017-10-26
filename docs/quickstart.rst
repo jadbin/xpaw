@@ -30,7 +30,7 @@ Creating a Project
 Creating a Spider
 -----------------
 
-我们编写的Spider需要继承 ``xpaw.Spider`` 类，其承担的功能主要为:
+我们编写的spider需要继承 ``xpaw.Spider`` 类，其承担的功能主要为:
 
 * 定义初始待爬取的链接
 
@@ -92,7 +92,7 @@ How to run our Spider
 How to Run a Single Spider
 ==========================
 
-我们也可以直接编写Spider类并运行:
+我们也可以直接编写spider类并运行:
 
 .. code-block:: python
 

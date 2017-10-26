@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import logging
+import inspect
 
 from xpaw.middleware import MiddlewareManager
 
@@ -38,7 +39,7 @@ class Spider:
 
 
 def _isiterable(obj):
-    return hasattr(obj, "__iter__")
+    return hasattr(obj, "__iter__") or hasattr(obj, "__aiter__")
 
 
 class SpiderMiddlewareManager(MiddlewareManager):
@@ -71,56 +72,66 @@ class SpiderMiddlewareManager(MiddlewareManager):
         log.debug("Spider middleware list: {}".format(mw_list))
         return mw_list
 
-    def parse(self, spider, response):
+    async def parse(self, spider, response):
         try:
-            self._handle_input(response)
+            await self._handle_input(response)
             if response.request and response.request.callback:
                 r = getattr(spider, response.request.callback)(response)
             else:
                 r = spider.parse(response)
+            if inspect.iscoroutine(r):
+                r = await r
             if r:
-                r = self._handle_output(response, r)
+                r = await self._handle_output(response, r)
             return r or ()
         except Exception as e:
-            res = self._handle_error(response, e)
+            res = await self._handle_error(response, e)
             if isinstance(res, Exception):
                 raise res
             if res:
                 return res
 
-    def handle_error(self, spider, request, error):
+    async def handle_error(self, spider, request, error):
         if request and request.errback:
-            getattr(spider, request.errback)(request, error)
+            r = getattr(spider, request.errback)(request, error)
+            if inspect.iscoroutine(r):
+                await r
 
-    def start_requests(self, spider):
+    async def start_requests(self, spider):
         r = spider.start_requests()
         if r:
-            r = self._handle_start_requests(r)
+            r = await self._handle_start_requests(r)
         return r or ()
 
-    def _handle_input(self, response):
+    async def _handle_input(self, response):
         for method in self._input_handlers:
             res = method(response)
+            if inspect.iscoroutine(res):
+                await res
             assert res is None, \
                 "Input handler must return None, got {}".format(type(res).__name__)
 
-    def _handle_output(self, response, result):
+    async def _handle_output(self, response, result):
         for method in self._output_handlers:
             result = method(response, result)
+            if inspect.iscoroutine(result):
+                result = await result
             assert _isiterable(result), \
                 "Response handler must return an iterable object, got {}".format(type(result).__name__)
         return result
 
-    def _handle_error(self, response, error):
+    async def _handle_error(self, response, error):
         for method in self._error_handlers:
             res = method(response, error)
+            if inspect.iscoroutine(res):
+                res = await res
             assert res is None or _isiterable(res), \
                 "Exception handler must return None or an iterable object, got {}".format(type(res).__name__)
-            if res:
+            if res is not None:
                 return res
         return error
 
-    def _handle_start_requests(self, result):
+    async def _handle_start_requests(self, result):
         for method in self._start_requests_handlers:
             result = method(result)
             assert _isiterable(result), \

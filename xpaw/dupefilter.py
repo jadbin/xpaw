@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 
 
 class Dupefilter:
-    def is_duplicated(self, request):
+    async def is_duplicated(self, request):
         raise NotImplementedError
 
     def open(self):
@@ -22,7 +22,7 @@ class SetDupeFilter(Dupefilter):
     def __init__(self):
         self.hash = set()
 
-    def is_duplicated(self, request):
+    async def is_duplicated(self, request):
         if request.dont_filter:
             return False
         h = request_fingerprint(request)

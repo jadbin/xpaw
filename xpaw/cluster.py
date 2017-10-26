@@ -11,7 +11,7 @@ from importlib import import_module
 
 from xpaw.downloader import Downloader
 from xpaw.http import HttpRequest, HttpResponse
-from xpaw.utils import load_object
+from xpaw.utils import load_object, AsyncGenWrapper
 from xpaw.errors import IgnoreRequest
 from xpaw.downloader import DownloaderMiddlewareManager
 from xpaw.spider import SpiderMiddlewareManager
@@ -24,7 +24,6 @@ class LocalCluster:
     def __init__(self, proj_dir=None, config=None):
         self.config = self._load_task_config(proj_dir, config)
         self.loop = asyncio.new_event_loop()
-        self.loop.set_exception_handler(self._handle_coro_error)
         self.queue = self._new_object_from_cluster(self.config.get("queue_cls"), self)
         self.dupefilter = self._new_object_from_cluster(self.config.get("dupefilter_cls"), self)
         self.downloader = Downloader(timeout=self.config.getfloat("downloader_timeout"),
@@ -48,9 +47,6 @@ class LocalCluster:
         self.downloadermw.open()
         self._start_loop()
 
-    def _handle_coro_error(self, loop, context):
-        log.error("Error occurred while running event loop: {}".format(context["message"]))
-
     async def _push_start_requests(self):
         try:
             if hasattr(self.spider.start_requests, "cron_job"):
@@ -58,9 +54,12 @@ class LocalCluster:
             else:
                 tick = 0
             while True:
-                for res in self.spidermw.start_requests(self.spider):
-                    if isinstance(res, HttpRequest):
-                        self._push_without_duplicated(res)
+                res = await self.spidermw.start_requests(self.spider)
+                if not hasattr(res, "__aiter__"):
+                    res = AsyncGenWrapper(res)
+                async for r in res:
+                    if isinstance(r, HttpRequest):
+                        await self._push_without_duplicated(r)
                     await asyncio.sleep(0.01, loop=self.loop)
                 if tick <= 0:
                     break
@@ -101,7 +100,8 @@ class LocalCluster:
                 if f.done():
                     if i not in self._job_futures_done:
                         self._job_futures_done.add(i)
-                        log.error("Coro[{}] is shut down".format(i))
+                        reason = "cancelled" if f.cancelled() else str(f.exception())
+                        log.error("Coro[{}] is shut down: {}".format(i, reason))
         asyncio.ensure_future(self.shutdown())
 
     async def shutdown(self):
@@ -138,34 +138,34 @@ class LocalCluster:
 
     async def _pull_requests(self, coro_id):
         while True:
-            req = self.queue.pop()
-            if req:
-                self._last_request = time.time()
-                log.debug("The request (url={}) has been pulled by coro[{}]".format(req.url, coro_id))
+            req = await self.queue.pop()
+            self._last_request = time.time()
+            log.debug("The request (url={}) has been pulled by coro[{}]".format(req.url, coro_id))
+            try:
+                result = await self.downloadermw.download(self.downloader, req)
+                await self._handle_result(req, result)
+            except Exception as e:
+                if not isinstance(e, IgnoreRequest):
+                    log.warning("Unexpected error occurred while processing request '{}'".format(req.url),
+                                exc_info=True)
                 try:
-                    result = await self.downloadermw.download(self.downloader, req)
-                    self._handle_result(req, result)
-                except Exception as e:
-                    if not isinstance(e, IgnoreRequest):
-                        log.warning("Unexpected error occurred while processing request '{}'".format(req.url),
-                                    exc_info=True)
-                    try:
-                        self.spidermw.handle_error(self.spider, req, e)
-                    except Exception:
-                        log.warning("Unexpected error occurred in error callback", exc_info=True)
-            else:
-                await asyncio.sleep(3, loop=self.loop)
+                    await self.spidermw.handle_error(self.spider, req, e)
+                except Exception:
+                    log.warning("Unexpected error occurred in error callback", exc_info=True)
 
-    def _handle_result(self, request, result):
+    async def _handle_result(self, request, result):
         if isinstance(result, HttpRequest):
-            self._push_without_duplicated(result)
+            await self._push_without_duplicated(result)
         elif isinstance(result, HttpResponse):
             # bind HttpRequest
             result.request = request
             try:
-                for res in self.spidermw.parse(self.spider, result):
-                    if isinstance(res, HttpRequest):
-                        self._push_without_duplicated(res)
+                res = await self.spidermw.parse(self.spider, result)
+                if not hasattr(res, "__aiter__"):
+                    res = AsyncGenWrapper(res)
+                async for r in res:
+                    if isinstance(r, HttpRequest):
+                        await self._push_without_duplicated(r)
             except Exception:
                 log.warning("Unexpected error occurred while processing response of '{}'".format(request.url),
                             exc_info=True)
@@ -179,11 +179,12 @@ class LocalCluster:
             obj = obj_cls()
         return obj
 
-    def _push_without_duplicated(self, request):
-        if not self.dupefilter.is_duplicated(request):
-            self.queue.push(request)
+    async def _push_without_duplicated(self, request):
+        if not await self.dupefilter.is_duplicated(request):
+            await self.queue.push(request)
 
-    def _load_task_config(self, proj_dir=None, base_config=None):
+    @staticmethod
+    def _load_task_config(proj_dir=None, base_config=None):
         if proj_dir is not None and proj_dir not in sys.path:
             # add project path
             sys.path.append(proj_dir)
