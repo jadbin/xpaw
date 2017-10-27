@@ -24,9 +24,10 @@ class EventBus:
         self._refs[event][i] = weakref.WeakMethod(receiver)
 
     def unsubscribe(self, receiver, event):
-        i = self._calc_id(receiver)
-        if i in self._refs[event]:
-            del self._refs[event][i]
+        if event in self._refs:
+            i = self._calc_id(receiver)
+            if i in self._refs[event]:
+                del self._refs[event][i]
 
     async def send(self, event, **kwargs):
         if event not in self._refs:
