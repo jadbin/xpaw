@@ -4,6 +4,7 @@ import logging
 import inspect
 
 from xpaw.middleware import MiddlewareManager
+from xpaw import events
 
 log = logging.getLogger(__name__)
 
@@ -16,6 +17,8 @@ class Spider:
     def from_cluster(cls, cluster):
         spider = cls(config=cluster.config)
         spider.cluster = cluster
+        cluster.eventbus.subscribe(spider.open, events.cluster_start)
+        cluster.eventbus.subscribe(spider.close, events.cluster_shutdown)
         return spider
 
     @property

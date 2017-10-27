@@ -14,12 +14,6 @@ class RequestQueue:
     async def pop(self):
         raise NotImplementedError
 
-    def open(self):
-        pass
-
-    def close(self):
-        pass
-
 
 class RequestDequeue(RequestQueue):
     def __init__(self, loop=None):

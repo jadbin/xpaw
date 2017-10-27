@@ -11,12 +11,15 @@ New features
 
 - spider的 ``start_requests`` 和 ``parse`` 函数支持async类型和python 3.6中的async generator类型
 - spider中间件的handle_*函数支持async类型
+- 新增事件驱动组件eventbus，支持事件的订阅、发送
 
 Update
 ~~~~~~
 
 - 实例化中间件的classmethod ``from_config`` 更改为 ``from_cluster`` ，原先的 ``config`` 参数可以通过 ``cluster.config`` 获取
 - queue组件的 ``push`` , ``pop`` 函数，以及dupefilter组件的 ``is_duplicated`` 函数改为async类型
+- dupefilter组件基类Dupefilter更名为DupeFilter
+- 系统不再默认调用dupefilter组件和queue组件的 ``open`` 和 ``close`` 函数，如果自定义的组件包含这些函数，可通过订阅相关事件的方式进行调用
 
 
 0.7.1 (2017-10-25)
@@ -118,7 +121,7 @@ New features
 New features
 ~~~~~~~~~~~~
 
-- 中间件添加open和close两个钩子函数，分别对应开启和关闭爬虫的事件
+- 中间件添加 ``open`` 和 ``close`` 两个钩子函数，分别对应开启和关闭爬虫的事件
 - RetryMiddleware中可以自定义需要重试的HTTP状态码
 - 新增SpeedLimitMiddleware，用于爬虫限速
 - 新增ProxyMiddleware，用于为请求添加指定代理

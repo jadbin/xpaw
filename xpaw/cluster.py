@@ -16,6 +16,8 @@ from xpaw.errors import IgnoreRequest
 from xpaw.downloader import DownloaderMiddlewareManager
 from xpaw.spider import SpiderMiddlewareManager
 from xpaw.config import Config
+from xpaw.eventbus import EventBus
+from xpaw import events
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +26,7 @@ class LocalCluster:
     def __init__(self, proj_dir=None, config=None):
         self.config = self._load_task_config(proj_dir, config)
         self.loop = asyncio.new_event_loop()
+        self.eventbus = EventBus()
         self.queue = self._new_object_from_cluster(self.config.get("queue_cls"), self)
         self.dupefilter = self._new_object_from_cluster(self.config.get("dupefilter_cls"), self)
         self.downloader = Downloader(timeout=self.config.getfloat("downloader_timeout"),
@@ -40,12 +43,25 @@ class LocalCluster:
         self._supervisor_future = None
 
     def start(self):
-        self.dupefilter.open()
-        self.queue.open()
-        self.spider.open()
-        self.spidermw.open()
-        self.downloadermw.open()
-        self._start_loop()
+        asyncio.ensure_future(self.eventbus.send(events.cluster_start), loop=self.loop)
+        self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
+        self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.loop)
+        downloader_clients = self.config.getint("downloader_clients")
+        log.debug("Downloader clients: {}".format(downloader_clients))
+        self._job_futures = []
+        for i in range(downloader_clients):
+            f = asyncio.ensure_future(self._pull_requests(i), loop=self.loop)
+            self._job_futures.append(f)
+
+        asyncio.set_event_loop(self.loop)
+        try:
+            log.info("Start event loop")
+            self.loop.run_forever()
+        except Exception:
+            log.error("Fatal error occurred while running event loop", exc_info=True)
+        finally:
+            log.info("Close event loop")
+            self.loop.close()
 
     async def _push_start_requests(self):
         try:
@@ -66,26 +82,6 @@ class LocalCluster:
                 await asyncio.sleep(tick, loop=self.loop)
         except Exception:
             log.warning("Error occurred when handle start requests", exc_info=True)
-
-    def _start_loop(self):
-        self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
-        self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.loop)
-        downloader_clients = self.config.getint("downloader_clients")
-        log.debug("Downloader clients: {}".format(downloader_clients))
-        self._job_futures = []
-        for i in range(downloader_clients):
-            f = asyncio.ensure_future(self._pull_requests(i), loop=self.loop)
-            self._job_futures.append(f)
-
-        asyncio.set_event_loop(self.loop)
-        try:
-            log.info("Start event loop")
-            self.loop.run_forever()
-        except Exception:
-            log.error("Fatal error occurred while running event loop", exc_info=True)
-        finally:
-            log.info("Close event loop")
-            self.loop.close()
 
     async def _supervisor(self):
         timeout = self.config.getfloat("downloader_timeout")
@@ -112,26 +108,7 @@ class LocalCluster:
             self._start_future.cancel()
         if self._supervisor_future:
             self._supervisor_future.cancel()
-        try:
-            self.downloadermw.close()
-        except Exception:
-            log.warning("Error occurred when close downloader middlewares", exc_info=True)
-        try:
-            self.spidermw.close()
-        except Exception:
-            log.warning("Error occurred when close spider middlewares", exc_info=True)
-        try:
-            self.spider.close()
-        except Exception:
-            log.warning("Error occurred when close spider", exc_info=True)
-        try:
-            self.queue.close()
-        except Exception:
-            log.warning("Error occurred when close queue", exc_info=True)
-        try:
-            self.dupefilter.close()
-        except Exception:
-            log.warning("Error occurred when close dupefilter", exc_info=True)
+        await self.eventbus.send(events.cluster_shutdown)
         log.info("Event loop will be stopped after 1 second")
         await asyncio.sleep(1, loop=self.loop)
         self.loop.stop()

@@ -3,6 +3,7 @@
 import logging
 
 from xpaw.utils import load_object
+from xpaw import events
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +30,10 @@ class MiddlewareManager:
             else:
                 mw = mw_cls()
             mws.append(mw)
-        return cls(*mws)
+        mwm = cls(*mws)
+        cluster.eventbus.subscribe(mwm.open, events.cluster_start)
+        cluster.eventbus.subscribe(mwm.close, events.cluster_shutdown)
+        return mwm
 
     def _add_middleware(self, middleware):
         if hasattr(middleware, "open"):
