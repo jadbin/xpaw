@@ -1,0 +1,20 @@
+# coding=utf-8
+
+import logging
+
+from xpaw.middleware import MiddlewareManager
+
+log = logging.getLogger(__name__)
+
+
+class ExtensionManager(MiddlewareManager):
+    @classmethod
+    def _middleware_list_from_cluster(cls, cluster):
+        mw_list = cluster.config.get("extensions")
+        if mw_list:
+            if not isinstance(mw_list, list):
+                mw_list = [mw_list]
+        else:
+            mw_list = []
+        log.debug("Extensions: {}".format(mw_list))
+        return mw_list

@@ -12,6 +12,8 @@ New features
 - spider的 ``start_requests`` 和 ``parse`` 函数支持async类型和python 3.6中的async generator类型
 - spider中间件的handle_*函数支持async类型
 - 新增事件驱动组件eventbus，支持事件的订阅、发送
+- 支持捕获SIGINT和SIGTERM信号并做出相应处理
+- 添加extension模块，支持用户自定义拓展
 
 Update
 ~~~~~~

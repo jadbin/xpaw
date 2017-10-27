@@ -19,6 +19,7 @@ from xpaw.spider import SpiderMiddlewareManager
 from xpaw.config import Config
 from xpaw.eventbus import EventBus
 from xpaw import events
+from xpaw.extension import ExtensionManager
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ class LocalCluster:
                                                 type(self.spider).__name__))))
         self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
         self.spidermw = SpiderMiddlewareManager.from_cluster(self)
+        self.extensions = ExtensionManager.from_cluster(self)
         self._last_request = None
         self._job_futures = None
         self._job_futures_done = set()

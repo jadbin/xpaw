@@ -22,3 +22,5 @@ downloader_middlewares = [
 ]
 
 spider_middlewares = []
+
+extensions = []
