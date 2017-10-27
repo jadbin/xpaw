@@ -5,7 +5,6 @@ import asyncio
 import inspect
 
 import aiohttp
-import async_timeout
 
 from xpaw.middleware import MiddlewareManager
 from xpaw.http import HttpRequest, HttpResponse
@@ -27,7 +26,7 @@ class Downloader:
         async with aiohttp.ClientSession(cookies=request.cookies,
                                          loop=self._loop,
                                          cookie_jar=request.meta.get("cookie_jar")) as session:
-            with async_timeout.timeout(timeout, loop=self._loop):
+            with aiohttp.Timeout(timeout, loop=self._loop):
                 async with session.request(request.method,
                                            request.url,
                                            headers=request.headers,

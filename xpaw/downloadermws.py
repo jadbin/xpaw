@@ -2,13 +2,11 @@
 
 import re
 import json
-import aiohttp
 import random
 import logging
 import asyncio
 
-import async_timeout
-from aiohttp import CookieJar
+import aiohttp
 
 from xpaw.errors import ResponseNotMatch, IgnoreRequest, NetworkError
 
@@ -142,7 +140,7 @@ class ForwardedForMiddleware:
 class CookieJarMiddleware:
     def __init__(self, loop=None):
         self._loop = loop or asyncio.get_event_loop()
-        self._cookie_jar = CookieJar(loop=self._loop)
+        self._cookie_jar = aiohttp.CookieJar(loop=self._loop)
 
     @classmethod
     def from_cluster(cls, cluster):
@@ -216,7 +214,7 @@ class ProxyAgentMiddleware:
         log.debug("Update proxy list")
         try:
             async with aiohttp.ClientSession(loop=self._loop) as session:
-                with async_timeout.timeout(self._timeout, loop=self._loop):
+                with aiohttp.Timeout(self._timeout, loop=self._loop):
                     async with session.get(self._agent_addr) as resp:
                         body = await resp.read()
                         proxy_list = json.loads(body.decode(encoding="utf-8"))

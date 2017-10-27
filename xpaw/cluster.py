@@ -132,8 +132,8 @@ class LocalCluster:
             self.dupefilter.close()
         except Exception:
             log.warning("Error occurred when close dupefilter", exc_info=True)
-        log.info("Event loop will be stopped after 3 seconds")
-        await asyncio.sleep(3, loop=self.loop)
+        log.info("Event loop will be stopped after 1 second")
+        await asyncio.sleep(1, loop=self.loop)
         self.loop.stop()
 
     async def _pull_requests(self, coro_id):

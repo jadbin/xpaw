@@ -3,7 +3,7 @@
 import asyncio
 
 import pytest
-import async_timeout
+import aiohttp
 
 from xpaw.queue import RequestDequeue
 
@@ -17,7 +17,7 @@ async def test_request_queue(loop):
     q = RequestDequeue.from_cluster(Cluster(loop=loop))
     q.open()
     with pytest.raises(asyncio.TimeoutError):
-        with async_timeout.timeout(0.1):
+        with aiohttp.Timeout(0.1):
             await q.pop()
     obj_list = [1, 2, 3]
     for o in obj_list:
@@ -25,6 +25,6 @@ async def test_request_queue(loop):
     for i in range(len(obj_list)):
         assert await q.pop() == obj_list[i]
     with pytest.raises(asyncio.TimeoutError):
-        with async_timeout.timeout(0.1):
+        with aiohttp.Timeout(0.1):
             await q.pop()
     q.close()
