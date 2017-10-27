@@ -8,6 +8,7 @@ import sys
 import types
 from configparser import ConfigParser
 from importlib import import_module
+import signal
 
 from xpaw.downloader import Downloader
 from xpaw.http import HttpRequest, HttpResponse
@@ -41,6 +42,7 @@ class LocalCluster:
         self._job_futures_done = set()
         self._start_future = None
         self._supervisor_future = None
+        self._is_running = False
 
     def start(self):
         asyncio.ensure_future(self.eventbus.send(events.cluster_start), loop=self.loop)
@@ -53,15 +55,18 @@ class LocalCluster:
             f = asyncio.ensure_future(self._pull_requests(i), loop=self.loop)
             self._job_futures.append(f)
 
+        self.loop.add_signal_handler(signal.SIGINT, lambda: asyncio.ensure_future(self.shutdown()))
+        self.loop.add_signal_handler(signal.SIGTERM, lambda: asyncio.ensure_future(self.shutdown()))
         asyncio.set_event_loop(self.loop)
+        self._is_running = True
+        log.info("Cluster is running")
         try:
-            log.info("Start event loop")
             self.loop.run_forever()
         except Exception:
-            log.error("Fatal error occurred while running event loop", exc_info=True)
+            log.error("Fatal error occurred while running cluster", exc_info=True)
         finally:
-            log.info("Close event loop")
             self.loop.close()
+            log.info("Cluster is stopped")
 
     async def _push_start_requests(self):
         try:
@@ -101,6 +106,10 @@ class LocalCluster:
         asyncio.ensure_future(self.shutdown())
 
     async def shutdown(self):
+        if not self._is_running:
+            return
+        self._is_running = False
+        log.info("Shutdown now")
         if self._job_futures:
             for f in self._job_futures:
                 f.cancel()
@@ -109,8 +118,7 @@ class LocalCluster:
         if self._supervisor_future:
             self._supervisor_future.cancel()
         await self.eventbus.send(events.cluster_shutdown)
-        log.info("Event loop will be stopped after 1 second")
-        await asyncio.sleep(1, loop=self.loop)
+        await asyncio.sleep(0.001, loop=self.loop)
         self.loop.stop()
 
     async def _pull_requests(self, coro_id):
