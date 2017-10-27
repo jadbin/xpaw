@@ -15,7 +15,6 @@ class Cluster:
 
 async def test_request_queue(loop):
     q = RequestDequeue.from_cluster(Cluster(loop=loop))
-    q.open()
     with pytest.raises(asyncio.TimeoutError):
         with aiohttp.Timeout(0.1):
             await q.pop()
@@ -27,4 +26,3 @@ async def test_request_queue(loop):
     with pytest.raises(asyncio.TimeoutError):
         with aiohttp.Timeout(0.1):
             await q.pop()
-    q.close()

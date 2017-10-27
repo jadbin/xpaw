@@ -6,7 +6,6 @@ from xpaw.dupefilter import SetDupeFilter
 
 async def test_set_dupe_filter():
     f = SetDupeFilter()
-    f.open()
     r1 = HttpRequest("http://httpbin.org")
     r2 = HttpRequest("http://httpbin.org/")
     r3 = HttpRequest("http://httpbin.org", "POST")
@@ -17,4 +16,3 @@ async def test_set_dupe_filter():
     assert await f.is_duplicated(r3) is False
     assert await f.is_duplicated(r4) is False
     assert await f.is_duplicated(r5) is True
-    f.close()
