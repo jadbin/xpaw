@@ -18,7 +18,7 @@ Update
 
 - 实例化中间件的classmethod ``from_config`` 更改为 ``from_cluster`` ，原先的 ``config`` 参数可以通过 ``cluster.config`` 获取
 - queue组件的 ``push`` , ``pop`` 函数，以及dupefilter组件的 ``is_duplicated`` 函数改为async类型
-- dupefilter组件基类Dupefilter更名为DupeFilter
+- 移除queue组件和dupefilter组件的基类，RequestDequeue更名为RequestQueue
 - 系统不再默认调用dupefilter组件和queue组件的 ``open`` 和 ``close`` 函数，如果自定义的组件包含这些函数，可通过订阅相关事件的方式进行调用
 
 

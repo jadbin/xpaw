@@ -5,7 +5,7 @@ import asyncio
 import pytest
 import aiohttp
 
-from xpaw.queue import RequestDequeue
+from xpaw.queue import RequestQueue
 
 
 class Cluster:
@@ -14,7 +14,7 @@ class Cluster:
 
 
 async def test_request_queue(loop):
-    q = RequestDequeue.from_cluster(Cluster(loop=loop))
+    q = RequestQueue.from_cluster(Cluster(loop=loop))
     with pytest.raises(asyncio.TimeoutError):
         with aiohttp.Timeout(0.1):
             await q.pop()

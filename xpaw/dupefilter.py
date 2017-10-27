@@ -7,12 +7,7 @@ from xpaw.utils import request_fingerprint
 log = logging.getLogger(__name__)
 
 
-class DupeFilter:
-    async def is_duplicated(self, request):
-        raise NotImplementedError
-
-
-class SetDupeFilter(DupeFilter):
+class SetDupeFilter:
     def __init__(self):
         self.hash = set()
 

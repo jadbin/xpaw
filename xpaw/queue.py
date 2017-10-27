@@ -8,14 +8,6 @@ log = logging.getLogger(__name__)
 
 
 class RequestQueue:
-    async def push(self, request):
-        raise NotImplementedError
-
-    async def pop(self):
-        raise NotImplementedError
-
-
-class RequestDequeue(RequestQueue):
     def __init__(self, loop=None):
         self._queue = deque()
         self._semaphore = Semaphore(0, loop=loop)
