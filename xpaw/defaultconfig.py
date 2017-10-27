@@ -13,7 +13,7 @@ templates_dir = abspath(join(dirname(__file__), "templates"))
 downloader_clients = 100
 downloader_timeout = 20
 
-queue_cls = "xpaw.queue.RequestDequeue"
+queue_cls = "xpaw.queue.RequestQueue"
 
 dupefilter_cls = "xpaw.dupefilter.SetDupeFilter"
 
