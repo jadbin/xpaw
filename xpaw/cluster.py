@@ -28,9 +28,9 @@ class LocalCluster:
     def __init__(self, proj_dir=None, config=None):
         self.config = self._load_task_config(proj_dir, config)
         self.loop = asyncio.new_event_loop()
-        self.eventbus = EventBus()
+        self.event_bus = EventBus()
         self.queue = self._new_object_from_cluster(self.config.get("queue_cls"), self)
-        self.dupefilter = self._new_object_from_cluster(self.config.get("dupefilter_cls"), self)
+        self.dupe_filter = self._new_object_from_cluster(self.config.get("dupe_filter_cls"), self)
         self.downloader = Downloader(timeout=self.config.getfloat("downloader_timeout"),
                                      loop=self.loop)
         self.spider = self._new_object_from_cluster(self.config.get("spider"), self)
@@ -47,7 +47,7 @@ class LocalCluster:
         self._is_running = False
 
     def start(self):
-        asyncio.ensure_future(self.eventbus.send(events.cluster_start), loop=self.loop)
+        asyncio.ensure_future(self.event_bus.send(events.cluster_start), loop=self.loop)
         self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
         self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.loop)
         downloader_clients = self.config.getint("downloader_clients")
@@ -119,7 +119,7 @@ class LocalCluster:
             self._start_future.cancel()
         if self._supervisor_future:
             self._supervisor_future.cancel()
-        await self.eventbus.send(events.cluster_shutdown)
+        await self.event_bus.send(events.cluster_shutdown)
         await asyncio.sleep(0.001, loop=self.loop)
         self.loop.stop()
 
@@ -167,7 +167,7 @@ class LocalCluster:
         return obj
 
     async def _push_without_duplicated(self, request):
-        if not await self.dupefilter.is_duplicated(request):
+        if not await self.dupe_filter.is_duplicated(request):
             await self.queue.push(request)
 
     @staticmethod

@@ -31,8 +31,8 @@ class MiddlewareManager:
                 mw = mw_cls()
             mws.append(mw)
         mwm = cls(*mws)
-        cluster.eventbus.subscribe(mwm.open, events.cluster_start)
-        cluster.eventbus.subscribe(mwm.close, events.cluster_shutdown)
+        cluster.event_bus.subscribe(mwm.open, events.cluster_start)
+        cluster.event_bus.subscribe(mwm.close, events.cluster_shutdown)
         return mwm
 
     def _add_middleware(self, middleware):

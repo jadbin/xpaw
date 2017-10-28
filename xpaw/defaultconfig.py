@@ -10,12 +10,13 @@ log_dateformat = "%Y-%m-%d %H:%M:%S"
 
 templates_dir = abspath(join(dirname(__file__), "templates"))
 
-downloader_clients = 100
-downloader_timeout = 20
 
 queue_cls = "xpaw.queue.RequestQueue"
 
-dupefilter_cls = "xpaw.dupefilter.SetDupeFilter"
+dupe_filter_cls = "xpaw.dupefilter.SetDupeFilter"
+
+downloader_clients = 100
+downloader_timeout = 20
 
 downloader_middlewares = [
     "xpaw.downloadermws.RetryMiddleware"
