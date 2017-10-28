@@ -29,6 +29,7 @@ class LocalCluster:
         self.config = self._load_task_config(proj_dir, config)
         self.loop = asyncio.new_event_loop()
         self.event_bus = EventBus()
+        self.stats_center = self._new_object_from_cluster(self.config.get("stats_center_cls"), self)
         self.queue = self._new_object_from_cluster(self.config.get("queue_cls"), self)
         self.dupe_filter = self._new_object_from_cluster(self.config.get("dupe_filter_cls"), self)
         self.downloader = Downloader(timeout=self.config.getfloat("downloader_timeout"),

@@ -10,6 +10,7 @@ log_dateformat = "%Y-%m-%d %H:%M:%S"
 
 templates_dir = abspath(join(dirname(__file__), "templates"))
 
+stats_center_cls = "xpaw.statscenter.StatsCenter"
 
 queue_cls = "xpaw.queue.RequestQueue"
 
