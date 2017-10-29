@@ -36,7 +36,7 @@ class LocalCluster:
                                      loop=self.loop)
         self.spider = self._new_object_from_cluster(self.config.get("spider"), self)
         log.info("Spider: {}".format(".".join((type(self.spider).__module__,
-                                                type(self.spider).__name__))))
+                                               type(self.spider).__name__))))
         self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
         self.spidermw = SpiderMiddlewareManager.from_cluster(self)
         self.extensions = ExtensionManager.from_cluster(self)
@@ -147,6 +147,7 @@ class LocalCluster:
         elif isinstance(result, HttpResponse):
             # bind HttpRequest
             result.request = request
+            await self.event_bus.send(events.response_received, response=result)
             try:
                 res = await self.spidermw.parse(self.spider, result)
                 if not hasattr(res, "__aiter__"):
@@ -169,6 +170,7 @@ class LocalCluster:
 
     async def _push_without_duplicated(self, request):
         if not await self.dupe_filter.is_duplicated(request):
+            await self.event_bus.send(events.request_scheduled, request=request)
             await self.queue.push(request)
 
     @staticmethod
