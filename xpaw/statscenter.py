@@ -3,25 +3,39 @@
 
 class StatsCenter:
     def __init__(self):
-        self.stats = {}
+        self._stats = {}
 
     def get(self, key, default=None):
-        return self.stats.get(key, default)
+        return self._stats.get(key, default)
 
     def set(self, key, value):
-        self.stats[key] = value
+        self._stats[key] = value
 
     def set_default(self, key, default=None):
-        self.stats.setdefault(key, default)
+        self._stats.setdefault(key, default)
 
     def set_min(self, key, value):
-        self.stats[key] = min(self.stats.setdefault(key, value), value)
+        self._stats[key] = min(self._stats.setdefault(key, value), value)
 
     def set_max(self, key, value):
-        self.stats[key] = max(self.stats.setdefault(key, value), value)
+        self._stats[key] = max(self._stats.setdefault(key, value), value)
 
     def inc(self, key, value=1, start=0):
-        self.stats[key] = self.stats.setdefault(key, start) + value
+        self._stats[key] = self._stats.setdefault(key, start) + value
+
+    def clear(self):
+        self._stats.clear()
+
+    def remove(self, key):
+        if key in self._stats:
+            del self._stats[key]
+
+    @property
+    def stats(self):
+        return self._stats
+
+    def set_stats(self, stats):
+        self._stats = stats
 
 
 class EmptyStatusCenter(StatsCenter):
@@ -41,4 +55,7 @@ class EmptyStatusCenter(StatsCenter):
         pass
 
     def inc(self, key, value=1, start=0):
+        pass
+
+    def set_stats(self, stats):
         pass

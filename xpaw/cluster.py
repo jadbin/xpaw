@@ -35,7 +35,7 @@ class LocalCluster:
         self.downloader = Downloader(timeout=self.config.getfloat("downloader_timeout"),
                                      loop=self.loop)
         self.spider = self._new_object_from_cluster(self.config.get("spider"), self)
-        log.debug("Spider: {}".format(".".join((type(self.spider).__module__,
+        log.info("Spider: {}".format(".".join((type(self.spider).__module__,
                                                 type(self.spider).__name__))))
         self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
         self.spidermw = SpiderMiddlewareManager.from_cluster(self)
@@ -52,7 +52,7 @@ class LocalCluster:
         self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
         self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.loop)
         downloader_clients = self.config.getint("downloader_clients")
-        log.debug("Downloader clients: {}".format(downloader_clients))
+        log.info("Downloader clients: {}".format(downloader_clients))
         self._job_futures = []
         for i in range(downloader_clients):
             f = asyncio.ensure_future(self._pull_requests(i), loop=self.loop)

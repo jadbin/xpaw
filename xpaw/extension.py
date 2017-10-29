@@ -16,5 +16,5 @@ class ExtensionManager(MiddlewareManager):
                 mw_list = [mw_list]
         else:
             mw_list = []
-        log.debug("Extensions: {}".format(mw_list))
+        log.info("Extensions: {}".format(mw_list))
         return mw_list

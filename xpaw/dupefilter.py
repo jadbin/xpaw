@@ -9,14 +9,17 @@ log = logging.getLogger(__name__)
 
 class SetDupeFilter:
     def __init__(self):
-        self.hash = set()
+        self._hash = set()
 
     async def is_duplicated(self, request):
         if request.dont_filter:
             return False
         h = request_fingerprint(request)
-        if h in self.hash:
+        if h in self._hash:
             log.debug("Find the request (method={}, url={}) is duplicated".format(request.method, request.url))
             return True
-        self.hash.add(h)
+        self._hash.add(h)
         return False
+
+    def clear(self):
+        self._hash.clear()
