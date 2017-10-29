@@ -10,13 +10,13 @@ log = logging.getLogger(__name__)
 
 
 class Spider:
-    def __init__(self, config=None, **kwargs):
+    def __init__(self, config=None, cluster=None):
         self.config = config
+        self.cluster = cluster
 
     @classmethod
     def from_cluster(cls, cluster):
-        spider = cls(config=cluster.config)
-        spider.cluster = cluster
+        spider = cls(config=cluster.config, cluster=cluster)
         cluster.event_bus.subscribe(spider.open, events.cluster_start)
         cluster.event_bus.subscribe(spider.close, events.cluster_shutdown)
         return spider
