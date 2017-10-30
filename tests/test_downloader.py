@@ -12,7 +12,7 @@ from xpaw.downloadermws import CookieJarMiddleware
 
 
 async def test_cookies(loop):
-    downloader = Downloader(timeout=20, loop=loop)
+    downloader = Downloader(timeout=60, loop=loop)
     seed = str(random.randint(0, 2147483647))
     req = HttpRequest("http://httpbin.org/cookies", cookies={"seed": seed})
     resp = await downloader.download(req)
@@ -21,7 +21,7 @@ async def test_cookies(loop):
 
 
 async def test_cookie_jar(loop):
-    downloader = Downloader(timeout=20, loop=loop)
+    downloader = Downloader(timeout=60, loop=loop)
     dmm = DownloaderMiddlewareManager(CookieJarMiddleware(loop=loop))
     seed = str(random.randint(0, 2147483647))
     await dmm.download(downloader, HttpRequest("http://httpbin.org/cookies/set?seed={}".format(seed)))
@@ -35,7 +35,7 @@ async def test_cookie_jar(loop):
 
 
 async def test_basic_auth(loop):
-    downloader = Downloader(timeout=20, loop=loop)
+    downloader = Downloader(timeout=60, loop=loop)
 
     def validate_response(resp, login):
         assert resp.status == 200
