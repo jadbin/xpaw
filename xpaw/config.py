@@ -56,7 +56,7 @@ class BaseConfig(MutableMapping):
         v = self.get(name, default)
         try:
             return bool(int(v))
-        except ValueError:
+        except (ValueError, TypeError):
             if v in ("True", "true"):
                 return True
             if v in ("False", "false"):
@@ -67,7 +67,7 @@ class BaseConfig(MutableMapping):
         v = self.get(name, default)
         try:
             return int(v)
-        except ValueError:
+        except (ValueError, TypeError):
             pass
         return None
 
@@ -75,7 +75,7 @@ class BaseConfig(MutableMapping):
         v = self.get(name, default)
         try:
             return float(v)
-        except ValueError:
+        except (ValueError, TypeError):
             pass
         return None
 
