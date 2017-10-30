@@ -32,7 +32,8 @@ class LocalCluster:
         self.stats_center = self._new_object_from_cluster(self.config.get("stats_center_cls"), self)
         self.queue = self._new_object_from_cluster(self.config.get("queue_cls"), self)
         self.dupe_filter = self._new_object_from_cluster(self.config.get("dupe_filter_cls"), self)
-        self.downloader = Downloader(timeout=self.config.getfloat("downloader_timeout"),
+        self.downloader = Downloader(self.config.getfloat("downloader_timeout"),
+                                     self.config.getbool("downloader_verify_ssl"),
                                      loop=self.loop)
         self.spider = self._new_object_from_cluster(self.config.get("spider"), self)
         log.info("Spider: {}".format(".".join((type(self.spider).__module__,

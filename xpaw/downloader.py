@@ -14,8 +14,9 @@ log = logging.getLogger(__name__)
 
 
 class Downloader:
-    def __init__(self, timeout=None, loop=None):
+    def __init__(self, timeout=None, verify_ssl=None, loop=None):
         self._timeout = timeout
+        self._verify_ssl = verify_ssl
         self._loop = loop or asyncio.get_event_loop()
 
     async def download(self, request):
@@ -23,9 +24,10 @@ class Downloader:
         timeout = request.meta.get("timeout")
         if not timeout:
             timeout = self._timeout
-        async with aiohttp.ClientSession(cookies=request.cookies,
-                                         loop=self._loop,
-                                         cookie_jar=request.meta.get("cookie_jar")) as session:
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=self._verify_ssl, loop=self._loop),
+                                         cookies=request.cookies,
+                                         cookie_jar=request.meta.get("cookie_jar"),
+                                         loop=self._loop) as session:
             with aiohttp.Timeout(timeout, loop=self._loop):
                 async with session.request(request.method,
                                            request.url,
