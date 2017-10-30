@@ -32,9 +32,11 @@ class Downloader:
                 async with session.request(request.method,
                                            request.url,
                                            params=request.params,
+                                           auth=request.auth,
                                            headers=request.headers,
                                            data=request.body,
-                                           proxy=request.proxy) as resp:
+                                           proxy=request.proxy,
+                                           proxy_auth=request.proxy_auth) as resp:
                     body = await resp.read()
                     cookies = resp.cookies
         response = HttpResponse(resp.url,

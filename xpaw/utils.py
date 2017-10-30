@@ -10,6 +10,8 @@ from importlib import import_module
 import string
 
 from aiohttp.http import URL
+from aiohttp.client import MultiDict
+from aiohttp.helpers import BasicAuth
 
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
@@ -127,3 +129,24 @@ class AsyncGenWrapper:
 
 def cmp(a, b):
     return (a > b) - (a < b)
+
+
+def parse_params(params):
+    if isinstance(params, dict):
+        res = MultiDict()
+        for k in params:
+            if isinstance(params[k], (tuple, list)):
+                for v in params[k]:
+                    res.add(k, v)
+            else:
+                res.add(k, params[k])
+        params = res
+    return params
+
+
+def parse_auth(auth):
+    if isinstance(auth, (tuple, list)):
+        auth = BasicAuth(*auth)
+    elif isinstance(auth, str):
+        auth = BasicAuth(*auth.split('@', 1))
+    return auth

@@ -2,7 +2,7 @@
 
 import inspect
 
-from xpaw.utils import get_encoding_from_header, get_encoding_from_content
+from xpaw.utils import get_encoding_from_header, get_encoding_from_content, parse_params, parse_auth
 
 
 class HttpRequest:
@@ -15,10 +15,12 @@ class HttpRequest:
         self.url = url
         self.method = method
         self.body = body
-        self.params = params or {}
+        self.params = parse_params(params)
+        self.auth = parse_auth(auth)
         self.headers = headers or {}
         self.cookies = cookies or {}
         self.proxy = proxy
+        self.proxy_auth = parse_auth(proxy_auth)
         self._meta = dict(meta) if meta else {}
         self.priority = priority
         self.dont_filter = dont_filter
