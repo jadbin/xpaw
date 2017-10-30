@@ -178,11 +178,3 @@ class TestResponseMatchMiddleware:
         with pytest.raises(ResponseNotMatch):
             await mw.handle_response(req_baidu, resp_qq)
         await mw.handle_response(req_qq, resp_qq)
-
-
-class TestCookieJarMiddleware:
-    async def test_handle_request(self, loop):
-        mw = CookieJarMiddleware.from_cluster(Cluster(loop=loop))
-        req = HttpRequest("http://httpbin.org")
-        await mw.handle_request(req)
-        assert req.meta.get("cookie_jar") is mw._cookie_jar

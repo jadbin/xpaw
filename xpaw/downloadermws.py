@@ -137,20 +137,6 @@ class ForwardedForMiddleware:
         request.headers["X-Forwarded-For"] = x
 
 
-class CookieJarMiddleware:
-    def __init__(self, loop=None):
-        self._loop = loop or asyncio.get_event_loop()
-        self._cookie_jar = aiohttp.CookieJar(loop=self._loop)
-
-    @classmethod
-    def from_cluster(cls, cluster):
-        return cls(loop=cluster.loop)
-
-    async def handle_request(self, request):
-        log.debug("Assign cookie jar to request (url={})".format(request.url))
-        request.meta["cookie_jar"] = self._cookie_jar
-
-
 class ProxyMiddleware:
     def __init__(self, proxies):
         if not proxies or len(proxies) <= 0:
