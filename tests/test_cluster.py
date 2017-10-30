@@ -36,4 +36,4 @@ class LinkSpider(Spider):
 
 
 def test_run_link_spider():
-    run_spider(LinkSpider, log_level='WARNING')
+    run_spider(LinkSpider, downloader_timeout=60, log_level='WARNING')
