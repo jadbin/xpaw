@@ -12,7 +12,7 @@ templates_dir = abspath(join(dirname(__file__), "templates"))
 
 stats_center_cls = "xpaw.statscenter.StatsCenter"
 
-queue_cls = "xpaw.queue.RequestQueue"
+queue_cls = "xpaw.queue.PriorityQueue"
 
 dupe_filter_cls = "xpaw.dupefilter.SetDupeFilter"
 
