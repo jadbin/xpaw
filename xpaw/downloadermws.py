@@ -7,6 +7,7 @@ import logging
 import asyncio
 
 import aiohttp
+from aiohttp.http import URL
 
 from xpaw.errors import ResponseNotMatch, IgnoreRequest, NetworkError
 
@@ -62,11 +63,11 @@ class RetryMiddleware:
             return self.retry(request, "{}: {}".format(type(error).__name__, error))
 
     def retry(self, request, reason):
-        retry_times = request.meta.get("_retry_times", 0) + 1
+        retry_times = request.meta.get("retry_times", 0) + 1
         if retry_times <= self._max_retry_times:
             log.debug("We will retry the request(url={}) because of {}".format(request.url, reason))
             retry_req = request.copy()
-            retry_req.meta["_retry_times"] = retry_times
+            retry_req.meta["retry_times"] = retry_times
             retry_req.dont_filter = True
             return retry_req
         else:
@@ -116,18 +117,18 @@ class _ResponseMatchPattern:
         return False
 
 
-class RequestHeadersMiddleware:
+class DefaultHeadersMiddleware:
     def __init__(self, headers):
         self._headers = headers or {}
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config.get("request_headers"))
+        return cls(cluster.config.get("default_headers"))
 
     async def handle_request(self, request):
         log.debug("Assign headers to request (url={}): {}".format(request.url, self._headers))
-        for i in self._headers:
-            request.headers[i] = self._headers[i]
+        for h in self._headers:
+            request.headers.setdefault(h, self._headers[h])
 
 
 class ForwardedForMiddleware:
@@ -138,26 +139,56 @@ class ForwardedForMiddleware:
 
 
 class ProxyMiddleware:
-    def __init__(self, proxies):
-        if not proxies or len(proxies) <= 0:
-            raise ValueError("proxies cannot be empty")
-        self._proxies = proxies
-        self._n = len(proxies)
+    def __init__(self, request_proxy=None):
+        self._proxies = {'http': [], 'https': []}
+        if request_proxy:
+            for p in request_proxy:
+                addr, auth, scheme = None, None, None
+                if isinstance(p, str):
+                    addr = p
+                elif isinstance(p, dict):
+                    addr = p.get('addr')
+                    auth = p.get('auth')
+                    scheme = p.get('scheme')
+                if addr:
+                    if scheme:
+                        if scheme in self._proxies:
+                            self._proxies[scheme].append((addr, auth))
+                    else:
+                        self._proxies['http'].append((addr, auth))
+                        self._proxies['https'].append((addr, auth))
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config.getlist("proxies"))
+        c = cluster.config.getlist("request_proxy")
+        return cls(c)
 
     async def handle_request(self, request):
-        proxy = self._pick_proxy()
-        log.debug("Assign proxy '{}' to request (url={})".format(proxy, request.url))
-        if not proxy.startswith("http://"):
-            proxy = "http://{}".format(proxy)
-        request.proxy = proxy
+        if isinstance(request.url, str):
+            url = URL(request.url)
+        else:
+            url = request.url
+        proxy = self._get_proxy(url.scheme)
+        if proxy:
+            addr, auth = proxy
+            log.debug("Assign proxy '{}' to request (url={})".format(addr, request.url))
+            if not addr.startswith("http://"):
+                addr = "http://{}".format(addr)
+            request.proxy = addr
+            request.proxy_auth = auth
 
-    def _pick_proxy(self):
-        i = random.randint(0, self._n - 1)
-        return self._proxies[i]
+    def _get_proxy(self, scheme):
+        if scheme not in self._proxies:
+            return
+        n = len(self._proxies[scheme])
+        if n > 0:
+            return self._proxies[scheme][random.randint(0, n - 1)]
+
+    def _parse_proxy(self, p):
+        if isinstance(p, str):
+            return p, None
+        if isinstance(p, dict):
+            return p.get('addr'), p.get('auth')
 
 
 class ProxyAgentMiddleware:

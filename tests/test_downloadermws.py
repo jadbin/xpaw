@@ -24,13 +24,14 @@ class TestForwardedForMiddleware:
         assert re.search(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", req.headers["X-Forwarded-For"])
 
 
-class TestRequestHeadersMiddleware:
+class TestDefaultHeadersMiddleware:
     async def test_handle_request(self):
-        headers = {"Content-Type": "text/html", "User-Agent": "xpaw", "Connection": "keep-alive"}
-        mw = RequestHeadersMiddleware.from_cluster(Cluster(request_headers=headers))
-        req = HttpRequest("http://httpbin.org")
+        default_headers = {"User-Agent": "xpaw", "Connection": "keep-alive"}
+        req_headers = {"User-Agent": "xpaw-test", "Connection": "keep-alive"}
+        mw = DefaultHeadersMiddleware.from_cluster(Cluster(default_headers=default_headers))
+        req = HttpRequest("http://httpbin.org", headers={"User-Agent": "xpaw-test"})
         await mw.handle_request(req)
-        assert headers == req.headers
+        assert req_headers == req.headers
 
 
 def make_proxy_list():
@@ -68,7 +69,7 @@ class TestProxyMiddleware:
     async def test_hanle_request(self, monkeypatch):
         monkeypatch.setattr(random, 'randint', Random().randint)
         proxy_list = make_proxy_list()
-        mw = ProxyMiddleware(proxy_list)
+        mw = ProxyMiddleware.from_cluster(Cluster(request_proxy=proxy_list))
         target_list = proxy_list * 2
         req = HttpRequest("http://httpbin.org")
         for i in range(len(target_list)):
