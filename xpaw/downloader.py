@@ -31,6 +31,7 @@ class Downloader:
             with aiohttp.Timeout(timeout, loop=self._loop):
                 async with session.request(request.method,
                                            request.url,
+                                           params=request.params,
                                            headers=request.headers,
                                            data=request.body,
                                            proxy=request.proxy) as resp:

@@ -7,8 +7,9 @@ import sys
 import hashlib
 import logging
 from importlib import import_module
-from pkgutil import iter_modules
 import string
+
+from aiohttp.http import URL
 
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
@@ -21,21 +22,6 @@ def load_object(path):
         mod = import_module(module)
         return getattr(mod, name)
     return path
-
-
-def walk_modules(path):
-    mods = []
-    mod = import_module(path)
-    mods.append(mod)
-    if hasattr(mod, "__path__"):
-        for _, subpath, ispkg in iter_modules(mod.__path__):
-            fullpath = path + "." + subpath
-            if ispkg:
-                mods += walk_modules(fullpath)
-            else:
-                submod = import_module(fullpath)
-                mods.append(submod)
-    return mods
 
 
 def configure_logging(name, config):
@@ -78,7 +64,18 @@ def get_encoding_from_content(content):
 def request_fingerprint(request):
     sha1 = hashlib.sha1()
     sha1.update(to_types(request.method))
-    sha1.update(to_types(str(request.url)))
+    if isinstance(request.url, str):
+        url = URL(request.url)
+    else:
+        url = request.url
+    queries = []
+    for k, v in url.query.items():
+        queries.append('{}={}'.format(k, v))
+    if request.params:
+        for k, v in request.params.items():
+            queries.append('{}={}'.format(k, v))
+    queries.sort()
+    sha1.update(to_types('{}://{}{}?{}'.format(url.scheme, url.host, url.path, '&'.join(queries))))
     sha1.update(request.body or b'')
     return sha1.hexdigest()
 
@@ -126,3 +123,7 @@ class AsyncGenWrapper:
             return next(self.iter)
         except StopIteration:
             raise StopAsyncIteration
+
+
+def cmp(a, b):
+    return (a > b) - (a < b)

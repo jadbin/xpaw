@@ -6,18 +6,21 @@ from xpaw.utils import get_encoding_from_header, get_encoding_from_content
 
 
 class HttpRequest:
-    def __init__(self, url, method="GET", body=None, headers=None, cookies=None, proxy=None,
-                 meta=None, dont_filter=False, callback=None, errback=None):
+    def __init__(self, url, method="GET", body=None, params=None,
+                 auth=None, headers=None, cookies=None, proxy=None, proxy_auth=None,
+                 meta=None, priority=None, dont_filter=False, callback=None, errback=None):
         """
         Construct an HTTP request.
         """
         self.url = url
         self.method = method
         self.body = body
+        self.params = params or {}
         self.headers = headers or {}
         self.cookies = cookies or {}
         self.proxy = proxy
         self._meta = dict(meta) if meta else {}
+        self.priority = priority
         self.dont_filter = dont_filter
         if callback and inspect.ismethod(callback):
             callback = callback.__name__
@@ -32,7 +35,8 @@ class HttpRequest:
 
     def copy(self):
         kw = {}
-        for x in ["url", "method", "body", "headers", "cookies", "proxy", "meta", "dont_filter", "callback", "errback"]:
+        for x in ["url", "method", "body", "params", "auth", "headers", "cookies", "proxy", "proxy_auth",
+                  "meta", "priority", "dont_filter", "callback", "errback"]:
             kw.setdefault(x, getattr(self, x))
         return HttpRequest(**kw)
 
@@ -70,13 +74,7 @@ class HttpResponse:
             return self._text
         if not self.body:
             return ""
-        encoding = self.encoding
-        content = ""
-        try:
-            content = self.body.decode(encoding, errors="replace")
-        except LookupError:
-            content = self.body.decode(encoding, errors="replace")
-        self._text = content
+        self._text = self.body.decode(self.encoding, errors="replace")
         return self._text
 
     @property
