@@ -74,7 +74,7 @@ class TestProxyMiddleware:
         req = HttpRequest("http://httpbin.org")
         for i in range(len(target_list)):
             await mw.handle_request(req)
-            assert req.proxy == "http://{}".format(target_list[i])
+            assert req.proxy == target_list[i]
 
 
 class TestProxyAgentMiddleware:
@@ -89,7 +89,7 @@ class TestProxyAgentMiddleware:
         target_list = make_proxy_list() * 2
         for i in range(len(target_list)):
             await mw.handle_request(req)
-            assert req.proxy == "http://{}".format(target_list[i])
+            assert req.proxy == target_list[i]
         mw.close()
 
     async def test_update_proxy_list(self, test_server, loop):

@@ -8,6 +8,7 @@ import hashlib
 import logging
 from importlib import import_module
 import string
+from urllib.parse import urlsplit
 
 from aiohttp.http import URL
 from aiohttp.client_reqrep import MultiDict
@@ -150,3 +151,12 @@ def parse_auth(auth):
     elif isinstance(auth, str):
         auth = BasicAuth(*auth.split(':', 1))
     return auth
+
+
+def parse_url(url):
+    if isinstance(url, str):
+        res = urlsplit(url)
+        if res.scheme == '':
+            url = 'http://{}'.format(url)
+        url = URL(url)
+    return url

@@ -10,6 +10,8 @@ from xpaw.middleware import MiddlewareManager
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.errors import NetworkError
 
+from xpaw.utils import parse_auth, parse_params, parse_url
+
 log = logging.getLogger(__name__)
 
 
@@ -34,13 +36,13 @@ class Downloader:
                                          loop=self._loop) as session:
             with aiohttp.Timeout(timeout, loop=self._loop):
                 async with session.request(request.method,
-                                           request.url,
-                                           params=request.params,
-                                           auth=request.auth,
+                                           parse_url(request.url),
+                                           params=parse_params(request.params),
+                                           auth=parse_auth(request.auth),
                                            headers=request.headers,
                                            data=request.body,
-                                           proxy=request.proxy,
-                                           proxy_auth=request.proxy_auth) as resp:
+                                           proxy=parse_url(request.proxy),
+                                           proxy_auth=parse_auth(request.proxy_auth)) as resp:
                     body = await resp.read()
                     cookies = resp.cookies
         response = HttpResponse(resp.url,

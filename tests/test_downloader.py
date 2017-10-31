@@ -91,8 +91,9 @@ async def test_params(loop):
         validate_response(resp, {'k': 'v', 'none': '', 'list': ['2', '1']})
 
     async def query_and_dict_params():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/get?list=2&k=v",
-                                                     params={'none': '', 'list': [1]}))
+        req = HttpRequest("http://httpbin.org/get?list=2&k=v")
+        req.params = {'none': '', 'list': [1]}
+        resp = await downloader.download(req)
         validate_response(resp, {'k': 'v', 'none': '', 'list': ['2', '1']})
 
     await asyncio.gather(query_params(), dict_params(), multi_dict_params(), query_and_dict_params(), loop=loop)

@@ -10,6 +10,7 @@ import aiohttp
 from aiohttp.http import URL
 
 from xpaw.errors import ResponseNotMatch, IgnoreRequest, NetworkError
+from xpaw.utils import parse_url
 
 log = logging.getLogger(__name__)
 
@@ -172,8 +173,6 @@ class ProxyMiddleware:
         if proxy:
             addr, auth = proxy
             log.debug("Assign proxy '{}' to request (url={})".format(addr, request.url))
-            if not addr.startswith("http://"):
-                addr = "http://{}".format(addr)
             request.proxy = addr
             request.proxy_auth = auth
 
@@ -193,9 +192,7 @@ class ProxyMiddleware:
 
 class ProxyAgentMiddleware:
     def __init__(self, agent_addr, *, update_interval=60, timeout=20, loop=None):
-        if not agent_addr.startswith("http://") and not agent_addr.startswith("https://"):
-            agent_addr = "http://{}".format(agent_addr)
-        self._agent_addr = agent_addr
+        self._agent_addr = parse_url(agent_addr)
         self._update_interval = update_interval
         self._timeout = timeout
         self._loop = loop or asyncio.get_event_loop()
@@ -213,8 +210,6 @@ class ProxyAgentMiddleware:
     async def handle_request(self, request):
         proxy = await self.get_proxy()
         log.debug("Assign proxy '{}' to request (url={})".format(proxy, request.url))
-        if not proxy.startswith("http://"):
-            proxy = "http://{}".format(proxy)
         request.proxy = proxy
 
     async def get_proxy(self):
