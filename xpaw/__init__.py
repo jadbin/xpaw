@@ -1,6 +1,8 @@
 # coding=utf-8
 
-__all__ = ["__version__", "Spider", "HttpRequest", "HttpResponse", "Selector"]
+__all__ = ['__version__',
+           'Spider', 'HttpRequest', 'HttpResponse', 'Selector', 'Downloader',
+           'FormData']
 
 from .version import __version__
 
@@ -13,3 +15,5 @@ from xpaw.spider import Spider
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.selector import Selector
 from xpaw.downloader import Downloader
+
+from aiohttp import FormData

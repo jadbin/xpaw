@@ -35,12 +35,17 @@ class Downloader:
                                          cookie_jar=self._cookie_jar,
                                          loop=self._loop) as session:
             with aiohttp.Timeout(timeout, loop=self._loop):
+                if isinstance(request.body, dict):
+                    data, json = None, request.body
+                else:
+                    data, json = request.body, None
                 async with session.request(request.method,
                                            parse_url(request.url),
                                            params=parse_params(request.params),
                                            auth=parse_auth(request.auth),
                                            headers=request.headers,
-                                           data=request.body,
+                                           data=data,
+                                           json=json,
                                            proxy=parse_url(request.proxy),
                                            proxy_auth=parse_auth(request.proxy_auth)) as resp:
                     body = await resp.read()

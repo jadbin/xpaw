@@ -3,9 +3,13 @@
 import json
 import random
 import asyncio
+import base64
 
+import aiohttp
+from aiohttp import web
 from aiohttp.helpers import BasicAuth
 from aiohttp.client_reqrep import MultiDict
+from aiohttp import FormData
 
 from xpaw.http import HttpRequest
 from xpaw.downloader import Downloader
@@ -99,3 +103,120 @@ async def test_params(loop):
     await asyncio.gather(query_params(), dict_params(), multi_dict_params(), query_and_dict_params(), loop=loop)
 
 
+async def make_proxy_server(test_server, loop):
+    async def process(request):
+        auth_str = request.headers.get('Proxy-Authorization')
+        if auth_str is None:
+            auth = None
+        else:
+            auth = BasicAuth.decode(auth_str)
+        async with aiohttp.ClientSession(loop=loop) as session:
+            with aiohttp.Timeout(60, loop=loop):
+                async with session.request("GET", request.raw_path, auth=auth) as resp:
+                    body = await resp.read()
+                    return web.Response(status=resp.status,
+                                        body=body,
+                                        headers=resp.headers)
+
+    app = web.Application()
+    app.router.add_route("GET", "/{tail:.*}", process)
+    server = await test_server(app)
+    return server
+
+
+async def test_proxy(test_server, loop):
+    server = await make_proxy_server(test_server, loop=loop)
+    downloader = Downloader(timeout=60, loop=loop)
+    seed = str(random.randint(0, 2147483647))
+    resp = await downloader.download(HttpRequest('http://httpbin.org/get?seed={}'.format(seed),
+                                                 proxy='{}:{}'.format(server.host, server.port)))
+    args = json.loads(resp.body.decode())['args']
+    assert 'seed' in args and args['seed'] == seed
+
+
+async def test_proxy_auth(test_server, loop):
+    downloader = Downloader(timeout=60, loop=loop)
+    server = await make_proxy_server(test_server, loop=loop)
+
+    def validate_response(resp, login):
+        assert resp.status == 200
+        data = json.loads(resp.body.decode())
+        assert data['authenticated'] is True and data['user'] == login
+
+    async def no_auth():
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
+                                                     proxy='{}:{}'.format(server.host, server.port)))
+        assert resp.status == 401
+
+    async def str_auth():
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
+                                                     proxy_auth='login:password',
+                                                     proxy='{}:{}'.format(server.host, server.port)), )
+        validate_response(resp, 'login')
+
+    async def tuple_auth():
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
+                                                     proxy_auth=('login', 'password'),
+                                                     proxy='{}:{}'.format(server.host, server.port)))
+        validate_response(resp, 'login')
+
+    async def basic_auth():
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
+                                                     proxy_auth=BasicAuth('login', 'password'),
+                                                     proxy='{}:{}'.format(server.host, server.port)))
+        validate_response(resp, 'login')
+
+    await asyncio.gather(no_auth(), str_auth(), tuple_auth(), basic_auth(), loop=loop)
+
+
+async def test_headers(loop):
+    downloader = Downloader(timeout=60, loop=loop)
+    headers = {'user-agent': 'xpaw', 'X-MY-HEADER': 'xpaw-HEADER'}
+    resp = await downloader.download(HttpRequest("http://httpbin.org/get",
+                                                 headers=headers))
+    assert resp.status == 200
+    data = json.loads(resp.body)['headers']
+    assert 'User-Agent' in data and data['User-Agent'] == 'xpaw'
+    assert 'X-MY-HEADER' not in data
+    assert 'X-My-Header' in data and data['X-My-Header'] == 'xpaw-HEADER'
+
+
+async def test_post_data(loop):
+    downloader = Downloader(timeout=60, loop=loop)
+
+    async def post_json():
+        json_data = {'key': 'value', 'list': [1, 2], 'obj': {'name': 'my obj'}}
+        resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=json_data))
+        assert resp.status == 200
+        body = json.loads(resp.body)
+        headers = body['headers']
+        assert 'Content-Type' in headers and headers['Content-Type'] == 'application/json'
+        assert body['json'] == json_data
+
+    async def post_form():
+        form_data = {'key': 'value', 'list': ['1', '2']}
+        resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=FormData(form_data)))
+        assert resp.status == 200
+        body = json.loads(resp.body)
+        headers = body['headers']
+        assert 'Content-Type' in headers and headers['Content-Type'] == 'application/x-www-form-urlencoded'
+        assert body['form'] == form_data
+
+    async def post_str():
+        str_data = 'my str data: 测试数据'
+        resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=str_data))
+        assert resp.status == 200
+        body = json.loads(resp.body)
+        assert body['data'] == str_data
+
+    async def post_bytes():
+        bytes_data = 'my str data: 测试数据'.encode('gbk')
+        resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=bytes_data))
+        assert resp.status == 200
+        body = json.loads(resp.body)
+        headers = body['headers']
+        data = body['data']
+        assert 'Content-Type' in headers and headers['Content-Type'] == 'application/octet-stream'
+        assert base64.b64decode(data.split(',', 1)[1]) == bytes_data
+
+    await asyncio.gather(post_json(), post_form(), post_str(), post_bytes())
