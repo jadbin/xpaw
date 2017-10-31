@@ -5,7 +5,7 @@ import random
 import asyncio
 
 from aiohttp.helpers import BasicAuth
-from aiohttp.client import MultiDict
+from aiohttp.client_reqrep import MultiDict
 
 from xpaw.http import HttpRequest
 from xpaw.downloader import Downloader

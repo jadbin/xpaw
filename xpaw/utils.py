@@ -10,7 +10,7 @@ from importlib import import_module
 import string
 
 from aiohttp.http import URL
-from aiohttp.client import MultiDict
+from aiohttp.client_reqrep import MultiDict
 from aiohttp.helpers import BasicAuth
 
 PY35 = sys.version_info >= (3, 5)
