@@ -8,7 +8,7 @@ import base64
 import aiohttp
 from aiohttp import web
 from aiohttp.helpers import BasicAuth
-from aiohttp.client_reqrep import MultiDict
+from multidict import MultiDict
 from aiohttp import FormData
 
 from xpaw.http import HttpRequest

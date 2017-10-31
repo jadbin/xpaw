@@ -10,8 +10,8 @@ from importlib import import_module
 import string
 from urllib.parse import urlsplit
 
-from aiohttp.http import URL
-from aiohttp.client_reqrep import MultiDict
+from yarl import URL
+from multidict import MultiDict
 from aiohttp.helpers import BasicAuth
 
 PY35 = sys.version_info >= (3, 5)

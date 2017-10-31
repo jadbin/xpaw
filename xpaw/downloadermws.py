@@ -7,7 +7,7 @@ import logging
 import asyncio
 
 import aiohttp
-from aiohttp.http import URL
+from yarl import URL
 
 from xpaw.errors import ResponseNotMatch, IgnoreRequest, NetworkError
 from xpaw.utils import parse_url

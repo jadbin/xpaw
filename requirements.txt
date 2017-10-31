@@ -1,2 +1,0 @@
-aiohttp>=2.2.0
-lxml
