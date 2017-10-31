@@ -46,7 +46,7 @@ async def test_basic_auth(loop):
 
     async def str_auth():
         resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
-                                                     auth='login@password'))
+                                                     auth='login:password'))
         validate_response(resp, 'login')
 
     async def tuple_auth():

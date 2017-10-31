@@ -148,5 +148,5 @@ def parse_auth(auth):
     if isinstance(auth, (tuple, list)):
         auth = BasicAuth(*auth)
     elif isinstance(auth, str):
-        auth = BasicAuth(*auth.split('@', 1))
+        auth = BasicAuth(*auth.split(':', 1))
     return auth
