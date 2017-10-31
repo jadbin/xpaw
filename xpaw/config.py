@@ -4,7 +4,7 @@ import copy
 from collections import MutableMapping
 import types
 
-from xpaw import defaultconfig
+from . import defaultconfig
 
 CONFIG_PRIORITIES = {
     "default": 0,

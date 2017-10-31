@@ -2,7 +2,7 @@
 
 import logging
 
-from xpaw.middleware import MiddlewareManager
+from .middleware import MiddlewareManager
 
 log = logging.getLogger(__name__)
 

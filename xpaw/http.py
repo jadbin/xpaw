@@ -2,7 +2,7 @@
 
 import inspect
 
-from xpaw.utils import get_encoding_from_header, get_encoding_from_content
+from .utils import get_encoding_from_header, get_encoding_from_content
 
 
 class HttpRequest:

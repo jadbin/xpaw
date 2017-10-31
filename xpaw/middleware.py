@@ -2,8 +2,8 @@
 
 import logging
 
-from xpaw.utils import load_object
-from xpaw import events
+from .utils import load_object
+from . import events
 
 log = logging.getLogger(__name__)
 

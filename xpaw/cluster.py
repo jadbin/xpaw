@@ -10,16 +10,16 @@ from configparser import ConfigParser
 from importlib import import_module
 import signal
 
-from xpaw.downloader import Downloader
-from xpaw.http import HttpRequest, HttpResponse
-from xpaw.utils import load_object, AsyncGenWrapper
-from xpaw.errors import IgnoreRequest
-from xpaw.downloader import DownloaderMiddlewareManager
-from xpaw.spider import SpiderMiddlewareManager
-from xpaw.config import Config
-from xpaw.eventbus import EventBus
-from xpaw import events
-from xpaw.extension import ExtensionManager
+from .downloader import Downloader
+from .http import HttpRequest, HttpResponse
+from .utils import load_object, AsyncGenWrapper
+from .errors import IgnoreRequest
+from .downloader import DownloaderMiddlewareManager
+from .spider import SpiderMiddlewareManager
+from .config import Config
+from .eventbus import EventBus
+from . import events
+from .extension import ExtensionManager
 
 log = logging.getLogger(__name__)
 

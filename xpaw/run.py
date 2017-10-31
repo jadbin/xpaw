@@ -2,9 +2,9 @@
 
 from os.path import isfile, join, abspath
 
-from xpaw.config import Config
-from xpaw.cluster import LocalCluster
-from xpaw.utils import configure_logging
+from .config import Config
+from .cluster import LocalCluster
+from .utils import configure_logging
 
 
 def run_crawler(project_dir, **kwargs):

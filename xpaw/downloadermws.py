@@ -9,8 +9,8 @@ import asyncio
 import aiohttp
 from yarl import URL
 
-from xpaw.errors import ResponseNotMatch, IgnoreRequest, NetworkError
-from xpaw.utils import parse_url
+from .errors import ResponseNotMatch, IgnoreRequest, NetworkError
+from .utils import parse_url
 
 log = logging.getLogger(__name__)
 

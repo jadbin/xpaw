@@ -3,8 +3,8 @@
 import logging
 import inspect
 
-from xpaw.middleware import MiddlewareManager
-from xpaw import events
+from .middleware import MiddlewareManager
+from . import events
 
 log = logging.getLogger(__name__)
 

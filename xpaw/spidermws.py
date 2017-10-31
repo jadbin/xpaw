@@ -2,7 +2,7 @@
 
 import logging
 
-from xpaw.http import HttpRequest
+from .http import HttpRequest
 
 log = logging.getLogger(__name__)
 

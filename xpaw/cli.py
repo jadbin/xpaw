@@ -3,9 +3,9 @@
 import sys
 import argparse
 
-from xpaw.errors import UsageError
-from xpaw import commands
-from xpaw.commands import Command
+from .errors import UsageError
+from . import commands
+from .commands import Command
 
 
 def _iter_command_classes():

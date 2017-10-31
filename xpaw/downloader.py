@@ -6,11 +6,10 @@ import inspect
 
 import aiohttp
 
-from xpaw.middleware import MiddlewareManager
-from xpaw.http import HttpRequest, HttpResponse
-from xpaw.errors import NetworkError
-
-from xpaw.utils import parse_auth, parse_params, parse_url
+from .middleware import MiddlewareManager
+from .http import HttpRequest, HttpResponse
+from .errors import NetworkError
+from .utils import parse_auth, parse_params, parse_url
 
 log = logging.getLogger(__name__)
 

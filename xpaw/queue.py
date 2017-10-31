@@ -6,7 +6,7 @@ from asyncio import Semaphore
 from collections import deque
 from heapq import heappush, heappop
 
-from xpaw.utils import cmp
+from .utils import cmp
 
 log = logging.getLogger(__name__)
 
