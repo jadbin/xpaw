@@ -5,6 +5,7 @@ import random
 import asyncio
 
 from aiohttp.helpers import BasicAuth
+from aiohttp.client import MultiDict
 
 from xpaw.http import HttpRequest
 from xpaw.downloader import Downloader
@@ -60,3 +61,40 @@ async def test_basic_auth(loop):
         validate_response(resp, 'login')
 
     await asyncio.gather(no_auth(), str_auth(), tuple_auth(), basic_auth(), loop=loop)
+
+
+async def test_params(loop):
+    downloader = Downloader(timeout=60, loop=loop)
+
+    def validate_response(resp, d):
+        assert resp.status == 200
+        data = json.loads(resp.body.decode())
+        assert data['args'] == d
+
+    async def query_params():
+        resp = await downloader.download(HttpRequest("http://httpbin.org/get?list=2&k=v&none=&list=1"))
+        validate_response(resp, {'k': 'v', 'none': '', 'list': ['2', '1']})
+
+    async def dict_params():
+        resp = await downloader.download(HttpRequest("http://httpbin.org/get",
+                                                     params={'k': 'v', 'none': '', 'list': [2, 1]}))
+        validate_response(resp, {'k': 'v', 'none': '', 'list': ['2', '1']})
+
+    async def multi_dict_params():
+        params = MultiDict()
+        params.add('list', 2)
+        params.add('k', 'v')
+        params.add('none', '')
+        params.add('list', 1)
+        resp = await downloader.download(HttpRequest("http://httpbin.org/get",
+                                                     params=params))
+        validate_response(resp, {'k': 'v', 'none': '', 'list': ['2', '1']})
+
+    async def query_and_dict_params():
+        resp = await downloader.download(HttpRequest("http://httpbin.org/get?list=2&k=v",
+                                                     params={'none': '', 'list': [1]}))
+        validate_response(resp, {'k': 'v', 'none': '', 'list': ['2', '1']})
+
+    await asyncio.gather(query_params(), dict_params(), multi_dict_params(), query_and_dict_params(), loop=loop)
+
+

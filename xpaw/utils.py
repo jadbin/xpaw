@@ -134,12 +134,12 @@ def cmp(a, b):
 def parse_params(params):
     if isinstance(params, dict):
         res = MultiDict()
-        for k in params:
-            if isinstance(params[k], (tuple, list)):
-                for v in params[k]:
-                    res.add(k, v)
+        for k, v in params.items():
+            if isinstance(v, (tuple, list)):
+                for i in v:
+                    res.add(k, i)
             else:
-                res.add(k, params[k])
+                res.add(k, v)
         params = res
     return params
 
