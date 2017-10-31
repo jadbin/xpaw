@@ -175,7 +175,7 @@ async def test_headers(loop):
     resp = await downloader.download(HttpRequest("http://httpbin.org/get",
                                                  headers=headers))
     assert resp.status == 200
-    data = json.loads(resp.body)['headers']
+    data = json.loads(resp.body.decode())['headers']
     assert 'User-Agent' in data and data['User-Agent'] == 'xpaw'
     assert 'X-MY-HEADER' not in data
     assert 'X-My-Header' in data and data['X-My-Header'] == 'xpaw-HEADER'
@@ -188,7 +188,7 @@ async def test_post_data(loop):
         json_data = {'key': 'value', 'list': [1, 2], 'obj': {'name': 'my obj'}}
         resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=json_data))
         assert resp.status == 200
-        body = json.loads(resp.body)
+        body = json.loads(resp.body.decode())
         headers = body['headers']
         assert 'Content-Type' in headers and headers['Content-Type'] == 'application/json'
         assert body['json'] == json_data
@@ -197,7 +197,7 @@ async def test_post_data(loop):
         form_data = {'key': 'value', 'list': ['1', '2']}
         resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=FormData(form_data)))
         assert resp.status == 200
-        body = json.loads(resp.body)
+        body = json.loads(resp.body.decode())
         headers = body['headers']
         assert 'Content-Type' in headers and headers['Content-Type'] == 'application/x-www-form-urlencoded'
         assert body['form'] == form_data
@@ -206,17 +206,17 @@ async def test_post_data(loop):
         str_data = 'my str data: 测试数据'
         resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=str_data))
         assert resp.status == 200
-        body = json.loads(resp.body)
+        body = json.loads(resp.body.decode())
         assert body['data'] == str_data
 
     async def post_bytes():
         bytes_data = 'my str data: 测试数据'.encode('gbk')
         resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=bytes_data))
         assert resp.status == 200
-        body = json.loads(resp.body)
+        body = json.loads(resp.body.decode())
         headers = body['headers']
         data = body['data']
         assert 'Content-Type' in headers and headers['Content-Type'] == 'application/octet-stream'
         assert base64.b64decode(data.split(',', 1)[1]) == bytes_data
 
-    await asyncio.gather(post_json(), post_form(), post_str(), post_bytes())
+    await asyncio.gather(post_json(), post_form(), post_str(), post_bytes(), loop=loop)
