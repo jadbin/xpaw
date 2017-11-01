@@ -91,7 +91,7 @@ class LocalCluster:
                     break
                 await asyncio.sleep(tick, loop=self.loop)
         except Exception:
-            log.warning("Error occurred when handle start requests", exc_info=True)
+            log.warning("Error occurred when generated start requests", exc_info=True)
 
     async def _supervisor(self):
         timeout = self.config.getfloat("downloader_timeout")
@@ -136,12 +136,12 @@ class LocalCluster:
                 await self._handle_result(req, result)
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
-                    log.warning("Unexpected error occurred while processing request '{}'".format(req.url),
+                    log.warning("Error occurred when sent request '{}'".format(req.url),
                                 exc_info=True)
                 try:
                     await self.spidermw.handle_error(self.spider, req, e)
                 except Exception:
-                    log.warning("Unexpected error occurred in error callback", exc_info=True)
+                    log.warning("Error occurred in error callback", exc_info=True)
 
     async def _handle_result(self, request, result):
         if isinstance(result, HttpRequest):
@@ -158,7 +158,7 @@ class LocalCluster:
                     if isinstance(r, HttpRequest):
                         await self._push_without_duplicated(r)
             except Exception:
-                log.warning("Unexpected error occurred while processing response of '{}'".format(request.url),
+                log.warning("Error occurred when parsed response of '{}'".format(request.url),
                             exc_info=True)
 
     @staticmethod

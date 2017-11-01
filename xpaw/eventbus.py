@@ -43,7 +43,7 @@ class EventBus:
                     if inspect.iscoroutine(res):
                         await res
                 except Exception:
-                    log.warning("Error occurred when send event.", exc_info=True)
+                    log.warning("Error occurred when sent a event.", exc_info=True)
         for i in del_list:
             del self._refs[event][i]
         del del_list
