@@ -11,17 +11,32 @@ New features
 
 - spider的 ``start_requests`` 和 ``parse`` 函数支持async类型和python 3.6中的async generator类型
 - spider中间件的handle_*函数支持async类型
-- 新增事件驱动组件eventbus，支持事件的订阅、发送
-- 支持捕获SIGINT和SIGTERM信号并做出相应处理
-- 添加extension模块，支持用户自定义拓展
+- 新增事件驱动相关的eventbus和events模块，支持事件的订阅、发送，可通过 ``cluster.event_bus`` 获取event bus组件
+- 捕获SIGINT和SIGTERM信号并做出相应处理
+- 新增extension模块，支持用户自定义拓展
+- 新增statscenter模块，用于收集、管理系统产生的各项统计量，可通过 ``cluster.stats_center`` 获取stats center组件；
+  系统配置新增 ``stats_center_cls`` 项，用于替换默认的stats center的实现
+- SetDupeFilter新增 ``clear`` 函数
+- 系统配置新增 ``downloader_verify_ssl`` 项，用于开启或关闭SSL证书认证
+- HttpRequest的 ``body`` 参数支持bytes、str、FormData、dict (json)等形式
+- HttpRequest新增 ``params`` , ``auth`` , ``proxy_auth`` , ``priority`` 等属性
+- 新增深度优先队列LifoQueue，以及优先级队列PriorityQueue，默认 ``queue_cls`` 更改为 ``xpaw.queue.PriorityQueue``
+- 支持设定HTTP请求的优先级并按优先级进行爬取
+- 新增item、pipeline模块，支持spider在处理response时返回BaseItem的实例或dict，并交由用户自定义的item pipelines进行处理
 
 Update
 ~~~~~~
 
-- 实例化中间件的classmethod ``from_config`` 更改为 ``from_cluster`` ，原先的 ``config`` 参数可以通过 ``cluster.config`` 获取
+- 实例化中间件的classmethod ``from_config`` 更改为 ``from_cluster`` ，现在 ``config`` 参数可以通过 ``cluster.config`` 获取
 - queue组件的 ``push`` , ``pop`` 函数，以及dupefilter组件的 ``is_duplicated`` 函数改为async类型
-- 移除queue组件和dupefilter组件的基类，RequestDequeue更名为RequestQueue
+- 移除queue组件和dupefilter组件的基类，RequestDequeue更名为FifoQueue
 - 系统不再默认调用dupefilter组件和queue组件的 ``open`` 和 ``close`` 函数，如果自定义的组件包含这些函数，可通过订阅相关事件的方式进行调用
+- 系统配置 ``dupefilter_cls`` 更名为 ``dupe_filter_cls`` ，cluster的 ``dupefilter`` 属性更名为 ``dupe_filter``
+- RequestHeadersMiddleware更改为DefaultHeadersMiddleware，配置字段 ``request_headers`` 更改为 ``default_headers``，功能由覆盖headers变为设置默认的headers
+- MaxDepthMiddleware更改为DepthMiddleware，配置字段 ``max_depth`` 更改为 ``request_depth``，功能变为记录request的depth并对max depth加以限制
+- 修改了ProxyMiddleware和ProxyAgentMiddleware的配置方式
+- 更新了 ``request_fingerprint`` 的计算方式
+- 修改aiohttp的版本限制为>=2.3.0
 
 
 0.7.1 (2017-10-25)
@@ -55,7 +70,7 @@ Update
 
 - 使用config.py替代config.yaml作为配置文件，移除对pyyaml的依赖
 - ForwardedForMiddleware移动到 ``xpaw.downloadermws.headers`` 模块下
-- 修改aiohttp的版本限制到>=2.2.0
+- 修改aiohttp的版本限制为>=2.2.0
 - 更新了中间件的错误处理机制
 - 不再采用中间件的形式实现请求的去重功能，并移除相关的中间件
 - ProxyAgentMiddleware的 ``proxy_agnet`` 配置下面 ``addr`` 字段更名为 ``agent_addr``

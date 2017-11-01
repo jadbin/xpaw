@@ -96,7 +96,8 @@ html_theme = 'alabaster'
 #
 html_theme_options = {
     'font_family': "'goudy old style', 'minion pro', 'bell mt', Georgia, 'Hiragino Mincho Pro', 'Hiragino Sans GB', 'PingFang SC', 'Microsoft YaHei', '微软雅黑', serif",
-    'font_size': '16px'
+    'font_size': '16px',
+    'code_font_size': '14px'
 }
 
 # Custom sidebar templates, maps document names to template names.
@@ -109,7 +110,7 @@ html_sidebars = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
+html_static_path = ['_static']
 
 
 # -- Options for HTMLHelp output ------------------------------------------

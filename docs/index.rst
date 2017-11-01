@@ -35,6 +35,37 @@ Installation
 
 .. _lxml installation: http://lxml.de/installation.html
 
+Quick Start
+===========
+
+以下是我们的一个爬虫类示例，其作用为爬取 `腾讯新闻 <http://news.qq.com/>`_ 首页的"要闻":
+
+.. code-block:: python
+
+    from xpaw import Spider, HttpRequest, Selector
+    from xpaw.run import run_spider
+
+
+    class TencentNewsSpider(Spider):
+        def start_requests(self):
+            yield HttpRequest("http://news.qq.com", callback=self.parse)
+
+        def parse(self, response):
+            selector = Selector(response.text)
+            major_news = selector.xpath("//div[@class='item major']//a[@class='linkto']").text
+            self.log("Major news:")
+            for i in range(len(major_news)):
+                self.log("{}: {}".format(i + 1, major_news[i]))
+
+
+    if __name__ == '__main__':
+        run_spider(TencentNewsSpider, log_level="DEBUG")
+
+在爬虫类中我们定义了一些方法：
+
+- ``start_requests``: 返回爬虫初始请求。
+- ``parse``: 处理请求得到的页面，这里借助 ``Selector`` 及XPath语法提取到了我们所需的数据。
+
 Requirements
 ============
 
@@ -50,7 +81,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   quickstart
+   tutorial
    usage
 
 All the Rest

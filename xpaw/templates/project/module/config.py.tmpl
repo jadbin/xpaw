@@ -12,7 +12,7 @@ project_description = ''
 
 downloader_middlewares = [
     # 'xpaw.downloadermws.ProxyAgentMiddleware',
-    'xpaw.downloadermws.RequestHeadersMiddleware',
+    'xpaw.downloadermws.DefaultHeadersMiddleware',
     'xpaw.downloadermws.ForwardedForMiddleware',
     'xpaw.downloadermws.RetryMiddleware'
 ]
@@ -20,6 +20,10 @@ downloader_middlewares = [
 spider_middlewares = []
 
 spider = '${project_name}.spider.${ProjectName}Spider'
+
+item_pipelines = [
+    '${project_name}.pipelines.${ProjectName}Pipeline'
+]
 
 extensions = []
 
@@ -31,7 +35,7 @@ proxy_agent = {
     'agent_addr': 'http://<address>:<port><path>'
 }
 
-request_headers = {
+default_headers = {
     'Connection': 'keep-alive',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
     'Upgrade-Insecure-Requests': '1',

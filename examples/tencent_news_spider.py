@@ -4,7 +4,7 @@ from xpaw import Spider, HttpRequest, Selector
 from xpaw.run import run_spider
 
 
-class TutorialSpider(Spider):
+class TencentNewsSpider(Spider):
     def start_requests(self):
         yield HttpRequest("http://news.qq.com", callback=self.parse)
 
@@ -17,4 +17,4 @@ class TutorialSpider(Spider):
 
 
 if __name__ == '__main__':
-    run_spider(TutorialSpider, log_level="DEBUG")
+    run_spider(TencentNewsSpider, log_level="DEBUG")
