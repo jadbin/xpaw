@@ -54,7 +54,7 @@ class TestSelector:
         with pytest.raises(ValueError):
             s = Selector()
 
-    def test_confused_xpath(self):
+    def test_location_path(self):
         html = "<p>text</p><ul><p>header</p><li>a</li><li>b</li></ul>"
         s = Selector(html)
 

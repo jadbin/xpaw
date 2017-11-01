@@ -8,13 +8,14 @@ from . import _patch
 
 del _patch
 
+from aiohttp import FormData
+
 from .spider import Spider
 from .http import HttpRequest, HttpResponse
 from .selector import Selector
 from .downloader import Downloader
-
-from aiohttp import FormData
+from .item import Item, Field
 
 __all__ = ('__version__',
-           'Spider', 'HttpRequest', 'HttpResponse', 'Selector', 'Downloader',
-           'FormData')
+           'FormData', 'HttpRequest', 'HttpResponse',
+           'Downloader', 'Spider', 'Selector', 'Item', 'Field')
