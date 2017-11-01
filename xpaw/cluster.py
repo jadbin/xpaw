@@ -13,13 +13,15 @@ import signal
 from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
 from .utils import load_object, AsyncGenWrapper
-from .errors import IgnoreRequest
+from .errors import IgnoreRequest, IgnoreItem
 from .downloader import DownloaderMiddlewareManager
 from .spider import SpiderMiddlewareManager
 from .config import Config
 from .eventbus import EventBus
 from . import events
 from .extension import ExtensionManager
+from .item import BaseItem
+from .pipeline import ItemPipelineManager
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +43,7 @@ class LocalCluster:
                                                type(self.spider).__name__))))
         self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
         self.spidermw = SpiderMiddlewareManager.from_cluster(self)
+        self.item_pipline = ItemPipelineManager.from_cluster(self)
         self.extensions = ExtensionManager.from_cluster(self)
         self._last_request = None
         self._job_futures = None
@@ -157,6 +160,13 @@ class LocalCluster:
                 async for r in res:
                     if isinstance(r, HttpRequest):
                         await self._push_without_duplicated(r)
+                    elif isinstance(r, (BaseItem, dict)):
+                        try:
+                            await self.item_pipline.handle_item(r)
+                        except Exception as e:
+                            if not isinstance(e, IgnoreItem):
+                                log.warning("Error occurred when handled item: {}".format(r),
+                                            exc_info=True)
             except Exception:
                 log.warning("Error occurred when parsed response of '{}'".format(request.url),
                             exc_info=True)

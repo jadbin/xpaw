@@ -27,4 +27,6 @@ downloader_middlewares = [
 
 spider_middlewares = []
 
+item_pipelines = []
+
 extensions = []
