@@ -30,7 +30,7 @@ def main():
     if sys.version_info < (3, 5):
         raise RuntimeError("Python 3.5+ is required")
     install_requires = [
-        "aiohttp>=2.2.0",
+        "aiohttp>=2.3.0",
         "lxml"
     ]
     tests_requires = install_requires + ["pytest", "pytest-aiohttp"]
