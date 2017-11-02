@@ -30,7 +30,7 @@ Quick Start
 
     class TencentNewsSpider(Spider):
         def start_requests(self):
-            yield HttpRequest("http://news.qq.com", callback=self.parse)
+            yield HttpRequest("http://news.qq.com/", callback=self.parse)
 
         def parse(self, response):
             selector = Selector(response.text)

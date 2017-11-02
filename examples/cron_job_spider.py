@@ -8,14 +8,12 @@ from xpaw.run import run_spider
 class CronJobSpider(Spider):
     @every(seconds=10)
     def start_requests(self):
-        yield HttpRequest("http://news.qq.com", callback=self.parse, dont_filter=True)
+        yield HttpRequest("http://quotes.toscrape.com/", callback=self.parse, dont_filter=True)
 
     def parse(self, response):
         selector = Selector(response.text)
-        major_news = selector.xpath("//div[@class='item major']//a[@class='linkto']").text
-        self.log("Major news:")
-        for i in range(len(major_news)):
-            self.log("{}: {}".format(i + 1, major_news[i]))
+        tags = selector.xpath("//div[contains(@class, 'tags-box')]//a").text
+        self.log("Top ten tags: {}".format(tags))
 
 
 if __name__ == '__main__':
