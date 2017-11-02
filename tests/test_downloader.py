@@ -12,7 +12,9 @@ from multidict import MultiDict
 from aiohttp import FormData
 
 from xpaw.http import HttpRequest
-from xpaw.downloader import Downloader
+from xpaw.downloader import Downloader, DownloaderMiddlewareManager
+from xpaw.eventbus import EventBus
+from xpaw.config import Config
 
 
 async def test_cookies(loop):
@@ -20,6 +22,7 @@ async def test_cookies(loop):
     seed = str(random.randint(0, 2147483647))
     req = HttpRequest("http://httpbin.org/cookies", cookies={"seed": seed})
     resp = await downloader.download(req)
+    assert resp.status == 200
     cookies = json.loads(resp.text)["cookies"]
     assert len(cookies) == 1 and cookies.get("seed") == seed
 
@@ -29,10 +32,12 @@ async def test_cookie_jar(loop):
     seed = str(random.randint(0, 2147483647))
     await downloader.download(HttpRequest("http://httpbin.org/cookies/set?seed={}".format(seed)))
     resp = await downloader.download(HttpRequest("http://httpbin.org/cookies"))
+    assert resp.status == 200
     cookies = json.loads(resp.text)["cookies"]
     assert len(cookies) == 1 and cookies.get("seed") == seed
     await downloader.download(HttpRequest("http://httpbin.org/cookies/delete?seed="))
     resp = await downloader.download(HttpRequest("http://httpbin.org/cookies"))
+    assert resp.status == 200
     cookies = json.loads(resp.text)["cookies"]
     assert len(cookies) == 0
 
@@ -220,3 +225,75 @@ async def test_post_data(loop):
         assert base64.b64decode(data.split(',', 1)[1]) == bytes_data
 
     await asyncio.gather(post_json(), post_form(), post_str(), post_bytes(), loop=loop)
+
+
+class MyDownloadermw:
+    def __init__(self, d):
+        self.d = d
+
+    def handle_request(self, request):
+        self.d['handle_request'] = request
+
+    def handle_response(self, request, response):
+        self.d['handle_response'] = (request, response)
+
+    def handle_error(self, request, error):
+        self.d['handle_error'] = (request, error)
+
+
+class MyEmptyDownloadermw:
+    """
+    no method
+    """
+
+
+class MyAsyncDownloaderMw(MyDownloadermw):
+    @classmethod
+    def from_cluster(cls, cluster):
+        return cls(cluster.config['data'])
+
+    async def handle_request(self, request):
+        self.d['async_handle_request'] = request
+
+    async def handle_response(self, request, response):
+        self.d['async_handle_response'] = (request, response)
+
+    async def handle_error(self, request, error):
+        self.d['async_handle_error'] = (request, error)
+
+
+class Cluster:
+    def __init__(self, **kwargs):
+        self.event_bus = EventBus()
+        self.config = Config(kwargs)
+
+
+async def test_downloader_middleware_manager_handlers():
+    data = {}
+    cluster = Cluster(downloader_middlewares=[lambda d=data: MyDownloadermw(d),
+                                              MyEmptyDownloadermw,
+                                              MyAsyncDownloaderMw],
+                      data=data)
+    downloadermw = DownloaderMiddlewareManager.from_cluster(cluster)
+    request_obj = object()
+    response_obj = object()
+    error_obj = object()
+    await downloadermw._handle_request(request_obj)
+    await downloadermw._handle_response(request_obj, response_obj)
+    await downloadermw._handle_error(request_obj, error_obj)
+    assert data['handle_request'] is request_obj
+    assert data['handle_response'][0] is request_obj and data['handle_response'][1] is response_obj
+    assert data['handle_error'][0] is request_obj and data['handle_error'][1] is error_obj
+    assert data['async_handle_request'] is request_obj
+    assert data['async_handle_response'][0] is request_obj and data['async_handle_response'][1] is response_obj
+    assert data['async_handle_error'][0] is request_obj and data['async_handle_error'][1] is error_obj
+
+    cluster2 = Cluster(downloader_middlewares=lambda d=data: MyDownloadermw(d),
+                       data=data)
+    downloadermw2 = DownloaderMiddlewareManager.from_cluster(cluster2)
+    request_obj2 = object()
+    await downloadermw2._handle_request(request_obj2)
+    assert data['handle_request'] is request_obj2
+
+    cluster3 = Cluster(downloader_middlewares=None, data=data)
+    DownloaderMiddlewareManager.from_cluster(cluster3)

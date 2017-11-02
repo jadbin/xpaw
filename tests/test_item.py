@@ -30,4 +30,5 @@ def test_item():
     assert len(item_copy) == 2 and item_copy['f1'] == 'v1' and item_copy['f2'] == 'v2'
     item['f2'] = 'new_v2'
     assert item['f2'] == 'new_v2'
-    assert repr(item) == "{'f1': 'v1', 'f2': 'new_v2'}"
+    repr_str = repr(item)
+    assert repr_str == "{'f1': 'v1', 'f2': 'new_v2'}" or repr_str == "{'f2': 'new_v2', 'f1': 'v1'}"

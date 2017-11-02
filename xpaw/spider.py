@@ -113,7 +113,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         for method in self._input_handlers:
             res = method(response)
             if inspect.iscoroutine(res):
-                await res
+                res = await res
             assert res is None, \
                 "Input handler must return None, got {}".format(type(res).__name__)
 
@@ -123,7 +123,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             if inspect.iscoroutine(result):
                 result = await result
             assert _isiterable(result), \
-                "Response handler must return an iterable object, got {}".format(type(result).__name__)
+                "Output handler must return an iterable object, got {}".format(type(result).__name__)
         return result
 
     async def _handle_error(self, response, error):
@@ -140,6 +140,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
     async def _handle_start_requests(self, result):
         for method in self._start_requests_handlers:
             result = method(result)
+            if inspect.iscoroutine(result):
+                result = await result
             assert _isiterable(result), \
                 "Start requests handler must return an iterable object, got {}".format(type(result).__name__)
         return result
