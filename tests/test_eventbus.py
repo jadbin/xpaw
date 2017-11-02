@@ -3,7 +3,6 @@
 import pytest
 
 from xpaw.eventbus import EventBus
-from xpaw.utils import configure_logging
 
 event1 = object()
 event2 = object()
@@ -121,7 +120,6 @@ async def test_unknown_unsubscribe():
 
 
 async def test_raise_error_in_callback():
-    configure_logging('xpaw', log_level='ERROR')
     eventbus = EventBus()
     obj = MyClass()
     eventbus.subscribe(obj.method_raise_error, event1)

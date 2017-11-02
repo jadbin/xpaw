@@ -175,6 +175,10 @@ class LocalCluster:
                         except Exception as e:
                             if not isinstance(e, IgnoreItem):
                                 log.warning("Error occurred when handled item: %s", r, exc_info=True)
+                            else:
+                                await self.event_bus.send(events.item_ignored, item=r)
+                        else:
+                            await self.event_bus.send(events.item_scraped, item=r)
             except CancelledError:
                 raise
             except Exception:
