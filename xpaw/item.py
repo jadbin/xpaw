@@ -1,7 +1,5 @@
 # coding=utf-8
 
-from pprint import pformat
-
 from collections import MutableMapping
 
 
@@ -50,7 +48,7 @@ class Item(MutableMapping, BaseItem):
         return self._values.keys()
 
     def __repr__(self):
-        return pformat(dict(self))
+        return repr(dict(self))
 
     def copy(self):
         return self.__class__(**self._values)

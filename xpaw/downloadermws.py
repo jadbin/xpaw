@@ -128,7 +128,6 @@ class DefaultHeadersMiddleware:
         return cls(cluster.config.get("default_headers"))
 
     async def handle_request(self, request):
-        log.debug("Assign headers to request (url=%s): %s", request.url, self._headers)
         for h in self._headers:
             request.headers.setdefault(h, self._headers[h])
 
@@ -136,7 +135,6 @@ class DefaultHeadersMiddleware:
 class ForwardedForMiddleware:
     async def handle_request(self, request):
         x = "61.%s.%s.%s" % (random.randint(128, 191), random.randint(0, 255), random.randint(1, 254))
-        log.debug("Assign 'X-Forwarded-For: %s' to request (url=%s)", x, request.url)
         request.headers["X-Forwarded-For"] = x
 
 
@@ -173,7 +171,6 @@ class ProxyMiddleware:
         proxy = self._get_proxy(url.scheme)
         if proxy:
             addr, auth = proxy
-            log.debug("Assign proxy '%s' to request (url=%s)", addr, request.url)
             request.proxy = addr
             request.proxy_auth = auth
 
@@ -210,7 +207,6 @@ class ProxyAgentMiddleware:
 
     async def handle_request(self, request):
         proxy = await self.get_proxy()
-        log.debug("Assign proxy '%s' to request (url=%s)", proxy, request.url)
         request.proxy = proxy
 
     async def get_proxy(self):
@@ -224,7 +220,6 @@ class ProxyAgentMiddleware:
         return self._proxy_list[random.randint(0, len(self._proxy_list) - 1)]
 
     async def update_proxy_list(self):
-        log.debug("Update proxy list")
         try:
             async with aiohttp.ClientSession(loop=self._loop) as session:
                 with aiohttp.Timeout(self._timeout, loop=self._loop):
@@ -278,7 +273,6 @@ class SpeedLimitMiddleware:
         while True:
             d = self._burst - self._value
             if d > 0:
-                log.debug("Update speed limit semaphore +%s", d)
                 self._value += d
                 i = 0
                 while i < d:

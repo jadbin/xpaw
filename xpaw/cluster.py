@@ -204,7 +204,7 @@ class LocalCluster:
             config_parser = ConfigParser()
             config_parser.read(join(proj_dir, "setup.cfg"))
             config_path = config_parser.get("config", "default")
-            log.debug('Default project configuration: %s', config_path)
+            log.info('Default project configuration: %s', config_path)
             module = import_module(config_path)
             for key in dir(module):
                 if not key.startswith("_"):

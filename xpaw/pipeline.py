@@ -30,6 +30,7 @@ class ItemPipelineManager(MiddlewareManager):
             self._item_handlers.append(middleware.handle_item)
 
     async def handle_item(self, item):
+        log.debug('Item (%s): %s', type(item).__name__, item)
         for method in self._item_handlers:
             res = method(item)
             if inspect.iscoroutine(res):
