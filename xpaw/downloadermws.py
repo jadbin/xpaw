@@ -5,6 +5,7 @@ import json
 import random
 import logging
 import asyncio
+from asyncio import CancelledError
 
 import aiohttp
 from yarl import URL
@@ -232,8 +233,10 @@ class ProxyAgentMiddleware:
                         proxy_list = json.loads(body.decode(encoding="utf-8"))
                         if proxy_list:
                             self._proxy_list = proxy_list
+        except CancelledError:
+            raise
         except Exception:
-            log.warning("Error occurred when update proxy list", exc_info=True)
+            log.warning("Error occurred when updated proxy list", exc_info=True)
 
     async def _update_proxy_list_task(self):
         while True:

@@ -3,6 +3,7 @@
 import weakref
 import inspect
 import logging
+from asyncio import CancelledError
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +43,8 @@ class EventBus:
                     res = f(**kwargs)
                     if inspect.iscoroutine(res):
                         await res
+                except CancelledError:
+                    raise
                 except Exception:
                     log.warning("Error occurred when sent a event.", exc_info=True)
         for i in del_list:

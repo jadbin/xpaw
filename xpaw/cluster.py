@@ -9,6 +9,7 @@ import types
 from configparser import ConfigParser
 from importlib import import_module
 import signal
+from asyncio import CancelledError
 
 from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
@@ -93,6 +94,8 @@ class LocalCluster:
                 if tick <= 0:
                     break
                 await asyncio.sleep(tick, loop=self.loop)
+        except CancelledError:
+            raise
         except Exception:
             log.warning("Error occurred when generated start requests", exc_info=True)
 
@@ -136,15 +139,20 @@ class LocalCluster:
             log.debug("The request (url={}) has been pulled by coro[{}]".format(req.url, coro_id))
             try:
                 result = await self.downloadermw.download(self.downloader, req)
-                await self._handle_result(req, result)
+            except CancelledError:
+                raise
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
                     log.warning("Error occurred when sent request '{}'".format(req.url),
                                 exc_info=True)
                 try:
                     await self.spidermw.handle_error(self.spider, req, e)
+                except CancelledError:
+                    raise
                 except Exception:
                     log.warning("Error occurred in error callback", exc_info=True)
+            else:
+                await self._handle_result(req, result)
 
     async def _handle_result(self, request, result):
         if isinstance(result, HttpRequest):
@@ -163,10 +171,14 @@ class LocalCluster:
                     elif isinstance(r, (BaseItem, dict)):
                         try:
                             await self.item_pipline.handle_item(r)
+                        except CancelledError:
+                            raise
                         except Exception as e:
                             if not isinstance(e, IgnoreItem):
                                 log.warning("Error occurred when handled item: {}".format(r),
                                             exc_info=True)
+            except CancelledError:
+                raise
             except Exception:
                 log.warning("Error occurred when parsed response of '{}'".format(request.url),
                             exc_info=True)

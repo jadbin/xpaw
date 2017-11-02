@@ -2,6 +2,7 @@
 
 import logging
 import inspect
+from asyncio import CancelledError
 
 from .middleware import MiddlewareManager
 from . import events
@@ -87,6 +88,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
             if r:
                 r = await self._handle_output(response, r)
             return r or ()
+        except CancelledError:
+            raise
         except Exception as e:
             res = await self._handle_error(response, e)
             if isinstance(res, Exception):

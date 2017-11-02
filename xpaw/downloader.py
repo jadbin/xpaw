@@ -3,6 +3,7 @@
 import logging
 import asyncio
 import inspect
+from asyncio import CancelledError
 
 import aiohttp
 
@@ -93,6 +94,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             if res is None:
                 try:
                     response = await downloader.download(request)
+                except CancelledError:
+                    raise
                 except Exception as e:
                     log.debug("Network error, {}: {}".format(type(e).__name__, e))
                     raise NetworkError(e)
@@ -101,6 +104,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             _res = await self._handle_response(request, res)
             if _res:
                 res = _res
+        except CancelledError:
+            raise
         except Exception as e:
             res = await self._handle_error(request, e)
             if isinstance(res, Exception):
