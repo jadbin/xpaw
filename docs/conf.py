@@ -95,9 +95,9 @@ html_theme = 'alabaster'
 # documentation.
 #
 html_theme_options = {
-    'font_family': "'goudy old style', 'minion pro', 'bell mt', Georgia, 'Hiragino Mincho Pro', 'Hiragino Sans GB', 'PingFang SC', 'Microsoft YaHei', '微软雅黑', serif",
-    'font_size': '16px',
-    'code_font_size': '14px'
+    'font_family': "'goudy old style', 'minion pro', 'bell mt', Georgia, serif",
+    'font_size': '14px',
+    'code_font_size': '12px'
 }
 
 # Custom sidebar templates, maps document names to template names.

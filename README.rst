@@ -17,8 +17,8 @@ Key Features
 - Provides a web scraping framework used to crawl web pages.
 - Provides data extraction tools used to extract structured data from web pages.
 
-Quick Start
-===========
+Spider Example
+==============
 
 以下是我们的一个爬虫类示例，其作用为爬取 `腾讯新闻 <http://news.qq.com/>`_ 首页的"要闻":
 

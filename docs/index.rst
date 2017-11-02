@@ -35,8 +35,8 @@ Installation
 
 .. _lxml installation: http://lxml.de/installation.html
 
-Quick Start
-===========
+Spider Example
+==============
 
 以下是我们的一个爬虫类示例，其作用为爬取 `腾讯新闻 <http://news.qq.com/>`_ 首页的"要闻":
 
