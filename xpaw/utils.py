@@ -27,12 +27,12 @@ def load_object(path):
     return path
 
 
-def configure_logging(name, config):
+def configure_logging(name, log_level=None, log_format=None, log_dateformat=None):
     logger = logging.getLogger(name)
-    logger.setLevel(config["log_level"])
+    logger.setLevel(log_level)
     log_stream_handler = logging.StreamHandler()
-    log_stream_handler.setLevel(config["log_level"])
-    log_formatter = logging.Formatter(config["log_format"], config["log_dateformat"])
+    log_stream_handler.setLevel(log_level)
+    log_formatter = logging.Formatter(log_format, log_dateformat)
     log_stream_handler.setFormatter(log_formatter)
     logger.addHandler(log_stream_handler)
 
