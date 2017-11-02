@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import math
 import logging
 
 from .http import HttpRequest
@@ -8,12 +9,17 @@ log = logging.getLogger(__name__)
 
 
 class DepthMiddleware:
-    def __init__(self, max_depth):
-        self._max_depth = max_depth
+    def __init__(self, max_depth=0):
+        if max_depth <= 0:
+            self._max_depth = math.inf
+        else:
+            self._max_depth = max_depth
 
     @classmethod
     def from_cluster(cls, cluster):
         c = cluster.config.get("request_depth")
+        if c is None:
+            c = {}
         return cls(**c)
 
     def handle_output(self, response, result):
