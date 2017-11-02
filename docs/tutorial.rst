@@ -18,7 +18,7 @@ tags           quote的标签列表
 
 例如对于这个quote:
 
-.. image:: /_static/quote_sample.png
+.. image:: _static/quote_sample.png
 
 我们得到的json数据为::
 
