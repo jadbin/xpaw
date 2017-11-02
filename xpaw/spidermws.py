@@ -30,6 +30,6 @@ class DepthMiddleware:
                 if depth <= self._max_depth:
                     yield r
                 else:
-                    log.debug("The request(url={}) will be aborted as the depth of it is out of limit".format(r.url))
+                    log.debug("The request(url=%s) will be aborted as the depth of it is out of limit", r.url)
             else:
                 yield r

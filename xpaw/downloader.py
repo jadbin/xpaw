@@ -26,7 +26,7 @@ class Downloader:
             self._cookie_jar = None
 
     async def download(self, request):
-        log.debug("HTTP request: {} {}".format(request.method, request.url))
+        log.debug("HTTP request: %s %s", request.method, request.url)
         timeout = request.meta.get("timeout")
         if not timeout:
             timeout = self._timeout
@@ -55,7 +55,7 @@ class Downloader:
                                 headers=resp.headers,
                                 body=body,
                                 cookies=cookies)
-        log.debug("HTTP response: {} {}".format(response.url, response.status))
+        log.debug("HTTP response: %s %s", response.url, response.status)
         return response
 
 
@@ -83,7 +83,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 mw_list = [mw_list]
         else:
             mw_list = []
-        log.info("Downloader middlewares: {}".format(mw_list))
+        log.info("Downloader middlewares: %s", mw_list)
         return mw_list
 
     async def download(self, downloader, request):
@@ -97,7 +97,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 except CancelledError:
                     raise
                 except Exception as e:
-                    log.debug("Network error, {}: {}".format(type(e).__name__, e))
+                    log.debug("Network error, %s: %s", type(e).__name__, e)
                     raise NetworkError(e)
                 else:
                     res = response

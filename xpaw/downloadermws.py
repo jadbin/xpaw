@@ -67,14 +67,14 @@ class RetryMiddleware:
     def retry(self, request, reason):
         retry_times = request.meta.get("retry_times", 0) + 1
         if retry_times <= self._max_retry_times:
-            log.debug("We will retry the request(url={}) because of {}".format(request.url, reason))
+            log.debug("We will retry the request(url=%s) because of %s", request.url, reason)
             retry_req = request.copy()
             retry_req.meta["retry_times"] = retry_times
             retry_req.dont_filter = True
             return retry_req
         else:
-            log.info("The request(url={}) has been retried {} times,"
-                     " and it will be aborted.".format(request.url, self._max_retry_times))
+            log.info("The request(url=%s) has been retried %s times,"
+                     " and it will be aborted", request.url, self._max_retry_times)
             raise IgnoreRequest
 
 
@@ -128,7 +128,7 @@ class DefaultHeadersMiddleware:
         return cls(cluster.config.get("default_headers"))
 
     async def handle_request(self, request):
-        log.debug("Assign headers to request (url={}): {}".format(request.url, self._headers))
+        log.debug("Assign headers to request (url=%s): %s", request.url, self._headers)
         for h in self._headers:
             request.headers.setdefault(h, self._headers[h])
 
@@ -136,7 +136,7 @@ class DefaultHeadersMiddleware:
 class ForwardedForMiddleware:
     async def handle_request(self, request):
         x = "61.%s.%s.%s" % (random.randint(128, 191), random.randint(0, 255), random.randint(1, 254))
-        log.debug("Assign 'X-Forwarded-For: {}' to request (url={})".format(x, request.url))
+        log.debug("Assign 'X-Forwarded-For: %s' to request (url=%s)", x, request.url)
         request.headers["X-Forwarded-For"] = x
 
 
@@ -173,7 +173,7 @@ class ProxyMiddleware:
         proxy = self._get_proxy(url.scheme)
         if proxy:
             addr, auth = proxy
-            log.debug("Assign proxy '{}' to request (url={})".format(addr, request.url))
+            log.debug("Assign proxy '%s' to request (url=%s)", addr, request.url)
             request.proxy = addr
             request.proxy_auth = auth
 
@@ -210,7 +210,7 @@ class ProxyAgentMiddleware:
 
     async def handle_request(self, request):
         proxy = await self.get_proxy()
-        log.debug("Assign proxy '{}' to request (url={})".format(proxy, request.url))
+        log.debug("Assign proxy '%s' to request (url=%s)", proxy, request.url)
         request.proxy = proxy
 
     async def get_proxy(self):
@@ -278,7 +278,7 @@ class SpeedLimitMiddleware:
         while True:
             d = self._burst - self._value
             if d > 0:
-                log.debug("Update speed limit semaphore +{}".format(d))
+                log.debug("Update speed limit semaphore +%s", d)
                 self._value += d
                 i = 0
                 while i < d:

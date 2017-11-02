@@ -26,8 +26,8 @@ class Spider:
     def logger(self):
         return log
 
-    def log(self, message, level=logging.INFO, **kw):
-        self.logger.log(level, message, **kw)
+    def log(self, message, *args, level=logging.INFO, **kwargs):
+        self.logger.log(level, message, *args, **kwargs)
 
     def parse(self, response):
         raise NotImplementedError
@@ -73,7 +73,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 mw_list = [mw_list]
         else:
             mw_list = []
-        log.info("Spider middlewares: {}".format(mw_list))
+        log.info("Spider middlewares: %s", mw_list)
         return mw_list
 
     async def parse(self, spider, response):

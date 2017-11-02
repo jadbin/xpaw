@@ -16,7 +16,7 @@ class SetDupeFilter:
             return False
         h = request_fingerprint(request)
         if h in self._hash:
-            log.debug("Find the request (method={}, url={}) is duplicated".format(request.method, request.url))
+            log.debug("Find the request (method=%s, url=%s) is duplicated", request.method, request.url)
             return True
         self._hash.add(h)
         return False

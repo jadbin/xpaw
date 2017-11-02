@@ -40,8 +40,8 @@ class LocalCluster:
                                      cookie_jar_enabled=self.config.getbool("downloader_cookie_jar_enabled"),
                                      loop=self.loop)
         self.spider = self._new_object_from_cluster(self.config.get("spider"), self)
-        log.info("Spider: {}".format(".".join((type(self.spider).__module__,
-                                               type(self.spider).__name__))))
+        log.info("Spider: %s", ".".join((type(self.spider).__module__,
+                                         type(self.spider).__name__)))
         self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
         self.spidermw = SpiderMiddlewareManager.from_cluster(self)
         self.item_pipline = ItemPipelineManager.from_cluster(self)
@@ -58,7 +58,7 @@ class LocalCluster:
         self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
         self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.loop)
         downloader_clients = self.config.getint("downloader_clients")
-        log.info("Downloader clients: {}".format(downloader_clients))
+        log.info("Downloader clients: %s", downloader_clients)
         self._job_futures = []
         for i in range(downloader_clients):
             f = asyncio.ensure_future(self._pull_requests(i), loop=self.loop)
@@ -113,7 +113,7 @@ class LocalCluster:
                     if i not in self._job_futures_done:
                         self._job_futures_done.add(i)
                         reason = "cancelled" if f.cancelled() else str(f.exception())
-                        log.error("Coro[{}] is shut down: {}".format(i, reason))
+                        log.error("Coro[%s] is shut down: %s", i, reason)
         asyncio.ensure_future(self.shutdown())
 
     async def shutdown(self):
@@ -136,15 +136,14 @@ class LocalCluster:
         while True:
             req = await self.queue.pop()
             self._last_request = time.time()
-            log.debug("The request (url={}) has been pulled by coro[{}]".format(req.url, coro_id))
+            log.debug("The request (url=%s) has been pulled by coro[%s]", req.url, coro_id)
             try:
                 result = await self.downloadermw.download(self.downloader, req)
             except CancelledError:
                 raise
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
-                    log.warning("Error occurred when sent request '{}'".format(req.url),
-                                exc_info=True)
+                    log.warning("Error occurred when sent request '%s'", req.url, exc_info=True)
                 try:
                     await self.spidermw.handle_error(self.spider, req, e)
                 except CancelledError:
@@ -175,13 +174,11 @@ class LocalCluster:
                             raise
                         except Exception as e:
                             if not isinstance(e, IgnoreItem):
-                                log.warning("Error occurred when handled item: {}".format(r),
-                                            exc_info=True)
+                                log.warning("Error occurred when handled item: %s", r, exc_info=True)
             except CancelledError:
                 raise
             except Exception:
-                log.warning("Error occurred when parsed response of '{}'".format(request.url),
-                            exc_info=True)
+                log.warning("Error occurred when parsed response of '%s'", request.url, exc_info=True)
 
     @staticmethod
     def _new_object_from_cluster(cls_path, cluster):
@@ -207,7 +204,7 @@ class LocalCluster:
             config_parser = ConfigParser()
             config_parser.read(join(proj_dir, "setup.cfg"))
             config_path = config_parser.get("config", "default")
-            log.debug('Default project configuration: {}'.format(config_path))
+            log.debug('Default project configuration: %s', config_path)
             module = import_module(config_path)
             for key in dir(module):
                 if not key.startswith("_"):

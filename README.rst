@@ -37,7 +37,7 @@ Quick Start
             major_news = selector.xpath("//div[@class='item major']//a[@class='linkto']").text
             self.log("Major news:")
             for i in range(len(major_news)):
-                self.log("{}: {}".format(i + 1, major_news[i]))
+                self.log("%s: %s", i + 1, major_news[i])
 
 
     if __name__ == '__main__':
