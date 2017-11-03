@@ -3,6 +3,7 @@
 from xpaw.config import Config
 from xpaw.spidermws import *
 from xpaw.http import HttpRequest
+from xpaw.item import Item
 
 
 class Cluster:
@@ -21,9 +22,10 @@ class TestDepthMiddleware:
 
         mw = DepthMiddleware.from_cluster(Cluster(request_depth={'max_depth': 1}))
         req = HttpRequest("http://httpbin.org", "GET")
-        res = [i for i in mw.handle_output(R(), [req])]
-        assert res == [req] and req.meta['depth'] == 1
-        res = [i for i in mw.handle_output(R(0), [req])]
-        assert res == [req] and req.meta['depth'] == 1
-        res = [i for i in mw.handle_output(R(1), [req])]
-        assert res == [] and req.meta['depth'] == 2
+        item = Item()
+        res = [i for i in mw.handle_output(R(), [req, item])]
+        assert res == [req, item] and req.meta['depth'] == 1
+        res = [i for i in mw.handle_output(R(0), [req, item])]
+        assert res == [req, item] and req.meta['depth'] == 1
+        res = [i for i in mw.handle_output(R(1), [req, item])]
+        assert res == [item] and req.meta['depth'] == 2

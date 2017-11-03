@@ -2,7 +2,8 @@
 
 import pytest
 from aiohttp import web
-from yarl import URL
+import asyncio
+import aiohttp
 
 from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
@@ -179,3 +180,40 @@ class TestResponseMatchMiddleware:
         with pytest.raises(ResponseNotMatch):
             await mw.handle_response(req_baidu, resp_qq)
         await mw.handle_response(req_qq, resp_qq)
+
+
+class TestSpeedLimitMiddleware:
+    def test_value_error(self):
+        with pytest.raises(ValueError):
+            SpeedLimitMiddleware(0, 1)
+        with pytest.raises(ValueError):
+            SpeedLimitMiddleware(1, 0)
+        with pytest.raises(ValueError):
+            SpeedLimitMiddleware(1, 1.1)
+
+    async def test_handle_request(self, loop):
+        class Counter:
+            def __init__(self):
+                self.n = 0
+
+            def inc(self):
+                self.n += 1
+
+        async def processor():
+            while True:
+                await mw.handle_request(None)
+                counter.inc()
+
+        counter = Counter()
+        mw = SpeedLimitMiddleware.from_cluster(Cluster(speed_limit={'rate': 1000, 'burst': 5},
+                                                       loop=loop))
+        futures = []
+        for i in range(100):
+            futures.append(asyncio.ensure_future(processor(), loop=loop))
+        mw.open()
+        await asyncio.sleep(0.1, loop=loop)
+        mw.close()
+        for f in futures:
+            assert f.cancel() is True
+        await asyncio.sleep(0.01, loop=loop)
+        assert counter.n <= 105

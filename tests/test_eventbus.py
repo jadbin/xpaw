@@ -35,7 +35,7 @@ class MyClass:
         self.value = value
 
     def method_raise_error(self):
-        raise RuntimeError
+        raise RuntimeError('not an error actually')
 
 
 def test_raise_value_error():
