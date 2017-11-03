@@ -36,7 +36,7 @@ Update
 - MaxDepthMiddleware更改为DepthMiddleware，配置字段 ``max_depth`` 更改为 ``request_depth``，功能变为记录request的depth并对max depth加以限制
 - 修改了ProxyMiddleware和ProxyAgentMiddleware的配置方式
 - 更新了 ``request_fingerprint`` 的计算方式
-- 修改aiohttp的版本限制为>=2.3.0
+- 修改aiohttp的版本限制为>=2.3.2
 
 
 0.7.1 (2017-10-25)

@@ -1,2 +1,2 @@
-aiohttp>=2.3.0
+aiohttp>=2.3.2
 lxml
