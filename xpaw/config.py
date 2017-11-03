@@ -27,12 +27,10 @@ class ConfigAttribute:
 
     def set(self, value, priority):
         if priority >= self.priority:
-            if isinstance(self.value, BaseConfig):
-                value = BaseConfig(value, priority=priority)
             self.value = value
             self.priority = priority
 
-    def __str__(self):
+    def __repr__(self):
         return "<ConfigAttribute value={self.value!r} priority={self.priority}>".format(self=self)
 
 

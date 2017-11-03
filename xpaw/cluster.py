@@ -114,7 +114,7 @@ class LocalCluster:
                         self._job_futures_done.add(i)
                         reason = "cancelled" if f.cancelled() else str(f.exception())
                         log.error("Coro[%s] is shut down: %s", i, reason)
-        asyncio.ensure_future(self.shutdown())
+        asyncio.ensure_future(self.shutdown(), loop=self.loop)
 
     async def shutdown(self):
         if not self._is_running:

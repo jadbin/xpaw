@@ -55,9 +55,9 @@ def main(argv=None):
     parser.usage = "xpaw {} {}".format(cmdname, cmd.syntax)
     parser.description = cmd.long_desc
     cmd.add_arguments(parser)
-    args = parser.parse_args(args=argv[1:])
-    cmd.process_arguments(args)
     try:
+        args = parser.parse_args(args=argv[1:])
+        cmd.process_arguments(args)
         cmd.run(args)
     except UsageError as e:
         if str(e):
