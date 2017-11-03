@@ -104,7 +104,7 @@ class LocalCluster:
         task_finished_delay = 2 * timeout
         self._last_request = time.time()
         while True:
-            await asyncio.sleep(5, loop=self.loop)
+            await asyncio.sleep(timeout, loop=self.loop)
             if self._start_future.done() and time.time() - self._last_request > task_finished_delay:
                 break
             for i in range(len(self._job_futures)):
