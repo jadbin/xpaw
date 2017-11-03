@@ -248,14 +248,16 @@ class ProxyAgentMiddleware:
 
 
 class SpeedLimitMiddleware:
-    def __init__(self, span=1, burst=1, loop=None):
-        if span <= 0:
-            raise ValueError("span must greater than 0")
-        self._span = span
+    def __init__(self, rate=1, burst=1, loop=None):
+        if rate <= 0:
+            raise ValueError("rate must be greater than 0")
+        if not isinstance(burst, int) or burst <= 0:
+            raise ValueError('burst must be an integer greater than 0')
+        self._interval = 1.0 / rate
         self._burst = burst
+        self._bucket = burst
         self._loop = loop or asyncio.get_event_loop()
-        self._semaphore = asyncio.Semaphore(0, loop=loop)
-        self._value = 0
+        self._semaphore = asyncio.Semaphore(burst, loop=loop)
         self._update_future = None
 
     @classmethod
@@ -267,18 +269,14 @@ class SpeedLimitMiddleware:
 
     async def handle_request(self, request):
         await self._semaphore.acquire()
-        self._value -= 1
+        self._bucket -= 1
 
     async def _update_value(self):
         while True:
-            d = self._burst - self._value
-            if d > 0:
-                self._value += d
-                i = 0
-                while i < d:
-                    self._semaphore.release()
-                    i += 1
-            await asyncio.sleep(self._span, loop=self._loop)
+            await asyncio.sleep(self._interval, loop=self._loop)
+            if self._bucket + 1 <= self._burst:
+                self._bucket += 1
+                self._semaphore.release()
 
     def open(self):
         self._update_future = asyncio.ensure_future(self._update_value(), loop=self._loop)
