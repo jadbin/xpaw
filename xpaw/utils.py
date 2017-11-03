@@ -9,6 +9,8 @@ import logging
 from importlib import import_module
 import string
 from urllib.parse import urlsplit
+from asyncio import CancelledError
+import inspect
 
 from yarl import URL
 from multidict import MultiDict
@@ -112,11 +114,12 @@ def string_camelcase(s):
 
 
 class AsyncGenWrapper:
-    def __init__(self, gen):
+    def __init__(self, gen, errback=None):
         if hasattr(gen, "__next__"):
             self.iter = gen
         else:
             self.iter = iter(gen)
+        self.errback = errback
 
     async def __aiter__(self):
         return self
@@ -126,6 +129,15 @@ class AsyncGenWrapper:
             return next(self.iter)
         except StopIteration:
             raise StopAsyncIteration
+        except CancelledError:
+            raise
+        except Exception as e:
+            if self.errback:
+                r = self.errback(e)
+                if inspect.iscoroutine(r):
+                    r = await r
+                return r
+            raise
 
 
 def cmp(a, b):

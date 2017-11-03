@@ -6,6 +6,7 @@ from asyncio import CancelledError
 
 from .middleware import MiddlewareManager
 from . import events
+from .utils import AsyncGenWrapper
 
 log = logging.getLogger(__name__)
 
@@ -85,17 +86,25 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 r = spider.parse(response)
             if inspect.iscoroutine(r):
                 r = await r
+            assert r is None or _isiterable(r), \
+                "Result of parsing must be None or an iterable object, got {}".format(type(r).__name__)
             if r:
                 r = await self._handle_output(response, r)
-            return r or ()
+            if r is None:
+                return ()
+            if not hasattr(r, "__aiter__"):
+                r = AsyncGenWrapper(r, errback=lambda x, resp=response: self._handle_error_of_parse(resp, x))
+            return r
         except CancelledError:
             raise
         except Exception as e:
-            res = await self._handle_error(response, e)
-            if isinstance(res, Exception):
-                raise res
-            if res:
-                return res
+            return await self._handle_error_of_parse(response, e)
+
+    async def _handle_error_of_parse(self, response, error):
+        res = await self._handle_error(response, error)
+        if isinstance(res, Exception):
+            raise res
+        return res or ()
 
     async def handle_error(self, spider, request, error):
         if request and request.errback:
@@ -105,9 +114,15 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     async def start_requests(self, spider):
         r = spider.start_requests()
+        assert r is None or _isiterable(r), \
+            "Start requests must be None or an iterable object, got {}".format(type(r).__name__)
         if r:
             r = await self._handle_start_requests(r)
-        return r or ()
+        if r is None:
+            return ()
+        if not hasattr(r, "__aiter__"):
+            r = AsyncGenWrapper(r)
+        return r
 
     async def _handle_input(self, response):
         for method in self._input_handlers:

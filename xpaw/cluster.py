@@ -13,7 +13,7 @@ from asyncio import CancelledError
 
 from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
-from .utils import load_object, AsyncGenWrapper
+from .utils import load_object
 from .errors import IgnoreRequest, IgnoreItem
 from .downloader import DownloaderMiddlewareManager
 from .spider import SpiderMiddlewareManager
@@ -64,8 +64,10 @@ class LocalCluster:
             f = asyncio.ensure_future(self._pull_requests(i), loop=self.loop)
             self._job_futures.append(f)
 
-        self.loop.add_signal_handler(signal.SIGINT, lambda: asyncio.ensure_future(self.shutdown()))
-        self.loop.add_signal_handler(signal.SIGTERM, lambda: asyncio.ensure_future(self.shutdown()))
+        self.loop.add_signal_handler(signal.SIGINT,
+                                     lambda loop=self.loop: asyncio.ensure_future(self.shutdown(), loop=loop))
+        self.loop.add_signal_handler(signal.SIGTERM,
+                                     lambda loop=self.loop: asyncio.ensure_future(self.shutdown(), loop=loop))
         asyncio.set_event_loop(self.loop)
         self._is_running = True
         log.info("Cluster is running")
@@ -85,8 +87,6 @@ class LocalCluster:
                 tick = 0
             while True:
                 res = await self.spidermw.start_requests(self.spider)
-                if not hasattr(res, "__aiter__"):
-                    res = AsyncGenWrapper(res)
                 async for r in res:
                     if isinstance(r, HttpRequest):
                         await self._push_without_duplicated(r)
@@ -162,8 +162,6 @@ class LocalCluster:
             await self.event_bus.send(events.response_received, response=result)
             try:
                 res = await self.spidermw.parse(self.spider, result)
-                if not hasattr(res, "__aiter__"):
-                    res = AsyncGenWrapper(res)
                 async for r in res:
                     if isinstance(r, HttpRequest):
                         await self._push_without_duplicated(r)
