@@ -181,12 +181,6 @@ class ProxyMiddleware:
         if n > 0:
             return self._proxies[scheme][random.randint(0, n - 1)]
 
-    def _parse_proxy(self, p):
-        if isinstance(p, str):
-            return p, None
-        if isinstance(p, dict):
-            return p.get('addr'), p.get('auth')
-
 
 class ProxyAgentMiddleware:
     def __init__(self, agent_addr, *, update_interval=60, timeout=20, loop=None):
@@ -194,7 +188,7 @@ class ProxyAgentMiddleware:
         self._update_interval = update_interval
         self._timeout = timeout
         self._loop = loop or asyncio.get_event_loop()
-        self._proxy_list = []
+        self._proxies = {'http': [], 'https': []}
         self._update_lock = asyncio.Lock(loop=self._loop)
         self._update_future = None
 
@@ -206,18 +200,27 @@ class ProxyAgentMiddleware:
         return cls(**c, loop=cluster.loop)
 
     async def handle_request(self, request):
-        proxy = await self.get_proxy()
-        request.proxy = proxy
+        if isinstance(request.url, str):
+            url = URL(request.url)
+        else:
+            url = request.url
+        proxy = await self.get_proxy(url.scheme)
+        if proxy:
+            addr, auth = proxy
+            request.proxy = addr
+            request.proxy_auth = auth
 
-    async def get_proxy(self):
+    async def get_proxy(self, scheme):
+        if scheme not in self._proxies:
+            return
         while True:
             async with self._update_lock:
-                if not self._proxy_list:
+                if len(self._proxies[scheme]) <= 0:
                     await self.update_proxy_list()
-                if self._proxy_list:
+                if len(self._proxies[scheme]) > 0:
                     break
             await asyncio.sleep(self._timeout, loop=self._loop)
-        return self._proxy_list[random.randint(0, len(self._proxy_list) - 1)]
+        return self._proxies[scheme][random.randint(0, len(self._proxies[scheme]) - 1)]
 
     async def update_proxy_list(self):
         try:
@@ -227,7 +230,23 @@ class ProxyAgentMiddleware:
                         body = await resp.read()
                         proxy_list = json.loads(body.decode(encoding="utf-8"))
                         if proxy_list:
-                            self._proxy_list = proxy_list
+                            for k in self._proxies:
+                                self._proxies[k].clear()
+                            for p in proxy_list:
+                                addr, auth, scheme = None, None, None
+                                if isinstance(p, str):
+                                    addr = p
+                                elif isinstance(p, dict):
+                                    addr = p.get('addr')
+                                    auth = p.get('auth')
+                                    scheme = p.get('scheme')
+                                if addr:
+                                    if scheme:
+                                        if scheme in self._proxies:
+                                            self._proxies[scheme].append((addr, auth))
+                                    else:
+                                        self._proxies['http'].append((addr, auth))
+                                        self._proxies['https'].append((addr, auth))
         except CancelledError:
             raise
         except Exception:
