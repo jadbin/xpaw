@@ -91,7 +91,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             if r:
                 r = await self._handle_output(response, r)
             if r is None:
-                return ()
+                r = ()
             if not hasattr(r, "__aiter__"):
                 r = AsyncGenWrapper(r, errback=lambda x, resp=response: self._handle_error_of_parse(resp, x))
             return r
@@ -119,7 +119,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         if r:
             r = await self._handle_start_requests(r)
         if r is None:
-            return ()
+            r = ()
         if not hasattr(r, "__aiter__"):
             r = AsyncGenWrapper(r)
         return r
