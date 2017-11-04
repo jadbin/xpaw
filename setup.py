@@ -31,7 +31,8 @@ def main():
         raise RuntimeError("Python 3.5+ is required")
     install_requires = [
         "aiohttp>=2.3.2",
-        "lxml"
+        "lxml>=4.1.0",
+        "cssselect>=1.0.1"
     ]
     tests_requires = install_requires + ["pytest", "pytest-aiohttp"]
     setup(
