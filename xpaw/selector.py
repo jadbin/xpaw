@@ -50,9 +50,6 @@ class Selector:
             return SelectorList([])
         if not isinstance(res, list):
             res = [res]
-            raise RuntimeError
-        if not isinstance(res, list):
-            return res
         return SelectorList([self.__class__(root=i) for i in res])
 
     def css(self, css, **kwargs):

@@ -115,11 +115,11 @@ class TestCssSelector:
         assert s.css('a')[0].text == 'httpbin'
         assert s.css('a[class=link]')[0].text == 'Returns Origin IP'
         assert s.css('a[class~=link]')[0].text == 'Index Page'
-        assert s.css('ul > a') == []
-        assert len(s.css('li > a')) == 2
+        assert s.css('ul>a') == []
+        assert len(s.css('li>a')) == 2
         assert s.css('ul a')[0].text == 'Index Page'
         assert s.css('ul').css('a')[0].text == 'Index Page'
-        assert s.css('li > a:not([class~=primary])')[0].text == 'Returns Origin IP'
+        assert s.css('li>a:not([class~=primary])')[0].text == 'Returns Origin IP'
 
     def test_attribute_selection(self):
         s = Selector("""<html>
@@ -132,11 +132,11 @@ class TestCssSelector:
                         </body>
                         </html>""")
         assert s.css('h1').xpath('@class')[0].text == 'header'
-        assert s.css('li > a[class=link]').xpath('@href')[0].text == 'http://httpbin.org/ip'
+        assert s.css('li>a[class=link]').xpath('@href')[0].text == 'http://httpbin.org/ip'
         assert s.css('h1').attr('class')[0] == 'header'
         assert s.css('h1')[0].attr('class') == 'header'
-        assert s.css('li > a').attr('class')[0] == 'primary link'
-        assert s.css('li > a').attr('class')[-1] == 'link'
+        assert s.css('li>a').attr('class')[0] == 'primary link'
+        assert s.css('li>a').attr('class')[-1] == 'link'
         assert s.css('ul').attr('class') == [None]
         assert s.css('ul')[0].attr('class') is None
         assert s.css('h2').attr('class') == []

@@ -54,8 +54,10 @@ class LinkSpider(Spider):
         yield HttpRequest("http://httpbin.org/status/401", callback=self.generator_parse)
         yield HttpRequest("http://httpbin.org/status/402", callback=self.func_prase)
         yield HttpRequest("http://httpbin.org/status/403", callback=self.async_parse)
+        yield HttpRequest("http://httpbin.org/status/404", callback=self.return_list_parse)
+        yield HttpRequest("http://httpbin.org/status/405", callback=self.return_none)
         yield HttpRequest("http://httpbin.org/status/500")
-        yield HttpRequest("http://do.not.exist", errback=self.err_back)
+        yield HttpRequest("http://localhost", errback=self.network_error)
         yield HttpRequest("http://httpbin.org/links/{}".format(self.link_count), dont_filter=True)
 
     def parse(self, response):
@@ -64,9 +66,8 @@ class LinkSpider(Spider):
             yield HttpRequest(urljoin(str(response.url), href))
         yield LinkItem(url=response.request.url)
 
-    def err_back(self, request, err):
-        if request.url == "http://do.not.exist":
-            raise RuntimeError('not an error actually')
+    def network_error(self, request, err):
+        raise RuntimeError('not an error actually')
 
     def generator_parse(self, response):
         if response.status / 100 != 2:
@@ -79,11 +80,17 @@ class LinkSpider(Spider):
     async def async_parse(self, response):
         raise RuntimeError('not an error actually')
 
+    def return_list_parse(self, response):
+        return []
+
+    def return_none(self, response):
+        pass
+
 
 def test_run_link_spider():
     link_data = set()
     link_count = 10
-    run_spider(LinkSpider, downloader_timeout=60, log_level='WARNING', item_pipelines=[LinkPipeline],
+    run_spider(LinkSpider, downloader_timeout=60, log_level='DEBUG', item_pipelines=[LinkPipeline],
                link_data=link_data, link_count=link_count, retry={'max_retry_times': 0})
     assert len(link_data) == link_count
     for i in range(link_count):
