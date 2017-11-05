@@ -10,7 +10,7 @@ class TencentNewsSpider(Spider):
 
     def parse(self, response):
         selector = Selector(response.text)
-        major_news = selector.xpath("//div[@class='item major']//a[@class='linkto']").text
+        major_news = selector.css("div.major a.linkto").text
         self.log("Major news:")
         for i in range(len(major_news)):
             self.log("%s: %s", i + 1, major_news[i])

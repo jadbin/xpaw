@@ -13,15 +13,15 @@ class QuotesSpider(Spider):
 
     def parse(self, response):
         selector = Selector(response.text)
-        for quote in selector.xpath('//div[@class="quote"]'):
-            text = quote.xpath('.//span[@itemprop="text"]')[0].text
-            author = quote.xpath('.//small[@itemprop="author"]')[0].text
-            author_url = quote.xpath('.//span/a/@href')[0].text
+        for quote in selector.css('div.quote'):
+            text = quote.css('span.text')[0].text
+            author = quote.css('small.author')[0].text
+            author_url = quote.css('small+a')[0].attr('href')
             author_url = urljoin(str(response.url), author_url)
-            tags = quote.xpath('.//div[@class="tags"]/a').text
+            tags = quote.css('div.tags a').text
             yield QuotesItem(text=text, tags=tags,
                              author=author, author_url=author_url)
-        next_page = selector.xpath('//li[@class="next"]/a/@href')
+        next_page = selector.css('li.next a')
         if len(next_page) > 0:
-            next_page_url = urljoin(str(response.url), next_page[0].text)
+            next_page_url = urljoin(str(response.url), next_page[0].attr('href'))
             yield HttpRequest(next_page_url, callback=self.parse)

@@ -52,7 +52,7 @@ Spider Example
 
         def parse(self, response):
             selector = Selector(response.text)
-            major_news = selector.xpath("//div[@class='item major']//a[@class='linkto']").text
+            major_news = selector.css("div.major a.linkto").text
             self.log("Major news:")
             for i in range(len(major_news)):
                 self.log("%s: %s", i + 1, major_news[i])
@@ -64,7 +64,7 @@ Spider Example
 在爬虫类中我们定义了一些方法：
 
 - ``start_requests``: 返回爬虫初始请求。
-- ``parse``: 处理请求得到的页面，这里借助 ``Selector`` 及XPath语法提取到了我们所需的数据。
+- ``parse``: 处理请求得到的页面，这里借助 ``Selector`` 及CSS Selector语法提取到了我们所需的数据。
 
 Requirements
 ============

@@ -12,7 +12,7 @@ class CronJobSpider(Spider):
 
     def parse(self, response):
         selector = Selector(response.text)
-        tags = selector.xpath("//div[contains(@class, 'tags-box')]//a").text
+        tags = selector.css("div.tags-box a").text
         self.log("Top ten tags: %s", tags)
 
 

@@ -1,5 +1,7 @@
 .. _tutorial:
 
+.. include:: <isonum.txt>
+
 Tutorial
 ========
 
@@ -97,17 +99,17 @@ Writing our Spider
 
         def parse(self, response):
             selector = Selector(response.text)
-            for quote in selector.xpath('//div[@class="quote"]'):
-                text = quote.xpath('.//span[@itemprop="text"]')[0].text
-                author = quote.xpath('.//small[@itemprop="author"]')[0].text
-                author_url = quote.xpath('.//span/a/@href')[0].text
+            for quote in selector.css('div.quote'):
+                text = quote.css('span.text')[0].text
+                author = quote.css('small.author')[0].text
+                author_url = quote.css('small+a')[0].attr('href')
                 author_url = urljoin(str(response.url), author_url)
-                tags = quote.xpath('.//div[@class="tags"]/a').text
+                tags = quote.css('div.tags a').text
                 yield QuotesItem(text=text, tags=tags,
                                  author=author, author_url=author_url)
-            next_page = selector.xpath('//li[@class="next"]/a/@href')
+            next_page = selector.css('li.next a')
             if len(next_page) > 0:
-                next_page_url = urljoin(str(response.url), next_page[0].text)
+                next_page_url = urljoin(str(response.url), next_page[0].attr('href'))
                 yield HttpRequest(next_page_url, callback=self.parse)
 
 接下来将逐一解释我们的spider都做了那些事情。
@@ -124,33 +126,108 @@ HttpRequest的 ``callback`` 用来指定该request对应的response由哪个函�
     - ``start_requests`` 函数的返回值需为可迭代对象，如tupe, list, generator等。
     - ``callback`` 只能指定为spider自身的成员函数。
 
-Extracting data
-^^^^^^^^^^^^^^^
+Extracting data & links
+^^^^^^^^^^^^^^^^^^^^^^^
 
 xpaw成功获取到response之后，会调用在request中指定的 ``callback`` 函数来处理response；
 如果没有指定则会默认调用spider中名为 "parse" 的函数，这时如果没有定义 "parse" 函数，则会抛出异常。
+spider中处理response的函数的返回值需为可迭代对象，如tupe, list, generator等。
 
-我们之前指定了 ``parse`` 函数来处理response。
-在 ``parse`` 函数中，我们借助xpaw内置的selector和XPath语句来完成数据的提取。
-XPath提供了一套语法来定位XML树状结构中的节点、属性、文本等信息，有关XPath的详细信息可以参考 `XPath Tutorial <https://www.w3schools.com/xml/xpath_intro.asp>`_ 。
+在 ``parse`` 函数中我们需要提取出quote的各项属性和翻页链接。
+通过查看网页的源代码，我们发现每个quote是用类似如下的HTML代码进行描述的：
 
-通过查看网页的源码，我们可以归纳出待提取的数据所在的节点的特征并用XPath语言对其描述，然后借助selector的相关接口来提取我们想要的数据。
+.. code-block:: html
 
-.. note::
+    <div class="quote" itemscope itemtype="http://schema.org/CreativeWork">
+        <span class="text" itemprop="text">“I have not failed.
+        I&#39;ve just found 10,000 ways that won&#39;t work.”</span>
+        <span>by <small class="author" itemprop="author">Thomas A. Edison</small>
+        <a href="/author/Thomas-A-Edison">(about)</a>
+        </span>
+        <div class="tags">
+            Tags:
+            <a class="tag" href="/tag/edison/page/1/">edison</a>
+            <a class="tag" href="/tag/failure/page/1/">failure</a>
+            <a class="tag" href="/tag/inspirational/page/1/">inspirational</a>
+            <a class="tag" href="/tag/paraphrased/page/1/">paraphrased</a>
+        </div>
+    </div>
 
-    spider中处理response的函数的返回值需为可迭代对象，如tupe, list, generator等。
+我们可以发现每个quote都是位于一个class=quote的<div>标签中，以及quote的各项属性 (text, author, author_url, tags) 所在节点的特征:
 
-Extracting links
-^^^^^^^^^^^^^^^^
+- **text** : 位于class=text的<span>标签中
+- **author** : 位于class=author的<small>标签中
+- **author_url** : <small>标签紧邻的<a>标签的href属性
+- **tags** : 所有class=tag的<a>标签中
+
+我们将这些特征用CSS Selector语法对其描述，然后借助xpaw内置的selector来对quote的各项属性进行提取，最后将quote封装成item返回:
+
+.. code-block:: python
+
+    ... (omitted)
+    for quote in selector.css('div.quote'):
+        text = quote.css('span.text')[0].text
+        author = quote.css('small.author')[0].text
+        author_url = quote.css('small+a')[0].attr('href')
+        author_url = urljoin(str(response.url), author_url)
+        tags = quote.css('div.tags a').text
+        yield QuotesItem(text=text, tags=tags,
+                         author=author, author_url=author_url)
+    ...
 
 在 ``parse`` 函数中，我们还需要提取出翻页的链接来告诉xpaw还需要继续爬取哪些网页。
+同样的，通过查看网页原代码，我们看到 "Next |rarr|" 附近的HTML代码:
 
-同样的，通过查看网页的源码，我们可以归纳出"下一页"所在的节点的特征并用XPath语言对其描述，然后借助selector的相关接口提取"下一页"的链接。
-同 ``start_requests`` 一样，我们需要用HttpRequest封装提取的链接，并指定response继续由 ``parse`` 函数来处理。
+.. code-block:: html
+
+    <nav>
+        <ul class="pager">
+            <li class="previous">
+                <a href="/page/1/"><span aria-hidden="true">&larr;</span> Previous</a>
+            </li>
+            <li class="next">
+                <a href="/page/3/">Next <span aria-hidden="true">&rarr;</span></a>
+            </li>
+        </ul>
+    </nav>
+
+
+我们发现翻页 "Next |rarr|" 的对应着class=next的<li>标签中的<a>标签的href属性。
+我们将特征用CSS Selector语法对其描述，然后借助selector的提取链接，同 ``start_requests`` 一样用HttpRequest封装提取的链接，并指定response继续由 ``parse`` 函数来处理:
+
+.. code-block:: python
+
+    ... (omitted)
+    next_page = selector.css('li.next a')
+    if len(next_page) > 0:
+        next_page_url = urljoin(str(response.url), next_page[0].attr('href'))
+        yield HttpRequest(next_page_url, callback=self.parse)
+    ...
+
+有关CSS Selector语法的详细信息可以参考 `CSS Selectors <https://www.w3schools.com/cssref/css_selectors.asp>`_ 。
+
+我们也可以选择用XPath来定位quote的各项属性以及 "next page" 所在的节点：
+
+.. code-block:: python
+
+    ... (omitted)
+    selector = Selector(response.text)
+    for quote in selector.xpath('//div[@class="quote"]'):
+        text = quote.xpath('.//span[@itemprop="text"]')[0].text
+        author = quote.xpath('.//small[@itemprop="author"]')[0].text
+        author_url = quote.xpath('.//span/a/@href')[0].text
+        author_url = urljoin(str(response.url), author_url)
+        tags = quote.xpath('.//div[@class="tags"]/a').text
+        ...
+    next_page = selector.xpath('//li[@class="next"]/a/@href')
+    ...
+
+有关XPath的详细信息可以参考 `XPath Tutorial <https://www.w3schools.com/xml/xpath_intro.asp>`_ 。
 
 .. note::
 
-    在提取链接时我们不需要关注提取出URL是否重复了，xpaw会自动帮我们完成URL去重的工作。
+    - spider中处理response的函数的返回值需为可迭代对象，如tupe, list, generator等。
+    - 在提取链接时我们不需要关注提取出URL是否重复了，xpaw会自动帮我们完成URL去重的工作。
 
 Storing the Scraped Data
 ------------------------
@@ -194,7 +271,7 @@ How to Run our Project
 
 我们将会看到类似这样的日志::
 
-    ...
+    ... (omitted)
     2017-11-02 13:40:46 xpaw.cluster [INFO]: Cluster is running
     2017-11-02 13:40:46 xpaw.cluster [DEBUG]: The request (url=http://quotes.toscrape.com/) has been pulled by coro[0]
     2017-11-02 13:40:46 xpaw.downloader [DEBUG]: HTTP request: GET http://quotes.toscrape.com/
