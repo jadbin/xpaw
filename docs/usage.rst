@@ -1,17 +1,14 @@
 .. _usage:
 
-===========
 Usage Guide
 ===========
 
 Cron Job
-========
+--------
 
 可以使用 ``xpaw.handler.every`` 实现定时任务，每隔设定的时间会重复执行修饰的函数:
 
 .. code-block:: python
-
-    # coding=utf-8
 
     from xpaw import Spider, HttpRequest, Selector
     from xpaw.handler import every
@@ -19,19 +16,14 @@ Cron Job
 
 
     class CronJobSpider(Spider):
-        def __init__(self, config):
-            super().__init__(config)
-
         @every(seconds=10)
         def start_requests(self):
-            yield HttpRequest("http://news.qq.com", callback=self.parse, dont_filter=True)
+            yield HttpRequest("http://quotes.toscrape.com/", callback=self.parse, dont_filter=True)
 
         def parse(self, response):
             selector = Selector(response.text)
-            major_news = selector.xpath("//div[@class='item major']//a[@class='linkto']").text
-            self.log("Major news:")
-            for i in range(len(major_news)):
-                self.log("{}: {}".format(i + 1, major_news[i]))
+            tags = selector.css("div.tags-box a").text
+            self.log("Top ten tags: %s", tags)
 
 
     if __name__ == '__main__':
@@ -45,4 +37,4 @@ Cron Job
 
 - ``seconds`` : 间隔的秒数
 
-``@every`` 只能用于修饰Spider的 ``start_requests`` 成员函数。
+HttpRequest的参数 ``dont_filter=True`` 表示这个request不会经过去重过滤器。

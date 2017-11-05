@@ -6,12 +6,12 @@ from shutil import move, copy2, copystat, ignore_patterns
 from datetime import datetime
 import logging.config
 
-from xpaw.errors import UsageError
-from xpaw.config import Config
-from xpaw.utils import string_camelcase, render_templatefile
-from xpaw.version import __version__
-from xpaw.cluster import LocalCluster
-from xpaw.utils import configure_logging
+from .errors import UsageError
+from .config import Config
+from .utils import string_camelcase, render_templatefile
+from .version import __version__
+from .cluster import LocalCluster
+from .utils import configure_logging
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +87,9 @@ class CrawlCommand(Command):
             print("Error: Cannot find 'setup.cfg' in {}".format(abspath(args.project_dir)))
             return
 
-        configure_logging("xpaw", self.config)
+        configure_logging("xpaw", log_level=self.config.get('log_level'),
+                          log_format=self.config.get('log_format'),
+                          log_dateformat=self.config.get('log_dateformat'))
         cluster = LocalCluster(args.project_dir, self.config)
         cluster.start()
 

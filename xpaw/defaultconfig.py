@@ -10,15 +10,23 @@ log_dateformat = "%Y-%m-%d %H:%M:%S"
 
 templates_dir = abspath(join(dirname(__file__), "templates"))
 
+stats_center_cls = "xpaw.statscenter.StatsCenter"
+
+queue_cls = "xpaw.queue.PriorityQueue"
+
+dupe_filter_cls = "xpaw.dupefilter.SetDupeFilter"
+
 downloader_clients = 100
 downloader_timeout = 20
-
-queue_cls = "xpaw.queue.RequestDequeue"
-
-dupefilter_cls = "xpaw.dupefilter.SetDupeFilter"
+downloader_verify_ssl = True
+downloader_cookie_jar_enabled = False
 
 downloader_middlewares = [
     "xpaw.downloadermws.RetryMiddleware"
 ]
 
 spider_middlewares = []
+
+item_pipelines = []
+
+extensions = []

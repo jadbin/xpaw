@@ -30,15 +30,16 @@ def main():
     if sys.version_info < (3, 5):
         raise RuntimeError("Python 3.5+ is required")
     install_requires = [
-        "aiohttp>=2.0.1",
-        "lxml"
+        "aiohttp>=2.3.2",
+        "lxml>=4.1.0",
+        "cssselect>=1.0.1"
     ]
     tests_requires = install_requires + ["pytest", "pytest-aiohttp"]
     setup(
         name="xpaw",
         version=read_version(),
         url="https://github.com/jadbin/xpaw",
-        description="A web scraping framework",
+        description="Async web scraping framework",
         long_description=long_description,
         author="jadbin",
         author_email="jadbin.com@hotmail.com",
@@ -58,6 +59,7 @@ def main():
             "Programming Language :: Python",
             "Programming Language :: Python :: 3",
             "Programming Language :: Python :: 3.5",
+            "Programming Language :: Python :: 3.6",
             "Topic :: Internet :: WWW/HTTP",
             "Topic :: Software Development :: Libraries :: Application Frameworks"
         ],

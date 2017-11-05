@@ -2,32 +2,24 @@
 
 import logging
 
-from xpaw.utils import request_fingerprint
+from .utils import request_fingerprint
 
 log = logging.getLogger(__name__)
 
 
-class Dupefilter:
-    def is_duplicated(self, request):
-        raise NotImplementedError
-
-    def open(self):
-        pass
-
-    def close(self):
-        pass
-
-
-class SetDupeFilter(Dupefilter):
+class SetDupeFilter:
     def __init__(self):
-        self.hash = set()
+        self._hash = set()
 
-    def is_duplicated(self, request):
+    async def is_duplicated(self, request):
         if request.dont_filter:
             return False
         h = request_fingerprint(request)
-        if h in self.hash:
-            log.debug("Find the request (method={}, url={}) is duplicated".format(request.method, request.url))
+        if h in self._hash:
+            log.debug("Find the request (method=%s, url=%s) is duplicated", request.method, request.url)
             return True
-        self.hash.add(h)
+        self._hash.add(h)
         return False
+
+    def clear(self):
+        self._hash.clear()

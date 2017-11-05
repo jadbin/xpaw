@@ -3,11 +3,21 @@
 import os
 import re
 import cgi
+import sys
 import hashlib
 import logging
 from importlib import import_module
-from pkgutil import iter_modules
 import string
+from urllib.parse import urlsplit
+from asyncio import CancelledError
+import inspect
+
+from yarl import URL
+from multidict import MultiDict
+from aiohttp.helpers import BasicAuth
+
+PY35 = sys.version_info >= (3, 5)
+PY36 = sys.version_info >= (3, 6)
 
 
 def load_object(path):
@@ -19,27 +29,12 @@ def load_object(path):
     return path
 
 
-def walk_modules(path):
-    mods = []
-    mod = import_module(path)
-    mods.append(mod)
-    if hasattr(mod, "__path__"):
-        for _, subpath, ispkg in iter_modules(mod.__path__):
-            fullpath = path + "." + subpath
-            if ispkg:
-                mods += walk_modules(fullpath)
-            else:
-                submod = import_module(fullpath)
-                mods.append(submod)
-    return mods
-
-
-def configure_logging(name, config):
+def configure_logging(name, log_level=None, log_format=None, log_dateformat=None):
     logger = logging.getLogger(name)
-    logger.setLevel(config["log_level"])
+    logger.setLevel(log_level)
     log_stream_handler = logging.StreamHandler()
-    log_stream_handler.setLevel(config["log_level"])
-    log_formatter = logging.Formatter(config["log_format"], config["log_dateformat"])
+    log_stream_handler.setLevel(log_level)
+    log_formatter = logging.Formatter(log_format, log_dateformat)
     log_stream_handler.setFormatter(log_formatter)
     logger.addHandler(log_stream_handler)
 
@@ -74,7 +69,18 @@ def get_encoding_from_content(content):
 def request_fingerprint(request):
     sha1 = hashlib.sha1()
     sha1.update(to_types(request.method))
-    sha1.update(to_types(str(request.url)))
+    if isinstance(request.url, str):
+        url = URL(request.url)
+    else:
+        url = request.url
+    queries = []
+    for k, v in url.query.items():
+        queries.append('{}={}'.format(k, v))
+    if request.params:
+        for k, v in request.params.items():
+            queries.append('{}={}'.format(k, v))
+    queries.sort()
+    sha1.update(to_types('{}://{}{}?{}'.format(url.scheme, url.host, url.path, '&'.join(queries))))
     sha1.update(request.body or b'')
     return sha1.hexdigest()
 
@@ -105,3 +111,64 @@ _camelcase_invalid_chars = re.compile('[^a-zA-Z\d]')
 
 def string_camelcase(s):
     return _camelcase_invalid_chars.sub('', s.title())
+
+
+class AsyncGenWrapper:
+    def __init__(self, gen, errback=None):
+        if hasattr(gen, "__next__"):
+            self.iter = gen
+        else:
+            self.iter = iter(gen)
+        self.errback = errback
+
+    async def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            return next(self.iter)
+        except StopIteration:
+            raise StopAsyncIteration
+        except CancelledError:
+            raise
+        except Exception as e:
+            if self.errback:
+                r = self.errback(e)
+                if inspect.iscoroutine(r):
+                    r = await r
+                return r
+            raise
+
+
+def cmp(a, b):
+    return (a > b) - (a < b)
+
+
+def parse_params(params):
+    if isinstance(params, dict):
+        res = MultiDict()
+        for k, v in params.items():
+            if isinstance(v, (tuple, list)):
+                for i in v:
+                    res.add(k, i)
+            else:
+                res.add(k, v)
+        params = res
+    return params
+
+
+def parse_auth(auth):
+    if isinstance(auth, (tuple, list)):
+        auth = BasicAuth(*auth)
+    elif isinstance(auth, str):
+        auth = BasicAuth(*auth.split(':', 1))
+    return auth
+
+
+def parse_url(url):
+    if isinstance(url, str):
+        res = urlsplit(url)
+        if res.scheme == '':
+            url = 'http://{}'.format(url)
+        url = URL(url)
+    return url

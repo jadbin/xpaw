@@ -3,9 +3,9 @@
 import sys
 import argparse
 
-from xpaw.errors import UsageError
-from xpaw import commands
-from xpaw.commands import Command
+from .errors import UsageError
+from . import commands
+from .commands import Command
 
 
 def _iter_command_classes():
@@ -55,9 +55,9 @@ def main(argv=None):
     parser.usage = "xpaw {} {}".format(cmdname, cmd.syntax)
     parser.description = cmd.long_desc
     cmd.add_arguments(parser)
-    args = parser.parse_args(args=argv[1:])
-    cmd.process_arguments(args)
     try:
+        args = parser.parse_args(args=argv[1:])
+        cmd.process_arguments(args)
         cmd.run(args)
     except UsageError as e:
         if str(e):

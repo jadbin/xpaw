@@ -19,6 +19,12 @@ class ResponseNotMatch(Exception):
     """
 
 
+class IgnoreItem(Exception):
+    """
+    Ignore this item.
+    """
+
+
 class UsageError(Exception):
     """
     CLI usage error.
