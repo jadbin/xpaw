@@ -35,6 +35,7 @@ Update
 - RequestHeadersMiddleware更改为DefaultHeadersMiddleware，配置字段 ``request_headers`` 更改为 ``default_headers``，功能由覆盖headers变为设置默认的headers
 - MaxDepthMiddleware更改为DepthMiddleware，配置字段 ``max_depth`` 更改为 ``request_depth``，功能变为记录request的depth并对max depth加以限制
 - 修改了ProxyMiddleware和ProxyAgentMiddleware的配置方式
+- 重写了SpeedLimitMiddleware，通过 ``rate`` (采集速率) 和 ``burst`` (最大并发数) 来限制采集速率
 - 更新了 ``request_fingerprint`` 的计算方式
 - 修改aiohttp的版本限制为>=2.3.2
 

@@ -267,7 +267,7 @@ How to Run our Project
 
     $ xpaw crawl ./ -l DEBUG
 
-其中``crawl`` 的参数为工程的根目录的路径， ``-l DEBUG`` 设定了日志的级别为DEBUG。
+其中 ``crawl`` 的参数为工程的根目录的路径， ``-l DEBUG`` 设定了日志的级别为DEBUG。
 
 我们将会看到类似这样的日志::
 

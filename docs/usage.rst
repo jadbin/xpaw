@@ -37,4 +37,4 @@ Cron Job
 
 - ``seconds`` : 间隔的秒数
 
-``@every`` 只能用于修饰Spider的 ``start_requests`` 成员函数。
+HttpRequest的参数 ``dont_filter=True`` 表示这个request不会经过去重过滤器。
