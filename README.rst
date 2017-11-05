@@ -59,6 +59,8 @@ Requirements
 - Python >= 3.5
 - `aiohttp`_
 - `lxml`_
+- `cssselect`_
 
 .. _aiohttp: https://pypi.python.org/pypi/aiohttp
 .. _lxml: https://pypi.python.org/pypi/lxml
+.. _cssselect: https://pypi.python.org/pypi/cssselect
