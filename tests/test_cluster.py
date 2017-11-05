@@ -11,6 +11,7 @@ from xpaw.run import run_spider
 from xpaw.handler import every
 from xpaw.item import Item, Field
 from xpaw.errors import IgnoreItem
+from xpaw.spidermws import DepthMiddleware
 
 
 class LinkItem(Item):
@@ -90,8 +91,9 @@ class LinkSpider(Spider):
 def test_run_link_spider():
     link_data = set()
     link_count = 10
-    run_spider(LinkSpider, downloader_timeout=60, log_level='DEBUG', item_pipelines=[LinkPipeline],
-               link_data=link_data, link_count=link_count, retry={'max_retry_times': 0})
+    run_spider(LinkSpider, downloader_timeout=60, log_level='WARNING', item_pipelines=[LinkPipeline],
+               link_data=link_data, link_count=link_count, retry={'max_retry_times': 0},
+               spider_middlewares=DepthMiddleware)
     assert len(link_data) == link_count
     for i in range(link_count):
         assert "http://httpbin.org/links/{}/{}".format(link_count, i) in link_data
