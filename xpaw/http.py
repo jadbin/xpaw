@@ -50,17 +50,17 @@ class HttpResponse:
         Construct an HTTP response.
         """
         self.url = url
-        self.status = status
+        self.status = int(status)
         self.body = body
-        self.headers = headers
-        self.cookies = cookies
+        self.headers = headers or {}
+        self.cookies = cookies or {}
         self.request = request
 
     @property
     def encoding(self):
         if hasattr(self, "_encoding"):
             return self._encoding
-        encoding = get_encoding_from_header(self.headers.get("content-type"))
+        encoding = get_encoding_from_header(self.headers.get("Content-Type"))
         if not encoding and self.body:
             encoding = get_encoding_from_content(self.body)
         self._encoding = encoding or "utf-8"

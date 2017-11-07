@@ -40,9 +40,10 @@ def configure_logging(name, log_level=None, log_format=None, log_dateformat=None
 
 
 def get_encoding_from_header(content_type):
-    content_type, params = cgi.parse_header(content_type)
-    if "charset" in params:
-        return params["charset"]
+    if content_type:
+        content_type, params = cgi.parse_header(content_type)
+        if "charset" in params:
+            return params["charset"]
 
 
 _charset_flag = re.compile(r"""<meta.*?charset=["']*(.+?)["'>]""", flags=re.I)
