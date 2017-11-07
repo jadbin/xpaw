@@ -74,7 +74,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 mw_list = [mw_list]
         else:
             mw_list = []
-        log.info("Spider middlewares: %s", mw_list)
         return mw_list
 
     async def parse(self, spider, response):

@@ -40,12 +40,15 @@ class LocalCluster:
                                      cookie_jar_enabled=self.config.getbool("downloader_cookie_jar_enabled"),
                                      loop=self.loop)
         self.spider = self._new_object_from_cluster(self.config.get("spider"), self)
-        log.info("Spider: %s", ".".join((type(self.spider).__module__,
-                                         type(self.spider).__name__)))
+        log.info("Spider: %s", type(self.spider).__name__)
         self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
+        log.info("Downloader middlewares: %s", ', '.join([type(i).__name__ for i in self.downloadermw.objects]))
         self.spidermw = SpiderMiddlewareManager.from_cluster(self)
+        log.info("Spider middlewares: %s", ', '.join([type(i).__name__ for i in self.spidermw.objects]))
         self.item_pipline = ItemPipelineManager.from_cluster(self)
+        log.info("Item pipelines: %s", ', '.join([type(i).__name__ for i in self.item_pipline.objects]))
         self.extensions = ExtensionManager.from_cluster(self)
+        log.info("Extensions: %s", ', '.join([type(i).__name__ for i in self.extensions.objects]))
         self._last_request = None
         self._job_futures = None
         self._job_futures_done = set()

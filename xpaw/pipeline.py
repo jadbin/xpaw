@@ -21,7 +21,6 @@ class ItemPipelineManager(MiddlewareManager):
                 mw_list = [mw_list]
         else:
             mw_list = []
-        log.info("Item pipelines: %s", mw_list)
         return mw_list
 
     def _add_middleware(self, middleware):

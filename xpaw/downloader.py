@@ -83,7 +83,6 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 mw_list = [mw_list]
         else:
             mw_list = []
-        log.info("Downloader middlewares: %s", mw_list)
         return mw_list
 
     async def download(self, downloader, request):
