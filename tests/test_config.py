@@ -104,6 +104,7 @@ class TestBaseConfig:
         assert config.getlist('single') == [1]
         assert config.getlist('list_str') == ['1', '2']
         assert config.getlist('list', [1]) == [1, 2]
+        assert config.getlist('no_such_list') is None
         assert config.getlist('no_such_list', [1]) == [1]
 
     def test_get_priority(self):

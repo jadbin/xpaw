@@ -78,7 +78,9 @@ class BaseConfig(MutableMapping):
         return None
 
     def getlist(self, name, default=None):
-        v = self.get(name, default or [])
+        v = self.get(name, default)
+        if v is None:
+            return None
         if isinstance(v, str):
             v = v.split(",")
         elif not hasattr(v, "__iter__"):
