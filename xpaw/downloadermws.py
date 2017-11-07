@@ -160,8 +160,10 @@ class ProxyMiddleware:
             scheme = p.get('scheme')
         if addr:
             if scheme:
-                if scheme in self._proxies:
-                    self._proxies[scheme].append((addr, auth))
+                schemes = scheme.split(',')
+                for s in schemes:
+                    if s in self._proxies:
+                        self._proxies[s].append((addr, auth))
             else:
                 self._proxies['http'].append((addr, auth))
                 self._proxies['https'].append((addr, auth))

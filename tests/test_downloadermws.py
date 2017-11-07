@@ -46,7 +46,8 @@ def make_another_proxy_list():
 def make_detail_proxy_list():
     return [{'addr': '127.0.0.1:3128'},
             {'addr': '127.0.0.2:3128', 'scheme': 'http'},
-            {'addr': '127.0.0.3:3128', 'scheme': 'https', 'auth': 'root:123456'}]
+            {'addr': '127.0.0.3:3128', 'scheme': 'https', 'auth': 'root:123456'},
+            {'addr': '127.0.0.4:3128', 'scheme': 'http,https'}]
 
 
 async def make_proxy_agent(test_server):
@@ -94,8 +95,11 @@ class TestProxyMiddleware:
         reqs = [HttpRequest('http://httpbin.org'),
                 HttpRequest('https://httpbin.org'),
                 HttpRequest('https://httpbin.org'),
+                HttpRequest('https://httpbin.org'),
+                HttpRequest('http://httpbin.org'),
                 HttpRequest('http://httpbin.org')]
-        target_list = ['127.0.0.1:3128', '127.0.0.3:3128', '127.0.0.1:3128', '127.0.0.2:3128']
+        target_list = ['127.0.0.1:3128', '127.0.0.3:3128', '127.0.0.4:3128',
+                       '127.0.0.1:3128', '127.0.0.2:3128', '127.0.0.4:3128']
         for i in range(len(reqs)):
             await mw.handle_request(reqs[i])
             assert reqs[i].proxy == target_list[i]
@@ -129,8 +133,11 @@ class TestProxyMiddleware:
         reqs = [HttpRequest('http://httpbin.org'),
                 HttpRequest('https://httpbin.org'),
                 HttpRequest('https://httpbin.org'),
+                HttpRequest('https://httpbin.org'),
+                HttpRequest('http://httpbin.org'),
                 HttpRequest('http://httpbin.org')]
-        target_list = ['127.0.0.1:3128', '127.0.0.3:3128', '127.0.0.1:3128', '127.0.0.2:3128']
+        target_list = ['127.0.0.1:3128', '127.0.0.3:3128', '127.0.0.4:3128',
+                       '127.0.0.1:3128', '127.0.0.2:3128', '127.0.0.4:3128']
         for i in range(len(reqs)):
             await mw.handle_request(reqs[i])
             assert reqs[i].proxy == target_list[i]
