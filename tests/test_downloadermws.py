@@ -1,14 +1,13 @@
 # coding=utf-8
 
+import re
 import pytest
 from aiohttp import web
-import asyncio
-import aiohttp
 
 from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
-from xpaw.errors import IgnoreRequest, ResponseNotMatch
+from xpaw.errors import IgnoreRequest, NetworkError
 
 
 class Cluster:
@@ -17,12 +16,13 @@ class Cluster:
         self.config = Config(kwargs)
 
 
-class TestForwardedForMiddleware:
+class TestImitatingProxyMiddleware:
     async def test_handle_request(self):
-        mw = ForwardedForMiddleware()
+        mw = ImitatingProxyMiddleware()
         req = HttpRequest("http://httpbin.org")
         await mw.handle_request(req)
         assert re.search(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", req.headers["X-Forwarded-For"])
+        assert req.headers['Via'] == '1.1 xpaw'
 
 
 class TestDefaultHeadersMiddleware:
@@ -76,17 +76,21 @@ class TestProxyMiddleware:
     async def test_handle_request(self, monkeypatch):
         monkeypatch.setattr(random, 'randint', Random().randint)
         proxy_list = make_proxy_list()
-        mw = ProxyMiddleware.from_cluster(Cluster(request_proxy=proxy_list))
+        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list))
         target_list = proxy_list * 2
         req = HttpRequest("http://httpbin.org")
         for i in range(len(target_list)):
             await mw.handle_request(req)
             assert req.proxy == target_list[i]
 
+        req2 = HttpRequest('ftp://httpbin.org')
+        await mw.handle_request(req2)
+        assert req2.proxy is None
+
     async def test_handle_request2(self, monkeypatch):
         monkeypatch.setattr(random, 'randint', Random().randint)
         proxy_list = make_detail_proxy_list()
-        mw = ProxyMiddleware.from_cluster(Cluster(request_proxy=proxy_list))
+        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list))
         reqs = [HttpRequest('http://httpbin.org'),
                 HttpRequest('https://httpbin.org'),
                 HttpRequest('https://httpbin.org'),
@@ -96,13 +100,11 @@ class TestProxyMiddleware:
             await mw.handle_request(reqs[i])
             assert reqs[i].proxy == target_list[i]
 
-
-class TestProxyAgentMiddleware:
-    async def test_handle_request(self, monkeypatch, test_server, loop):
+    async def test_handle_request_with_agent(self, monkeypatch, test_server, loop):
         monkeypatch.setattr(random, 'randint', Random().randint)
         server = await make_proxy_agent(test_server)
-        mw = ProxyAgentMiddleware.from_cluster(
-            Cluster(proxy_agent={"agent_addr": "http://{}:{}".format(server.host, server.port)},
+        mw = ProxyMiddleware.from_cluster(
+            Cluster(proxy_agent="http://{}:{}".format(server.host, server.port),
                     loop=loop))
         mw.open()
         req = HttpRequest("http://httpbin.org")
@@ -110,14 +112,18 @@ class TestProxyAgentMiddleware:
         for i in range(len(target_list)):
             await mw.handle_request(req)
             assert req.proxy == target_list[i]
+
+        req2 = HttpRequest('ftp://httpbin.org')
+        await mw.handle_request(req2)
+        assert req2.proxy is None
         mw.close()
 
-    async def test_handle_request2(self, monkeypatch, test_server, loop):
+    async def test_handle_request_with_agent2(self, monkeypatch, test_server, loop):
         monkeypatch.setattr(random, 'randint', Random().randint)
         server = await make_proxy_agent(test_server)
         server.proxy_list = make_detail_proxy_list()
-        mw = ProxyAgentMiddleware.from_cluster(
-            Cluster(proxy_agent={"agent_addr": "http://{}:{}".format(server.host, server.port)},
+        mw = ProxyMiddleware.from_cluster(
+            Cluster(proxy_agent="http://{}:{}".format(server.host, server.port),
                     loop=loop))
         mw.open()
         reqs = [HttpRequest('http://httpbin.org'),
@@ -133,10 +139,10 @@ class TestProxyAgentMiddleware:
     async def test_update_proxy_list(self, monkeypatch, test_server, loop):
         monkeypatch.setattr(random, 'randint', Random().randint)
         server = await make_proxy_agent(test_server)
-        mw = ProxyAgentMiddleware.from_cluster(
-            Cluster(proxy_agent={"agent_addr": "http://{}:{}".format(server.host, server.port),
-                                 "update_interval": 0.05},
+        mw = ProxyMiddleware.from_cluster(
+            Cluster(proxy_agent="http://{}:{}".format(server.host, server.port),
                     loop=loop))
+        monkeypatch.setattr(ProxyMiddleware, 'UPDATE_INTERVAL', 0.05)
         mw.open()
         await asyncio.sleep(0.1, loop=loop)
         req = HttpRequest("http://httpbin.org")
@@ -152,50 +158,54 @@ class TestProxyAgentMiddleware:
             assert req.proxy == target_list[i]
         mw.close()
 
+    async def test_no_config(self, loop):
+        mw = ProxyMiddleware.from_cluster(Cluster(loop=loop))
+        assert hasattr(mw, 'disabled') and mw.disabled is True
+
 
 class TestRetryMiddleware:
-    async def test_handle_reponse(self, monkeypatch, loop):
-        class ErrorFlag(Exception):
-            pass
-
-        def _retry(request, reason):
-            assert isinstance(request, HttpRequest) and isinstance(reason, str)
-            raise ErrorFlag
-
-        mw = RetryMiddleware.from_cluster(Cluster(loop=loop))
-        monkeypatch.setattr(mw, "retry", _retry)
+    async def test_handle_reponse(self, loop):
+        mw = RetryMiddleware.from_cluster(Cluster(retry_http_status=(500,),
+                                                  loop=loop))
         req = HttpRequest("http://httpbin.org")
-        resp = HttpResponse(URL("http://httpbin.org"), 400)
-        await mw.handle_response(req, resp)
-        with pytest.raises(ErrorFlag):
-            resp = HttpResponse(URL("http://httpbin.org"), 503)
-            await mw.handle_response(req, resp)
+        resp = HttpResponse(URL("http://httpbin.org"), 502)
+        assert await mw.handle_response(req, resp) is None
+        req2 = HttpRequest("http://httpbin.org")
+        resp2 = HttpResponse(URL("http://httpbin.org"), 500)
+        retry_req2 = await mw.handle_response(req2, resp2)
+        assert retry_req2.meta['retry_times'] == 1
+        assert str(retry_req2.url) == str(req2.url)
+        req3 = HttpRequest("http://httpbin.org")
+        resp3 = HttpResponse(URL("http://httpbin.org"), 500)
+        req3.meta['retry_times'] = 2
+        retry_req3 = await mw.handle_response(req3, resp3)
+        assert retry_req3.meta['retry_times'] == 3
+        assert str(retry_req3.url) == str(req3.url)
+        req4 = HttpRequest("http://httpbin.org")
+        req4.meta['retry_times'] = 3
+        resp4 = HttpResponse(URL("http://httpbin.org"), 500)
+        with pytest.raises(IgnoreRequest):
+            await mw.handle_response(req4, resp4)
 
-    async def test_handle_error(self, loop, monkeypatch):
-        class ErrorFlag(Exception):
-            pass
-
-        def _retry(request, reason):
-            assert isinstance(request, HttpRequest) and isinstance(reason, str)
-            raise ErrorFlag
-
+    async def test_handle_error(self, loop):
         mw = RetryMiddleware.from_cluster(Cluster(loop=loop))
-        monkeypatch.setattr(mw, "retry", _retry)
         req = HttpRequest("http://httpbin.org")
         err = ValueError()
-        await mw.handle_error(req, err)
-        with pytest.raises(ErrorFlag):
-            err = ResponseNotMatch()
-            await mw.handle_error(req, err)
+        assert await mw.handle_error(req, err) is None
+        err2 = NetworkError()
+        retry_req2 = await mw.handle_error(req, err2)
+        assert isinstance(retry_req2, HttpRequest) and str(retry_req2.url) == str(req.url)
 
     async def test_retry(self, loop):
         max_retry_times = 2
-        mw = RetryMiddleware.from_cluster(Cluster(retry={"max_retry_times": max_retry_times},
+        mw = RetryMiddleware.from_cluster(Cluster(max_retry_times=max_retry_times,
+                                                  retry_http_status=(500,),
                                                   loop=loop))
         req = HttpRequest("http://httpbin.org")
         for i in range(max_retry_times):
-            req = mw.retry(req, "")
-            assert isinstance(req, HttpRequest)
+            retry_req = mw.retry(req, "")
+            assert isinstance(retry_req, HttpRequest) and str(retry_req.url) == str(req.url)
+            req = retry_req
         with pytest.raises(IgnoreRequest):
             mw.retry(req, "")
 
@@ -209,22 +219,6 @@ class TestRetryMiddleware:
         assert RetryMiddleware.match_status("~20X", 200) is False
         assert RetryMiddleware.match_status("!20x", 400) is True
         assert RetryMiddleware.match_status("0200", 200) is False
-
-
-class TestResponseMatchMiddleware:
-    async def test_handle_response(self, loop):
-        req_baidu = HttpRequest("http://www.baidu.com")
-        req_qq = HttpRequest("http://www.qq.com")
-        resp_baidu = HttpResponse(URL("http://www.baidu.com"), 200, body="<title>百度一下，你就知道</title>".encode("utf-8"))
-        resp_qq = HttpResponse(URL("http://www.qq.com"), 200, body="<title>腾讯QQ</title>".encode("utf-8"))
-        mw = ResponseMatchMiddleware.from_cluster(Cluster(response_match=[{"url_pattern": "baidu\\.com",
-                                                                           "body_pattern": "百度",
-                                                                           "encoding": "utf-8"}],
-                                                          loop=loop))
-        await mw.handle_response(req_baidu, resp_baidu)
-        with pytest.raises(ResponseNotMatch):
-            await mw.handle_response(req_baidu, resp_qq)
-        await mw.handle_response(req_qq, resp_qq)
 
 
 class TestSpeedLimitMiddleware:

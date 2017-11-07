@@ -13,7 +13,7 @@ project_description = ''
 downloader_middlewares = [
     # 'xpaw.downloadermws.ProxyAgentMiddleware',
     'xpaw.downloadermws.DefaultHeadersMiddleware',
-    'xpaw.downloadermws.ForwardedForMiddleware',
+    'xpaw.downloadermws.ImitatingProxyMiddleware',
     'xpaw.downloadermws.RetryMiddleware'
 ]
 

@@ -12,7 +12,10 @@ class MiddlewareManager:
     def __init__(self, *middlewares):
         self._open_handlers = []
         self._close_handlers = []
+        self.objects = []
         for middleware in middlewares:
+            if hasattr(middleware, 'disabled') and middleware.disabled:
+                continue
             self._add_middleware(middleware)
 
     @classmethod
@@ -36,6 +39,7 @@ class MiddlewareManager:
         return mwm
 
     def _add_middleware(self, middleware):
+        self.objects.append(middleware)
         if hasattr(middleware, "open"):
             self._open_handlers.append(middleware.open)
         if hasattr(middleware, "close"):

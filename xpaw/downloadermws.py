@@ -1,6 +1,5 @@
 # coding=utf-8
 
-import re
 import json
 import random
 import logging
@@ -10,26 +9,32 @@ from asyncio import CancelledError
 import aiohttp
 from yarl import URL
 
-from .errors import ResponseNotMatch, IgnoreRequest, NetworkError
+from .errors import IgnoreRequest, NetworkError
 from .utils import parse_url
 
 log = logging.getLogger(__name__)
 
 
 class RetryMiddleware:
-    RETRY_ERRORS = (NetworkError, ResponseNotMatch)
-    RETRY_HTTP_STATUS = (500, 502, 503, 504, 408)
+    MAX_RETRY_TIMES = 3
+    RETRY_ERRORS = (NetworkError,)
+    RETRY_HTTP_STATUS = (500, 502, 503, 504, 408, 429)
 
-    def __init__(self, max_retry_times=3, http_status=RETRY_HTTP_STATUS):
-        self._max_retry_times = max_retry_times
-        self._http_status = http_status
+    def __init__(self, max_retry_times=None, retry_http_status=None):
+        if max_retry_times is None:
+            self._max_retry_times = self.MAX_RETRY_TIMES
+        else:
+            self._max_retry_times = max_retry_times
+        if retry_http_status is None:
+            self._http_status = self.RETRY_HTTP_STATUS
+        else:
+            self._http_status = retry_http_status
 
     @classmethod
     def from_cluster(cls, cluster):
-        c = cluster.config.get("retry")
-        if c is None:
-            c = {}
-        return cls(**c)
+        config = cluster.config
+        return cls(max_retry_times=config.getint('max_retry_times'),
+                   retry_http_status=config.getlist('retry_http_status'))
 
     async def handle_response(self, request, response):
         for p in self._http_status:
@@ -78,49 +83,8 @@ class RetryMiddleware:
             raise IgnoreRequest
 
 
-class ResponseMatchMiddleware:
-    def __init__(self, patterns):
-        self._patterns = patterns
-
-    @classmethod
-    def from_cluster(cls, cluster):
-        c = cluster.config.getlist("response_match")
-        return cls([_ResponseMatchPattern(i.get("url_pattern"),
-                                          i.get("body_pattern"),
-                                          i.get("encoding"))
-                    for i in c])
-
-    async def handle_response(self, request, response):
-        for p in self._patterns:
-            if p.not_match(request, response):
-                raise ResponseNotMatch("Response body does not fit the pattern")
-
-
-class _ResponseMatchPattern:
-    def __init__(self, url_pattern, body_pattern, encoding):
-        if not url_pattern:
-            raise ValueError("url pattern is none")
-        if not body_pattern:
-            raise ValueError("body pattern is none")
-        self._url_pattern = re.compile(url_pattern)
-        self._body_pattern = re.compile(body_pattern)
-        self._encoding = encoding
-
-    def not_match(self, request, response):
-        req_url = str(request.url)
-        if response.body:
-            if self._url_pattern.search(req_url):
-                if self._encoding:
-                    text = response.body.decode(self._encoding, errors="replace")
-                else:
-                    text = response.text
-                if not self._body_pattern.search(text):
-                    return True
-        return False
-
-
 class DefaultHeadersMiddleware:
-    def __init__(self, headers):
+    def __init__(self, headers=None):
         self._headers = headers or {}
 
     @classmethod
@@ -132,72 +96,37 @@ class DefaultHeadersMiddleware:
             request.headers.setdefault(h, self._headers[h])
 
 
-class ForwardedForMiddleware:
+class ImitatingProxyMiddleware:
     async def handle_request(self, request):
-        x = "61.%s.%s.%s" % (random.randint(128, 191), random.randint(0, 255), random.randint(1, 254))
-        request.headers["X-Forwarded-For"] = x
+        ip = "61.%s.%s.%s" % (random.randint(128, 191), random.randint(0, 255), random.randint(1, 254))
+        request.headers['X-Forwarded-For'] = ip
+        request.headers['Via'] = '1.1 xpaw'
 
 
 class ProxyMiddleware:
-    def __init__(self, request_proxy=None):
+    UPDATE_INTERVAL = 60
+    TIMEOUT = 20
+
+    def __init__(self, proxy=None, proxy_agent=None, loop=None):
         self._proxies = {'http': [], 'https': []}
-        if request_proxy:
-            for p in request_proxy:
-                addr, auth, scheme = None, None, None
-                if isinstance(p, str):
-                    addr = p
-                elif isinstance(p, dict):
-                    addr = p.get('addr')
-                    auth = p.get('auth')
-                    scheme = p.get('scheme')
-                if addr:
-                    if scheme:
-                        if scheme in self._proxies:
-                            self._proxies[scheme].append((addr, auth))
-                    else:
-                        self._proxies['http'].append((addr, auth))
-                        self._proxies['https'].append((addr, auth))
-
-    @classmethod
-    def from_cluster(cls, cluster):
-        c = cluster.config.getlist("request_proxy")
-        return cls(c)
-
-    async def handle_request(self, request):
-        if isinstance(request.url, str):
-            url = URL(request.url)
-        else:
-            url = request.url
-        proxy = self._get_proxy(url.scheme)
         if proxy:
-            addr, auth = proxy
-            request.proxy = addr
-            request.proxy_auth = auth
-
-    def _get_proxy(self, scheme):
-        if scheme not in self._proxies:
-            return
-        n = len(self._proxies[scheme])
-        if n > 0:
-            return self._proxies[scheme][random.randint(0, n - 1)]
-
-
-class ProxyAgentMiddleware:
-    def __init__(self, agent_addr, *, update_interval=60, timeout=20, loop=None):
-        self._agent_addr = parse_url(agent_addr)
-        self._update_interval = update_interval
-        self._timeout = timeout
+            for p in proxy:
+                self._append_proxy(p)
+        self._agent_addr = parse_url(proxy_agent)
         self._loop = loop or asyncio.get_event_loop()
-        self._proxies = {'http': [], 'https': []}
         self._update_lock = asyncio.Lock(loop=self._loop)
         self._update_future = None
+        self.disabled = False
 
     @classmethod
     def from_cluster(cls, cluster):
-        c = cluster.config.get("proxy_agent")
-        if c is None:
-            c = {}
-        return cls(**c, loop=cluster.loop)
+        config = cluster.config
+        proxy = config.getlist('proxy')
+        proxy_agent = config.get('proxy_agent')
+        mw = cls(proxy=proxy, proxy_agent=proxy_agent, loop=cluster.loop)
+        if not proxy and not proxy_agent:
+            mw.disabled = True
+        return mw
 
     async def handle_request(self, request):
         if isinstance(request.url, str):
@@ -213,19 +142,34 @@ class ProxyAgentMiddleware:
     async def get_proxy(self, scheme):
         if scheme not in self._proxies:
             return
-        while True:
+        if self._agent_addr:
             async with self._update_lock:
                 if len(self._proxies[scheme]) <= 0:
-                    await self.update_proxy_list()
-                if len(self._proxies[scheme]) > 0:
-                    break
-            await asyncio.sleep(self._timeout, loop=self._loop)
-        return self._proxies[scheme][random.randint(0, len(self._proxies[scheme]) - 1)]
+                    await self._update_proxy_list()
+        n = len(self._proxies[scheme])
+        if n > 0:
+            return self._proxies[scheme][random.randint(0, n - 1)]
 
-    async def update_proxy_list(self):
+    def _append_proxy(self, p):
+        addr, auth, scheme = None, None, None
+        if isinstance(p, str):
+            addr = p
+        elif isinstance(p, dict):
+            addr = p.get('addr')
+            auth = p.get('auth')
+            scheme = p.get('scheme')
+        if addr:
+            if scheme:
+                if scheme in self._proxies:
+                    self._proxies[scheme].append((addr, auth))
+            else:
+                self._proxies['http'].append((addr, auth))
+                self._proxies['https'].append((addr, auth))
+
+    async def _update_proxy_list(self):
         try:
             async with aiohttp.ClientSession(loop=self._loop) as session:
-                with aiohttp.Timeout(self._timeout, loop=self._loop):
+                with aiohttp.Timeout(self.TIMEOUT, loop=self._loop):
                     async with session.get(self._agent_addr) as resp:
                         body = await resp.read()
                         proxy_list = json.loads(body.decode(encoding="utf-8"))
@@ -233,20 +177,8 @@ class ProxyAgentMiddleware:
                             for k in self._proxies:
                                 self._proxies[k].clear()
                             for p in proxy_list:
-                                addr, auth, scheme = None, None, None
-                                if isinstance(p, str):
-                                    addr = p
-                                elif isinstance(p, dict):
-                                    addr = p.get('addr')
-                                    auth = p.get('auth')
-                                    scheme = p.get('scheme')
-                                if addr:
-                                    if scheme:
-                                        if scheme in self._proxies:
-                                            self._proxies[scheme].append((addr, auth))
-                                    else:
-                                        self._proxies['http'].append((addr, auth))
-                                        self._proxies['https'].append((addr, auth))
+                                self._append_proxy(p)
+
         except CancelledError:
             raise
         except Exception:
@@ -255,11 +187,12 @@ class ProxyAgentMiddleware:
     async def _update_proxy_list_task(self):
         while True:
             async with self._update_lock:
-                await self.update_proxy_list()
-            await asyncio.sleep(self._update_interval, loop=self._loop)
+                await self._update_proxy_list()
+            await asyncio.sleep(self.UPDATE_INTERVAL, loop=self._loop)
 
     def open(self):
-        self._update_future = asyncio.ensure_future(self._update_proxy_list_task(), loop=self._loop)
+        if self._agent_addr:
+            self._update_future = asyncio.ensure_future(self._update_proxy_list_task(), loop=self._loop)
 
     def close(self):
         if self._update_future:
@@ -278,13 +211,15 @@ class SpeedLimitMiddleware:
         self._loop = loop or asyncio.get_event_loop()
         self._semaphore = asyncio.Semaphore(burst, loop=loop)
         self._update_future = None
+        self.disabled = False
 
     @classmethod
     def from_cluster(cls, cluster):
         c = cluster.config.get("speed_limit")
+        mw = cls(**(c or {}), loop=cluster.loop)
         if c is None:
-            c = {}
-        return cls(**c, loop=cluster.loop)
+            mw.disabled = True
+        return mw
 
     async def handle_request(self, request):
         await self._semaphore.acquire()

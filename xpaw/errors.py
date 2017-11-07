@@ -13,12 +13,6 @@ class IgnoreRequest(Exception):
     """
 
 
-class ResponseNotMatch(Exception):
-    """
-    The response is not as desired.
-    """
-
-
 class IgnoreItem(Exception):
     """
     Ignore this item.

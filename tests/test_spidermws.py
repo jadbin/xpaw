@@ -20,7 +20,7 @@ class TestDepthMiddleware:
                 if depth is not None:
                     self.meta["depth"] = depth
 
-        mw = DepthMiddleware.from_cluster(Cluster(request_depth={'max_depth': 1}))
+        mw = DepthMiddleware.from_cluster(Cluster(max_depth=1))
         req = HttpRequest("http://httpbin.org", "GET")
         item = Item()
         res = [i for i in mw.handle_output(R(), [req, item])]
