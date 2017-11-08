@@ -9,15 +9,14 @@ log = logging.getLogger(__name__)
 
 
 class DepthMiddleware:
-    def __init__(self, max_depth=None):
-        if max_depth is None or max_depth <= 0:
+    def __init__(self, config):
+        self._max_depth = config.getint("max_depth", 0)
+        if self._max_depth <= 0:
             self._max_depth = math.inf
-        else:
-            self._max_depth = max_depth
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config.getint("max_depth"))
+        return cls(cluster.config)
 
     def handle_output(self, response, result):
         depth = response.meta.get("depth", 0) + 1

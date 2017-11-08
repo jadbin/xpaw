@@ -4,6 +4,7 @@ import logging
 
 from .utils import load_object
 from . import events
+from .errors import NotEnabled
 
 log = logging.getLogger(__name__)
 
@@ -12,10 +13,8 @@ class MiddlewareManager:
     def __init__(self, *middlewares):
         self._open_handlers = []
         self._close_handlers = []
-        self.objects = []
+        self.components = []
         for middleware in middlewares:
-            if hasattr(middleware, 'disabled') and middleware.disabled:
-                continue
             self._add_middleware(middleware)
 
     @classmethod
@@ -28,18 +27,22 @@ class MiddlewareManager:
         mws = []
         for cls_path in mw_list:
             mw_cls = load_object(cls_path)
-            if hasattr(mw_cls, "from_cluster"):
-                mw = mw_cls.from_cluster(cluster)
+            try:
+                if hasattr(mw_cls, "from_cluster"):
+                    mw = mw_cls.from_cluster(cluster)
+                else:
+                    mw = mw_cls()
+            except NotEnabled:
+                log.debug('%s is not enabled', cls_path)
             else:
-                mw = mw_cls()
-            mws.append(mw)
+                mws.append(mw)
         mwm = cls(*mws)
         cluster.event_bus.subscribe(mwm.open, events.cluster_start)
         cluster.event_bus.subscribe(mwm.close, events.cluster_shutdown)
         return mwm
 
     def _add_middleware(self, middleware):
-        self.objects.append(middleware)
+        self.components.append(middleware)
         if hasattr(middleware, "open"):
             self._open_handlers.append(middleware.open)
         if hasattr(middleware, "close"):

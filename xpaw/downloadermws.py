@@ -9,7 +9,7 @@ from asyncio import CancelledError
 import aiohttp
 from yarl import URL
 
-from .errors import IgnoreRequest, NetworkError
+from .errors import IgnoreRequest, NetworkError, NotEnabled
 from .utils import parse_url
 
 log = logging.getLogger(__name__)
@@ -20,21 +20,15 @@ class RetryMiddleware:
     RETRY_ERRORS = (NetworkError,)
     RETRY_HTTP_STATUS = (500, 502, 503, 504, 408, 429)
 
-    def __init__(self, max_retry_times=None, retry_http_status=None):
-        if max_retry_times is None:
-            self._max_retry_times = self.MAX_RETRY_TIMES
-        else:
-            self._max_retry_times = max_retry_times
-        if retry_http_status is None:
-            self._http_status = self.RETRY_HTTP_STATUS
-        else:
-            self._http_status = retry_http_status
+    def __init__(self, config):
+        if not config.getbool('retry_enabled', True):
+            raise NotEnabled
+        self._max_retry_times = config.getint('max_retry_times', self.MAX_RETRY_TIMES)
+        self._http_status = config.getlist('retry_http_status', self.RETRY_HTTP_STATUS)
 
     @classmethod
     def from_cluster(cls, cluster):
-        config = cluster.config
-        return cls(max_retry_times=config.getint('max_retry_times'),
-                   retry_http_status=config.getlist('retry_http_status'))
+        return cls(cluster.config)
 
     async def handle_response(self, request, response):
         for p in self._http_status:
@@ -72,24 +66,26 @@ class RetryMiddleware:
     def retry(self, request, reason):
         retry_times = request.meta.get("retry_times", 0) + 1
         if retry_times <= self._max_retry_times:
-            log.debug("We will retry the request(url=%s) because of %s", request.url, reason)
+            log.debug("We will retry the request (url=%s) because of %s", request.url, reason)
             retry_req = request.copy()
             retry_req.meta["retry_times"] = retry_times
             retry_req.dont_filter = True
             return retry_req
         else:
-            log.info("The request(url=%s) has been retried %s times,"
+            log.info("The request (url=%s) has been retried %s times,"
                      " and it will be aborted", request.url, self._max_retry_times)
             raise IgnoreRequest
 
 
 class DefaultHeadersMiddleware:
-    def __init__(self, headers=None):
-        self._headers = headers or {}
+    def __init__(self, config):
+        self._headers = config.get("default_headers")
+        if self._headers is None:
+            raise NotEnabled
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config.get("default_headers"))
+        return cls(cluster.config)
 
     async def handle_request(self, request):
         for h in self._headers:
@@ -97,6 +93,14 @@ class DefaultHeadersMiddleware:
 
 
 class ImitatingProxyMiddleware:
+    def __init__(self, config):
+        if not config.getbool('imitating_proxy_enabled', True):
+            raise NotEnabled
+
+    @classmethod
+    def from_cluster(cls, cluster):
+        return cls(cluster.config)
+
     async def handle_request(self, request):
         ip = "61.%s.%s.%s" % (random.randint(128, 191), random.randint(0, 255), random.randint(1, 254))
         request.headers['X-Forwarded-For'] = ip
@@ -107,26 +111,22 @@ class ProxyMiddleware:
     UPDATE_INTERVAL = 60
     TIMEOUT = 20
 
-    def __init__(self, proxy=None, proxy_agent=None, loop=None):
+    def __init__(self, config, loop=None):
         self._proxies = {'http': [], 'https': []}
-        if proxy:
-            for p in proxy:
-                self._append_proxy(p)
+        proxy = config.getlist('proxy', [])
+        proxy_agent = config.get('proxy_agent')
+        if not proxy and not proxy_agent:
+            raise NotEnabled
+        for p in proxy:
+            self._append_proxy(p)
         self._agent_addr = parse_url(proxy_agent)
         self._loop = loop or asyncio.get_event_loop()
         self._update_lock = asyncio.Lock(loop=self._loop)
         self._update_future = None
-        self.disabled = False
 
     @classmethod
     def from_cluster(cls, cluster):
-        config = cluster.config
-        proxy = config.getlist('proxy')
-        proxy_agent = config.get('proxy_agent')
-        mw = cls(proxy=proxy, proxy_agent=proxy_agent, loop=cluster.loop)
-        if not proxy and not proxy_agent:
-            mw.disabled = True
-        return mw
+        return cls(cluster.config, loop=cluster.loop)
 
     async def handle_request(self, request):
         if isinstance(request.url, str):
@@ -180,7 +180,6 @@ class ProxyMiddleware:
                                 self._proxies[k].clear()
                             for p in proxy_list:
                                 self._append_proxy(p)
-
         except CancelledError:
             raise
         except Exception:
@@ -202,26 +201,24 @@ class ProxyMiddleware:
 
 
 class SpeedLimitMiddleware:
-    def __init__(self, rate=1, burst=1, loop=None):
-        if rate <= 0:
+    def __init__(self, config, loop=None):
+        if not config.getbool('speed_limit_enabled'):
+            raise NotEnabled
+        self._rate = config.getint('speed_limit_rate', 1)
+        if self._rate <= 0:
             raise ValueError("rate must be greater than 0")
-        if not isinstance(burst, int) or burst <= 0:
-            raise ValueError('burst must be an integer greater than 0')
-        self._interval = 1.0 / rate
-        self._burst = burst
-        self._bucket = burst
+        self._burst = config.getint('speed_limit_burst', config.getint('downloader_clients', 1))
+        if self._burst <= 0:
+            raise ValueError('burst must be greater than 0')
+        self._interval = 1.0 / self._rate
+        self._bucket = self._burst
         self._loop = loop or asyncio.get_event_loop()
-        self._semaphore = asyncio.Semaphore(burst, loop=loop)
+        self._semaphore = asyncio.Semaphore(self._burst, loop=loop)
         self._update_future = None
-        self.disabled = False
 
     @classmethod
     def from_cluster(cls, cluster):
-        c = cluster.config.get("speed_limit")
-        mw = cls(**(c or {}), loop=cluster.loop)
-        if c is None:
-            mw.disabled = True
-        return mw
+        return cls(cluster.config, loop=cluster.loop)
 
     async def handle_request(self, request):
         await self._semaphore.acquire()

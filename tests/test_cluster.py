@@ -12,6 +12,7 @@ from xpaw.handler import every
 from xpaw.item import Item, Field
 from xpaw.errors import IgnoreItem
 from xpaw.spidermws import DepthMiddleware
+from xpaw import defaultconfig
 
 
 class LinkItem(Item):
@@ -19,8 +20,9 @@ class LinkItem(Item):
 
 
 class LinkPipeline:
-    def __init__(self, n, data, cluster):
+    def __init__(self, n, tot, data, cluster):
         self.n = n
+        self.tot = tot
         self.data = data
         self.cluster = cluster
 
@@ -28,21 +30,36 @@ class LinkPipeline:
     def from_cluster(cls, cluster):
         n = cluster.config.getint('link_count')
         data = cluster.config.get('link_data')
-        return cls(n, data, cluster)
+        tot = cluster.config.getint('link_total')
+        return cls(n, tot, data, cluster)
 
     async def handle_item(self, item):
         url = item['url']
         if url == "http://httpbin.org/links/{}".format(self.n):
             raise IgnoreItem
         self.data.add(url)
-        if len(self.data) >= self.n:
+        if len(self.data) >= self.tot:
             asyncio.ensure_future(self.cluster.shutdown(), loop=self.cluster.loop)
 
-    def open(self):
-        pass
 
-    def close(self):
-        pass
+class MyError(Exception):
+    pass
+
+
+class LinkDownloaderMiddleware:
+    def handle_request(self, request):
+        if request.url == 'http://httpbin.org/status/406':
+            return HttpRequest('http://httpbin.org/status/407')
+        if request.url == 'http://httpbin.org/status/410':
+            raise MyError
+
+    def handle_response(self, request, response):
+        if request.url == 'http://httpbin.org/status/407':
+            return HttpRequest('http://httpbin.org/status/409')
+
+    def handle_error(self, request, error):
+        if isinstance(error, MyError):
+            return HttpRequest('http://httpbin.org/status/411')
 
 
 class LinkSpider(Spider):
@@ -57,7 +74,9 @@ class LinkSpider(Spider):
         yield HttpRequest("http://httpbin.org/status/403", callback=self.async_parse)
         yield HttpRequest("http://httpbin.org/status/404", callback=self.return_list_parse)
         yield HttpRequest("http://httpbin.org/status/405", callback=self.return_none)
-        yield HttpRequest("http://httpbin.org/status/500")
+        yield HttpRequest("http://httpbin.org/status/406")
+        yield HttpRequest("http://httpbin.org/status/408")
+        yield HttpRequest("http://httpbin.org/status/410")
         yield HttpRequest("http://localhost", errback=self.network_error)
         yield HttpRequest("http://httpbin.org/links/{}".format(self.link_count), dont_filter=True)
 
@@ -91,10 +110,14 @@ class LinkSpider(Spider):
 def test_run_link_spider():
     link_data = set()
     link_count = 10
+    link_total = 12
     run_spider(LinkSpider, downloader_timeout=60, log_level='DEBUG', item_pipelines=[LinkPipeline],
-               link_data=link_data, link_count=link_count, max_retry_times=0,
-               spider_middlewares=DepthMiddleware)
-    assert len(link_data) == link_count
+               link_data=link_data, link_count=link_count, link_total=link_total, max_retry_times=0,
+               spider_middlewares=DepthMiddleware,
+               downloader_middlewares=[LinkDownloaderMiddleware] + defaultconfig.downloader_middlewares)
+    assert len(link_data) == link_total
     for i in range(link_count):
         assert "http://httpbin.org/links/{}/{}".format(link_count, i) in link_data
+    assert "http://httpbin.org/status/409" in link_data
+    assert "http://httpbin.org/status/411" in link_data
     logging.getLogger('xpaw').handlers.clear()

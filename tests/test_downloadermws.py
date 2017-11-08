@@ -7,7 +7,7 @@ from aiohttp import web
 from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
-from xpaw.errors import IgnoreRequest, NetworkError
+from xpaw.errors import IgnoreRequest, NetworkError, NotEnabled
 
 
 class Cluster:
@@ -17,12 +17,17 @@ class Cluster:
 
 
 class TestImitatingProxyMiddleware:
-    async def test_handle_request(self):
-        mw = ImitatingProxyMiddleware()
+    async def test_handle_request(self, loop):
+        mw = ImitatingProxyMiddleware.from_cluster(Cluster(loop=loop))
         req = HttpRequest("http://httpbin.org")
         await mw.handle_request(req)
         assert re.search(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", req.headers["X-Forwarded-For"])
         assert req.headers['Via'] == '1.1 xpaw'
+
+    async def test_not_enabled(self, loop):
+        with pytest.raises(NotEnabled):
+            ImitatingProxyMiddleware.from_cluster(Cluster(imitating_proxy_enabled=False,
+                                                          loop=loop))
 
 
 class TestDefaultHeadersMiddleware:
@@ -33,6 +38,10 @@ class TestDefaultHeadersMiddleware:
         req = HttpRequest("http://httpbin.org", headers={"User-Agent": "xpaw-test"})
         await mw.handle_request(req)
         assert req_headers == req.headers
+
+    async def test_not_enabled(self, loop):
+        with pytest.raises(NotEnabled):
+            DefaultHeadersMiddleware.from_cluster(Cluster(loop=loop))
 
 
 def make_proxy_list():
@@ -165,9 +174,9 @@ class TestProxyMiddleware:
             assert req.proxy == target_list[i]
         mw.close()
 
-    async def test_no_config(self, loop):
-        mw = ProxyMiddleware.from_cluster(Cluster(loop=loop))
-        assert hasattr(mw, 'disabled') and mw.disabled is True
+    async def test_not_enabled(self, loop):
+        with pytest.raises(NotEnabled):
+            ProxyMiddleware.from_cluster(Cluster(loop=loop))
 
 
 class TestRetryMiddleware:
@@ -216,6 +225,10 @@ class TestRetryMiddleware:
         with pytest.raises(IgnoreRequest):
             mw.retry(req, "")
 
+    async def test_not_enabled(self, loop):
+        with pytest.raises(NotEnabled):
+            RetryMiddleware.from_cluster(Cluster(retry_enabled=False, loop=loop))
+
     def test_match_status(self):
         assert RetryMiddleware.match_status("200", 200) is True
         assert RetryMiddleware.match_status(200, 200) is True
@@ -229,13 +242,23 @@ class TestRetryMiddleware:
 
 
 class TestSpeedLimitMiddleware:
-    def test_value_error(self):
+    async def test_value_error(self, loop):
         with pytest.raises(ValueError):
-            SpeedLimitMiddleware(0, 1)
+            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_enabled=True,
+                                                      speed_limit_rate=0,
+                                                      speed_limit_burst=1,
+                                                      loop=loop))
         with pytest.raises(ValueError):
-            SpeedLimitMiddleware(1, 0)
-        with pytest.raises(ValueError):
-            SpeedLimitMiddleware(1, 1.1)
+            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_enabled=True,
+                                                      speed_limit_rate=1,
+                                                      speed_limit_burst=0,
+                                                      loop=loop))
+
+    async def test_not_enabled(self, loop):
+        with pytest.raises(NotEnabled):
+            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=1,
+                                                      speed_limit_burst=1,
+                                                      loop=loop))
 
     async def test_handle_request(self, loop):
         class Counter:
@@ -251,7 +274,9 @@ class TestSpeedLimitMiddleware:
                 counter.inc()
 
         counter = Counter()
-        mw = SpeedLimitMiddleware.from_cluster(Cluster(speed_limit={'rate': 1000, 'burst': 5},
+        mw = SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_enabled=True,
+                                                       speed_limit_rate=1000,
+                                                       speed_limit_burst=5,
                                                        loop=loop))
         futures = []
         for i in range(100):

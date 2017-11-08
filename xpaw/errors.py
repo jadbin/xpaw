@@ -1,9 +1,15 @@
 # coding=utf-8
 
 
+class NotEnabled(Exception):
+    """
+    Not enabled.
+    """
+
+
 class NetworkError(Exception):
     """
-    Error occurred when download.
+    Network error.
     """
 
 
