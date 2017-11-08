@@ -7,13 +7,15 @@ sudo: false
 
 cache:
   directories:
-  - $HOME/.cache/pip
+    - $HOME/.cache/pip
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
 
 install:
   - pip install -r requirements-ci.txt
 
 script:
-  - py.test --cov=xpaw tests
+  - pytest --cov=xpaw tests
 
 after_success:
   - coveralls
