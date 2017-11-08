@@ -109,10 +109,10 @@ class LinkSpider(Spider):
 
 def test_run_link_spider():
     link_data = set()
-    link_count = 10
-    link_total = 12
+    link_count = 5
+    link_total = 7
     run_spider(LinkSpider, downloader_timeout=60, log_level='DEBUG', item_pipelines=[LinkPipeline],
-               link_data=link_data, link_count=link_count, link_total=link_total, max_retry_times=0,
+               link_data=link_data, link_count=link_count, link_total=link_total, max_retry_times=1,
                downloader_clients=1, spider_middlewares=DepthMiddleware,
                downloader_middlewares=[LinkDownloaderMiddleware] + defaultconfig.downloader_middlewares)
     assert len(link_data) == link_total

@@ -36,11 +36,13 @@ class HttpRequest:
         return self._meta
 
     def copy(self):
-        kw = {}
-        for x in ["url", "method", "body", "params", "auth", "headers", "cookies", "proxy", "proxy_auth",
+        return self.new()
+
+    def new(self, **kwargs):
+        for i in ["url", "method", "body", "params", "auth", "headers", "cookies", "proxy", "proxy_auth",
                   "meta", "priority", "dont_filter", "callback", "errback"]:
-            kw.setdefault(x, getattr(self, x))
-        return HttpRequest(**kw)
+            kwargs.setdefault(i, getattr(self, i))
+        return type(self)(**kwargs)
 
 
 class HttpResponse:
@@ -86,7 +88,9 @@ class HttpResponse:
         return None
 
     def copy(self):
-        kw = {}
-        for x in ["url", "status", "body", "headers", "cookies", "request"]:
-            kw.setdefault(x, getattr(self, x))
-        return HttpResponse(**kw)
+        return self.new()
+
+    def new(self, **kwargs):
+        for i in ["url", "status", "body", "headers", "cookies", "request"]:
+            kwargs.setdefault(i, getattr(self, i))
+        return type(self)(**kwargs)
