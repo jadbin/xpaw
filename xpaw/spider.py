@@ -51,7 +51,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def __init__(self, *middlewares):
         self._input_handlers = []
         self._output_handlers = []
-        self._error_handlers = []
         self._start_requests_handlers = []
         super().__init__(*middlewares)
 
@@ -61,8 +60,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
             self._input_handlers.append(middleware.handle_input)
         if hasattr(middleware, "handle_output"):
             self._output_handlers.insert(0, middleware.handle_output)
-        if hasattr(middleware, "handle_error"):
-            self._error_handlers.insert(0, middleware.handle_error)
         if hasattr(middleware, "handle_start_requests"):
             self._start_requests_handlers.insert(0, middleware.handle_start_requests)
 
@@ -77,33 +74,22 @@ class SpiderMiddlewareManager(MiddlewareManager):
         return mw_list
 
     async def parse(self, spider, response):
-        try:
-            await self._handle_input(response)
-            if response.request and response.request.callback:
-                r = getattr(spider, response.request.callback)(response)
-            else:
-                r = spider.parse(response)
-            if inspect.iscoroutine(r):
-                r = await r
-            assert r is None or _isiterable(r), \
-                "Result of parsing must be None or an iterable object, got {}".format(type(r).__name__)
-            if r:
-                r = await self._handle_output(response, r)
-            if r is None:
-                r = ()
-            if not hasattr(r, "__aiter__"):
-                r = AsyncGenWrapper(r, errback=lambda x, resp=response: self._handle_error_of_parse(resp, x))
-            return r
-        except CancelledError:
-            raise
-        except Exception as e:
-            return await self._handle_error_of_parse(response, e)
-
-    async def _handle_error_of_parse(self, response, error):
-        res = await self._handle_error(response, error)
-        if isinstance(res, Exception):
-            raise res
-        return res or ()
+        await self._handle_input(response)
+        if response.request and response.request.callback:
+            r = getattr(spider, response.request.callback)(response)
+        else:
+            r = spider.parse(response)
+        if inspect.iscoroutine(r):
+            r = await r
+        assert r is None or _isiterable(r), \
+            "Result of parsing must be None or an iterable object, got {}".format(type(r).__name__)
+        if r:
+            r = await self._handle_output(response, r)
+        if r is None:
+            r = ()
+        if not hasattr(r, "__aiter__"):
+            r = AsyncGenWrapper(r)
+        return r
 
     async def handle_error(self, spider, request, error):
         if request and request.errback:
@@ -139,17 +125,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
             assert _isiterable(result), \
                 "Output handler must return an iterable object, got {}".format(type(result).__name__)
         return result
-
-    async def _handle_error(self, response, error):
-        for method in self._error_handlers:
-            res = method(response, error)
-            if inspect.iscoroutine(res):
-                res = await res
-            assert res is None or _isiterable(res), \
-                "Exception handler must return None or an iterable object, got {}".format(type(res).__name__)
-            if res is not None:
-                return res
-        return error
 
     async def _handle_start_requests(self, result):
         for method in self._start_requests_handlers:

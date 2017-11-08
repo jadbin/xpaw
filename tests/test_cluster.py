@@ -69,6 +69,7 @@ class LinkSpider(Spider):
 
     @every(seconds=30)
     def start_requests(self):
+        yield HttpRequest("http://localhost", errback=self.network_error)
         yield HttpRequest("http://httpbin.org/status/401", callback=self.generator_parse)
         yield HttpRequest("http://httpbin.org/status/402", callback=self.func_prase)
         yield HttpRequest("http://httpbin.org/status/403", callback=self.async_parse)
@@ -77,7 +78,6 @@ class LinkSpider(Spider):
         yield HttpRequest("http://httpbin.org/status/406")
         yield HttpRequest("http://httpbin.org/status/408")
         yield HttpRequest("http://httpbin.org/status/410")
-        yield HttpRequest("http://localhost", errback=self.network_error)
         yield HttpRequest("http://httpbin.org/links/{}".format(self.link_count), dont_filter=True)
 
     def parse(self, response):
@@ -113,7 +113,7 @@ def test_run_link_spider():
     link_total = 12
     run_spider(LinkSpider, downloader_timeout=60, log_level='DEBUG', item_pipelines=[LinkPipeline],
                link_data=link_data, link_count=link_count, link_total=link_total, max_retry_times=0,
-               spider_middlewares=DepthMiddleware,
+               downloader_clients=1, spider_middlewares=DepthMiddleware,
                downloader_middlewares=[LinkDownloaderMiddleware] + defaultconfig.downloader_middlewares)
     assert len(link_data) == link_total
     for i in range(link_count):

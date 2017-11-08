@@ -81,15 +81,12 @@ async def test_spider_middleware_manager_handlers():
     await spidermw._handle_start_requests((result_obj,))
     await spidermw._handle_input(response_obj)
     await spidermw._handle_output(response_obj, (result_obj,))
-    await spidermw._handle_error(response_obj, error_obj)
     assert data['handle_start_requests'] is result_obj
     assert data['handle_input'] is response_obj
     assert data['handle_output'][0] is response_obj and data['handle_output'][1] is result_obj
-    assert data['handle_error'][0] is response_obj and data['handle_error'][1] is error_obj
     assert data['async_handle_start_requests'] is result_obj
     assert data['async_handle_input'] is response_obj
     assert data['async_handle_output'][0] is response_obj and data['async_handle_output'][1] is result_obj
-    assert data['async_handle_error'][0] is response_obj and data['async_handle_error'][1] is error_obj
 
     cluster2 = Cluster(spider_middlewares=lambda d=data: MySpidermw(d),
                        data=data)

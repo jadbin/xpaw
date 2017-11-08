@@ -31,10 +31,11 @@ class TestImitatingProxyMiddleware:
 
 
 class TestDefaultHeadersMiddleware:
-    async def test_handle_request(self):
+    async def test_handle_request(self, loop):
         default_headers = {"User-Agent": "xpaw", "Connection": "keep-alive"}
         req_headers = {"User-Agent": "xpaw-test", "Connection": "keep-alive"}
-        mw = DefaultHeadersMiddleware.from_cluster(Cluster(default_headers=default_headers))
+        mw = DefaultHeadersMiddleware.from_cluster(Cluster(default_headers=default_headers,
+                                                           loop=loop))
         req = HttpRequest("http://httpbin.org", headers={"User-Agent": "xpaw-test"})
         await mw.handle_request(req)
         assert req_headers == req.headers
@@ -83,10 +84,10 @@ class Random:
 
 
 class TestProxyMiddleware:
-    async def test_handle_request(self, monkeypatch):
+    async def test_handle_request(self, monkeypatch, loop):
         monkeypatch.setattr(random, 'randint', Random().randint)
         proxy_list = make_proxy_list()
-        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list))
+        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list, loop=loop))
         target_list = proxy_list * 2
         req = HttpRequest("http://httpbin.org")
         for i in range(len(target_list)):
@@ -97,10 +98,10 @@ class TestProxyMiddleware:
         await mw.handle_request(req2)
         assert req2.proxy is None
 
-    async def test_handle_request2(self, monkeypatch):
+    async def test_handle_request2(self, monkeypatch, loop):
         monkeypatch.setattr(random, 'randint', Random().randint)
         proxy_list = make_detail_proxy_list()
-        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list))
+        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list, loop=loop))
         reqs = [HttpRequest('http://httpbin.org'),
                 HttpRequest('https://httpbin.org'),
                 HttpRequest('https://httpbin.org'),
