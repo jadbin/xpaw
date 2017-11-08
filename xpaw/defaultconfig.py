@@ -18,8 +18,8 @@ dupe_filter_cls = "xpaw.dupefilter.SetDupeFilter"
 
 downloader_clients = 100
 downloader_timeout = 20
-downloader_verify_ssl = True
-downloader_cookie_jar_enabled = False
+verify_ssl = True
+cookie_jar_enabled = False
 
 downloader_middlewares = [
     "xpaw.downloadermws.RetryMiddleware"
