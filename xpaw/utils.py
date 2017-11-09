@@ -9,8 +9,6 @@ import logging
 from importlib import import_module
 import string
 from urllib.parse import urlsplit
-from asyncio import CancelledError
-import inspect
 
 from yarl import URL
 from multidict import MultiDict
@@ -29,7 +27,10 @@ def load_object(path):
     return path
 
 
-def configure_logging(name, log_level=None, log_format=None, log_dateformat=None):
+def configure_logging(name, config):
+    log_level = config.get('log_level')
+    log_format = config.get('log_format')
+    log_dateformat = config.get('log_dateformat')
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
     log_stream_handler = logging.StreamHandler()
@@ -69,7 +70,7 @@ def get_encoding_from_content(content):
 
 def request_fingerprint(request):
     sha1 = hashlib.sha1()
-    sha1.update(to_types(request.method))
+    sha1.update(to_bytes(request.method))
     if isinstance(request.url, str):
         url = URL(request.url)
     else:
@@ -81,12 +82,12 @@ def request_fingerprint(request):
         for k, v in request.params.items():
             queries.append('{}={}'.format(k, v))
     queries.sort()
-    sha1.update(to_types('{}://{}{}?{}'.format(url.scheme, url.host, url.path, '&'.join(queries))))
+    sha1.update(to_bytes('{}://{}{}?{}'.format(url.scheme, url.host, url.path, '&'.join(queries))))
     sha1.update(request.body or b'')
     return sha1.hexdigest()
 
 
-def to_types(data, encoding=None):
+def to_bytes(data, encoding=None):
     if isinstance(data, bytes):
         return data
     if isinstance(data, str):

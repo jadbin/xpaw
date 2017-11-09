@@ -87,9 +87,7 @@ class CrawlCommand(Command):
             print("Error: Cannot find 'setup.cfg' in {}".format(abspath(args.project_dir)))
             return
 
-        configure_logging("xpaw", log_level=self.config.get('log_level'),
-                          log_format=self.config.get('log_format'),
-                          log_dateformat=self.config.get('log_dateformat'))
+        configure_logging("xpaw", self.config)
         cluster = LocalCluster(args.project_dir, self.config)
         cluster.start()
 
