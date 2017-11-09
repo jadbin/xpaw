@@ -49,7 +49,7 @@ class MyError(Exception):
 class LinkDownloaderMiddleware:
     def handle_request(self, request):
         if request.url == 'http://httpbin.org/status/406':
-            return HttpRequest('http://httpbin.org/status/407')
+            return HttpRequest('http://httpbin.org/status/407', dont_filter=True)
         if request.url == 'http://httpbin.org/status/410':
             raise MyError
 
@@ -69,15 +69,16 @@ class LinkSpider(Spider):
 
     @every(seconds=30)
     def start_requests(self):
-        yield HttpRequest("http://localhost", errback=self.network_error)
+        yield HttpRequest("http://localhost", errback=self.error_back)
+        yield HttpRequest("http://localhost", errback=self.async_error_back, dont_filter=True)
         yield HttpRequest("http://httpbin.org/status/401", callback=self.generator_parse)
         yield HttpRequest("http://httpbin.org/status/402", callback=self.func_prase)
         yield HttpRequest("http://httpbin.org/status/403", callback=self.async_parse)
         yield HttpRequest("http://httpbin.org/status/404", callback=self.return_list_parse)
         yield HttpRequest("http://httpbin.org/status/405", callback=self.return_none)
-        yield HttpRequest("http://httpbin.org/status/406")
+        yield HttpRequest("http://httpbin.org/status/406", dont_filter=True)
         yield HttpRequest("http://httpbin.org/status/408")
-        yield HttpRequest("http://httpbin.org/status/410")
+        yield HttpRequest("http://httpbin.org/status/410", dont_filter=True)
         yield HttpRequest("http://httpbin.org/links/{}".format(self.link_count), dont_filter=True)
 
     def parse(self, response):
@@ -86,7 +87,10 @@ class LinkSpider(Spider):
             yield HttpRequest(urljoin(str(response.url), href))
         yield LinkItem(url=response.request.url)
 
-    def network_error(self, request, err):
+    def error_back(self, request, err):
+        raise RuntimeError('not an error actually')
+
+    async def async_error_back(self, request, err):
         raise RuntimeError('not an error actually')
 
     def generator_parse(self, response):
@@ -113,8 +117,8 @@ def test_run_link_spider():
     link_total = 7
     run_spider(LinkSpider, downloader_timeout=60, log_level='DEBUG', item_pipelines=[LinkPipeline],
                link_data=link_data, link_count=link_count, link_total=link_total, max_retry_times=1,
-               downloader_clients=1, spider_middlewares=DepthMiddleware,
-               downloader_middlewares=[LinkDownloaderMiddleware] + defaultconfig.downloader_middlewares)
+               downloader_clients=1, spider_middlewares=[DepthMiddleware],
+               downloader_middlewares=[LinkDownloaderMiddleware])
     assert len(link_data) == link_total
     for i in range(link_count):
         assert "http://httpbin.org/links/{}/{}".format(link_count, i) in link_data

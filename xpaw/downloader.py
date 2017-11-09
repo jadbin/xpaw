@@ -76,14 +76,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             self._error_handlers.insert(0, middleware.handle_error)
 
     @classmethod
-    def _middleware_list_from_cluster(cls, cluster):
-        mw_list = cluster.config.get("downloader_middlewares")
-        if mw_list:
-            if not isinstance(mw_list, list):
-                mw_list = [mw_list]
-        else:
-            mw_list = []
-        return mw_list
+    def _middleware_list_from_config(cls, config):
+        return cls._make_component_list('downloader_middlewares', config)
 
     async def download(self, downloader, request):
         try:

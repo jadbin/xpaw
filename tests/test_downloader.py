@@ -15,6 +15,7 @@ from xpaw.http import HttpRequest
 from xpaw.downloader import Downloader, DownloaderMiddlewareManager
 from xpaw.eventbus import EventBus
 from xpaw.config import Config
+from xpaw import events
 
 
 async def test_cookies(loop):
@@ -231,6 +232,12 @@ class MyDownloadermw:
     def __init__(self, d):
         self.d = d
 
+    def open(self):
+        self.d['open'] = ''
+
+    def close(self):
+        self.d['close'] = ''
+
     def handle_request(self, request):
         self.d['handle_request'] = request
 
@@ -273,14 +280,18 @@ async def test_downloader_middleware_manager_handlers():
     cluster = Cluster(downloader_middlewares=[lambda d=data: MyDownloadermw(d),
                                               MyEmptyDownloadermw,
                                               MyAsyncDownloaderMw],
+                      downloader_middlewares_base=None,
                       data=data)
     downloadermw = DownloaderMiddlewareManager.from_cluster(cluster)
     request_obj = object()
     response_obj = object()
     error_obj = object()
+    await cluster.event_bus.send(events.cluster_start)
     await downloadermw._handle_request(request_obj)
     await downloadermw._handle_response(request_obj, response_obj)
     await downloadermw._handle_error(request_obj, error_obj)
+    await cluster.event_bus.send(events.cluster_shutdown)
+    assert 'open' in data and 'close' in data
     assert data['handle_request'] is request_obj
     assert data['handle_response'][0] is request_obj and data['handle_response'][1] is response_obj
     assert data['handle_error'][0] is request_obj and data['handle_error'][1] is error_obj
@@ -288,12 +299,17 @@ async def test_downloader_middleware_manager_handlers():
     assert data['async_handle_response'][0] is request_obj and data['async_handle_response'][1] is response_obj
     assert data['async_handle_error'][0] is request_obj and data['async_handle_error'][1] is error_obj
 
-    cluster2 = Cluster(downloader_middlewares=lambda d=data: MyDownloadermw(d),
-                       data=data)
+    data2 = {}
+    cluster2 = Cluster(downloader_middlewares={lambda d=data2: MyDownloadermw(d): 0},
+                       downloader_middlewares_base=None,
+                       data=data2)
     downloadermw2 = DownloaderMiddlewareManager.from_cluster(cluster2)
     request_obj2 = object()
+    await cluster2.event_bus.send(events.cluster_start)
     await downloadermw2._handle_request(request_obj2)
-    assert data['handle_request'] is request_obj2
+    await cluster2.event_bus.send(events.cluster_shutdown)
+    assert 'open' in data2 and 'close' in data2
+    assert data2['handle_request'] is request_obj2
 
-    cluster3 = Cluster(downloader_middlewares=None, data=data)
+    cluster3 = Cluster(downloader_middlewares=None, downloader_middlewares_base=None, data={})
     DownloaderMiddlewareManager.from_cluster(cluster3)

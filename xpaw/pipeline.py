@@ -14,14 +14,8 @@ class ItemPipelineManager(MiddlewareManager):
         super().__init__(*middlewares)
 
     @classmethod
-    def _middleware_list_from_cluster(cls, cluster):
-        mw_list = cluster.config.get("item_pipelines")
-        if mw_list:
-            if not isinstance(mw_list, list):
-                mw_list = [mw_list]
-        else:
-            mw_list = []
-        return mw_list
+    def _middleware_list_from_config(cls, config):
+        return cls._make_component_list('item_pipelines', config)
 
     def _add_middleware(self, middleware):
         super()._add_middleware(middleware)

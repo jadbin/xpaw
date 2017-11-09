@@ -18,12 +18,12 @@ class MiddlewareManager:
             self._add_middleware(middleware)
 
     @classmethod
-    def _middleware_list_from_cluster(cls, cluster):
+    def _middleware_list_from_config(cls, config):
         raise NotImplementedError
 
     @classmethod
     def from_cluster(cls, cluster):
-        mw_list = cls._middleware_list_from_cluster(cluster)
+        mw_list = cls._middleware_list_from_config(cluster.config)
         mws = []
         for cls_path in mw_list:
             mw_cls = load_object(cls_path)
@@ -47,6 +47,35 @@ class MiddlewareManager:
             self._open_handlers.append(middleware.open)
         if hasattr(middleware, "close"):
             self._close_handlers.insert(0, middleware.close)
+
+    @staticmethod
+    def _priority_list_from_config(name, config, *, shift=.0):
+        c = config.get(name)
+        assert c is None or isinstance(c, (list, dict)), \
+            "'{}' must be None, a list or a dict, got {}".format(name, type(c).__name__)
+        if c is None:
+            return {}
+        if isinstance(c, list):
+            d = {}
+            e = shift
+            for i in c:
+                if i not in d:
+                    d[i] = e
+                    e += shift
+            return d
+        return c
+
+    @classmethod
+    def _make_component_list(cls, name, config):
+        c_base = cls._priority_list_from_config(name + '_base', config, shift=1e-5)
+        c = cls._priority_list_from_config(name, config, shift=1e-10)
+        c_base.update(c)
+        res = []
+        for k, v in c_base.items():
+            if v is not None:
+                res.append((k, v))
+        res.sort(key=lambda x: x[1])
+        return [i[0] for i in res]
 
     def open(self):
         for method in self._open_handlers:

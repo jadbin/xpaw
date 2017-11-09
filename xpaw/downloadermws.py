@@ -103,8 +103,8 @@ class ImitatingProxyMiddleware:
 
     async def handle_request(self, request):
         ip = "61.%s.%s.%s" % (random.randint(128, 191), random.randint(0, 255), random.randint(1, 254))
-        request.headers['X-Forwarded-For'] = ip
-        request.headers['Via'] = '1.1 xpaw'
+        request.headers.setdefault('X-Forwarded-For', ip)
+        request.headers.setdefault('Via', '1.1 xpaw')
 
 
 class ProxyMiddleware:
@@ -148,7 +148,7 @@ class ProxyMiddleware:
                     await self._update_proxy_list()
         n = len(self._proxies[scheme])
         if n > 0:
-            return self._proxies[scheme][random.randint(0, n - 1)]
+            return random.choice(self._proxies[scheme])
 
     def _append_proxy(self, p):
         addr, auth, scheme = None, None, None

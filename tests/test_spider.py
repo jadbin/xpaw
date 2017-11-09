@@ -3,11 +3,18 @@
 from xpaw.spider import SpiderMiddlewareManager
 from xpaw.eventbus import EventBus
 from xpaw.config import Config
+from xpaw import events
 
 
 class MySpidermw:
     def __init__(self, d):
         self.d = d
+
+    def open(self):
+        self.d['open'] = ''
+
+    def close(self):
+        self.d['close'] = ''
 
     def handle_start_requests(self, result):
         res = []
@@ -73,14 +80,17 @@ async def test_spider_middleware_manager_handlers():
     cluster = Cluster(spider_middlewares=[lambda d=data: MySpidermw(d),
                                           MyEmptySpidermw,
                                           MyAsyncSpiderMw],
+                      spider_middlewares_base=None,
                       data=data)
     spidermw = SpiderMiddlewareManager.from_cluster(cluster)
     response_obj = object()
     result_obj = object()
-    error_obj = object()
+    await cluster.event_bus.send(events.cluster_start)
     await spidermw._handle_start_requests((result_obj,))
     await spidermw._handle_input(response_obj)
     await spidermw._handle_output(response_obj, (result_obj,))
+    await cluster.event_bus.send(events.cluster_shutdown)
+    assert 'open' in data and 'close' in data
     assert data['handle_start_requests'] is result_obj
     assert data['handle_input'] is response_obj
     assert data['handle_output'][0] is response_obj and data['handle_output'][1] is result_obj
@@ -88,12 +98,17 @@ async def test_spider_middleware_manager_handlers():
     assert data['async_handle_input'] is response_obj
     assert data['async_handle_output'][0] is response_obj and data['async_handle_output'][1] is result_obj
 
-    cluster2 = Cluster(spider_middlewares=lambda d=data: MySpidermw(d),
-                       data=data)
+    data2 = {}
+    cluster2 = Cluster(spider_middlewares={lambda d=data2: MySpidermw(d): 0},
+                       spider_middlewares_base=None,
+                       data=data2)
     spidermw2 = SpiderMiddlewareManager.from_cluster(cluster2)
     response_obj2 = object()
+    await cluster2.event_bus.send(events.cluster_start)
     await spidermw2._handle_input(response_obj2)
-    assert data['handle_input'] is response_obj2
+    await cluster2.event_bus.send(events.cluster_shutdown)
+    assert 'open' in data2 and 'close' in data2
+    assert data2['handle_input'] is response_obj2
 
-    cluster3 = Cluster(spider_middlewares=None, data=data)
+    cluster3 = Cluster(spider_middlewares=None, spider_middlewares_base=None, data={})
     SpiderMiddlewareManager.from_cluster(cluster3)

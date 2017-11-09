@@ -42,7 +42,7 @@ class TestDefaultHeadersMiddleware:
 
     async def test_not_enabled(self, loop):
         with pytest.raises(NotEnabled):
-            DefaultHeadersMiddleware.from_cluster(Cluster(loop=loop))
+            DefaultHeadersMiddleware.from_cluster(Cluster(loop=loop, default_headers=None))
 
 
 def make_proxy_list():
@@ -77,15 +77,15 @@ class Random:
     def __init__(self):
         self.iter = 0
 
-    def randint(self, a, b):
-        res = a + self.iter % (b - a + 1)
+    def choice(self, seq):
+        res = seq[self.iter % len(seq)]
         self.iter += 1
         return res
 
 
 class TestProxyMiddleware:
     async def test_handle_request(self, monkeypatch, loop):
-        monkeypatch.setattr(random, 'randint', Random().randint)
+        monkeypatch.setattr(random, 'choice', Random().choice)
         proxy_list = make_proxy_list()
         mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list, loop=loop))
         target_list = proxy_list * 2
@@ -99,7 +99,7 @@ class TestProxyMiddleware:
         assert req2.proxy is None
 
     async def test_handle_request2(self, monkeypatch, loop):
-        monkeypatch.setattr(random, 'randint', Random().randint)
+        monkeypatch.setattr(random, 'choice', Random().choice)
         proxy_list = make_detail_proxy_list()
         mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list, loop=loop))
         reqs = [HttpRequest('http://httpbin.org'),
@@ -115,7 +115,7 @@ class TestProxyMiddleware:
             assert reqs[i].proxy == target_list[i]
 
     async def test_handle_request_with_agent(self, monkeypatch, test_server, loop):
-        monkeypatch.setattr(random, 'randint', Random().randint)
+        monkeypatch.setattr(random, 'choice', Random().choice)
         server = await make_proxy_agent(test_server)
         mw = ProxyMiddleware.from_cluster(
             Cluster(proxy_agent="http://{}:{}".format(server.host, server.port),
@@ -133,7 +133,7 @@ class TestProxyMiddleware:
         mw.close()
 
     async def test_handle_request_with_agent2(self, monkeypatch, test_server, loop):
-        monkeypatch.setattr(random, 'randint', Random().randint)
+        monkeypatch.setattr(random, 'choice', Random().choice)
         server = await make_proxy_agent(test_server)
         server.proxy_list = make_detail_proxy_list()
         mw = ProxyMiddleware.from_cluster(
@@ -154,7 +154,7 @@ class TestProxyMiddleware:
         mw.close()
 
     async def test_update_proxy_list(self, monkeypatch, test_server, loop):
-        monkeypatch.setattr(random, 'randint', Random().randint)
+        monkeypatch.setattr(random, 'choice', Random().choice)
         server = await make_proxy_agent(test_server)
         mw = ProxyMiddleware.from_cluster(
             Cluster(proxy_agent="http://{}:{}".format(server.host, server.port),
