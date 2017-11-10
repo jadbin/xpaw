@@ -3,6 +3,28 @@
 Change log
 ==========
 
+0.9.0 (2017-?-?)
+----------------
+
+New features
+~~~~~~~~~~~~
+
+- 中间件的加载细分为内置中间件和用户自定义中间件两部分，内置中间件自动加载，用户中间件的加载由配置项确定；
+  中间件加载的顺序由配置的权值确定，权值越大越贴近downloader/spider
+- 添加 ``xpaw.errors.NotEnabled`` ，在中间件/拓展的构造函数中控制抛出该异常来实现开启或禁用该中间件/拓展。
+- 添加UserAgentMiddleware，支持选择PC端或移动端的User-Agent，支持随机User-Agent
+
+Update
+~~~~~~
+
+- 移除ResponseNotMatchMiddleware
+- 移除ProxyAgentMiddle，原有功能并入ProxyMiddleware
+- 中间件的参数配置扁平化，修改了RetryMiddleware、ProxyMiddleware、DepthMiddleware的参数配置方式
+- ForwardedForMiddleware更名为ImitatingProxyMiddleware，新增添加 ``Via`` 请求头的功能
+- 系统配置 ``downloader_verify_ssl`` 更名为 ``verify_ssl`` ， ``downloader_cookie_jar_enabled`` 更名为 ``cookie_jar_enabled``
+- 移除spider middleware的 ``handle_error`` 接口，spider处理流程应当是可控的，不应当抛出异常
+
+
 0.8.0 (2017-11-5)
 -----------------
 
@@ -11,18 +33,18 @@ New features
 
 - spider的 ``start_requests`` 和 ``parse`` 函数支持async类型和python 3.6中的async generator类型
 - spider中间件的handle_*函数支持async类型
-- 新增事件驱动相关的eventbus和events模块，支持事件的订阅、发送，可通过 ``cluster.event_bus`` 获取event bus组件
+- 添加事件驱动相关的eventbus和events模块，支持事件的订阅、发送，可通过 ``cluster.event_bus`` 获取event bus组件
 - 捕获SIGINT和SIGTERM信号并做出相应处理
-- 新增extension模块，支持用户自定义拓展
-- 新增statscenter模块，用于收集、管理系统产生的各项统计量，可通过 ``cluster.stats_center`` 获取stats center组件；
-  系统配置新增 ``stats_center_cls`` 项，用于替换默认的stats center的实现
-- SetDupeFilter新增 ``clear`` 函数
-- 系统配置新增 ``downloader_verify_ssl`` 项，用于开启或关闭SSL证书认证
+- 添加extension模块，支持用户自定义拓展
+- 添加statscenter模块，用于收集、管理系统产生的各项统计量，可通过 ``cluster.stats_center`` 获取stats center组件；
+  系统配置添加 ``stats_center_cls`` 项，用于替换默认的stats center的实现
+- SetDupeFilter添加 ``clear`` 函数
+- 系统配置添加 ``downloader_verify_ssl`` 项，用于开启或关闭SSL证书认证
 - HttpRequest的 ``body`` 参数支持bytes、str、FormData、dict (json)等形式
-- HttpRequest新增 ``params`` , ``auth`` , ``proxy_auth`` , ``priority`` 等属性
-- 新增深度优先队列LifoQueue，以及优先级队列PriorityQueue，默认 ``queue_cls`` 更改为 ``xpaw.queue.PriorityQueue``
+- HttpRequest添加 ``params`` , ``auth`` , ``proxy_auth`` , ``priority`` 等属性
+- 添加深度优先队列LifoQueue，以及优先级队列PriorityQueue，默认 ``queue_cls`` 更改为 ``xpaw.queue.PriorityQueue``
 - 支持设定HTTP请求的优先级并按优先级进行爬取
-- 新增item、pipeline模块，支持spider在处理response时返回BaseItem的实例或dict，并交由用户自定义的item pipelines进行处理
+- 添加item、pipeline模块，支持spider在处理response时返回BaseItem的实例或dict，并交由用户自定义的item pipelines进行处理
 
 Update
 ~~~~~~
@@ -33,8 +55,9 @@ Update
 - 系统不再默认调用dupefilter组件和queue组件的 ``open`` 和 ``close`` 函数，如果自定义的组件包含这些函数，可通过订阅相关事件的方式进行调用
 - 系统配置 ``dupefilter_cls`` 更名为 ``dupe_filter_cls`` ，cluster的 ``dupefilter`` 属性更名为 ``dupe_filter``
 - RequestHeadersMiddleware更改为DefaultHeadersMiddleware，配置字段 ``request_headers`` 更改为 ``default_headers``，功能由覆盖headers变为设置默认的headers
-- MaxDepthMiddleware更改为DepthMiddleware，配置字段 ``max_depth`` 更改为 ``request_depth``，功能变为记录request的depth并对max depth加以限制
-- 修改了ProxyMiddleware和ProxyAgentMiddleware的配置方式
+- 修改了MaxDepthMiddleware更改为DepthMiddleware的参数配置方式，功能变为记录request的depth并对max depth加以限制
+- 修改了ProxyMiddleware和ProxyAgentMiddleware的参数配置方式
+- 移除CookieJarMiddleware，通过 ``downloader_cookie_jar_enabled`` 配置是否启用cookie
 - 重写了SpeedLimitMiddleware，通过 ``rate`` (采集速率) 和 ``burst`` (最大并发数) 来限制采集速率
 - 更新了 ``request_fingerprint`` 的计算方式
 - 修改aiohttp的版本限制为>=2.3.2
@@ -47,8 +70,8 @@ New features
 ~~~~~~~~~~~~
 
 - 通过 ``xpaw.handler.every`` 实现定时任务功能
-- HttpRequest新增 ``dont_filter`` 字段，为 ``True`` 时表示该请求不会被过滤
-- ``xpaw.run`` 模块中新增 ``run_spider`` 函数，便于在python代码中直接运行Spider类
+- HttpRequest添加 ``dont_filter`` 字段，为 ``True`` 时表示该请求不会被过滤
+- ``xpaw.run`` 模块中添加 ``run_spider`` 函数，便于在python代码中直接运行Spider类
 
 Update
 ~~~~~~
@@ -63,8 +86,8 @@ Update
 New features
 ~~~~~~~~~~~~
 
-- 使用继承Dupefilter的去重过滤器来实现去重功能，系统配置新增 ``dupefilter_cls`` 项，用于替换默认的去重过滤器
-- ``xpaw.utils.run`` 模块中新增 ``run_crawler`` 函数，便于在python代码中控制开启爬虫
+- 使用继承Dupefilter的去重过滤器来实现去重功能，系统配置添加 ``dupefilter_cls`` 项，用于替换默认的去重过滤器
+- ``xpaw.utils.run`` 模块中添加 ``run_crawler`` 函数，便于在python代码中控制开启爬虫
 
 Update
 ~~~~~~
@@ -83,7 +106,7 @@ Update
 New features
 ~~~~~~~~~~~~
 
-- HttpRequest新增 ``errback`` 字段，表示无法正常获取到HttpResponse时触发的函数
+- HttpRequest添加 ``errback`` 字段，表示无法正常获取到HttpResponse时触发的函数
 
 Bug fixes
 ~~~~~~~~~
@@ -126,11 +149,11 @@ Update
 New features
 ~~~~~~~~~~~~
 
-- HttpResponse新增 ``encoding`` 和 ``text`` 字段，分别用于获取网页的编码及字符串形式的内容
-- 新增ResponseMatchMiddleware，用于初步判断得到的页面是否符合要求
-- 新增CookieJarMiddleware，用于维护请求过程中产生的cookie，同时HttpRequest的meta中新增系统项 ``cookie_jar`` 作为发起请求时使用的cookie jar
-- HttpRequest的meta中新增系统项 ``timeout`` ，用于精确控制某个请求的超时时间
-- 系统配置新增 ``queue_cls`` 项，用于替换默认的请求队列
+- HttpResponse添加 ``encoding`` 和 ``text`` 字段，分别用于获取网页的编码及字符串形式的内容
+- 添加ResponseMatchMiddleware，用于初步判断得到的页面是否符合要求
+- 添加CookieJarMiddleware，用于维护请求过程中产生的cookie，同时HttpRequest的meta中添加系统项 ``cookie_jar`` 作为发起请求时使用的cookie jar
+- HttpRequest的meta中添加系统项 ``timeout`` ，用于精确控制某个请求的超时时间
+- 系统配置添加 ``queue_cls`` 项，用于替换默认的请求队列
 
 
 0.6.1 (2017-03-23)
@@ -141,8 +164,8 @@ New features
 
 - 中间件添加 ``open`` 和 ``close`` 两个钩子函数，分别对应开启和关闭爬虫的事件
 - RetryMiddleware中可以自定义需要重试的HTTP状态码
-- 新增SpeedLimitMiddleware，用于爬虫限速
-- 新增ProxyMiddleware，用于为请求添加指定代理
+- 添加SpeedLimitMiddleware，用于爬虫限速
+- 添加ProxyMiddleware，用于为请求添加指定代理
 
 Update
 ~~~~~~

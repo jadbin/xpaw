@@ -3,7 +3,6 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-
 ============================
 xpaw |version| documentation
 ============================
@@ -19,21 +18,19 @@ Installation
 
 安装xpaw需要Python 3.5及更高版本的环境支持。
 
-可以直接使用如下命令通过PyPI安装:
+可以使用如下命令安装xpaw:
 
 .. code-block:: bash
 
     $ pip install xpaw
 
-也可使用如下命令通过源码安装:
+如果安装过程中遇到lxml安装失败的情况，可参考 `lxml installation <http://lxml.de/installation.html>`_ 。
+
+可以使用如下命令升级xpaw:
 
 .. code-block:: bash
 
-    $ python setup.py install
-
-如果安装过程中遇到lxml安装失败的情况，可参考 `lxml installation`_ 。
-
-.. _lxml installation: http://lxml.de/installation.html
+    $ pip install -U xpaw
 
 Spider Example
 ==============
@@ -77,8 +74,8 @@ Requirements
 .. _lxml: https://pypi.python.org/pypi/lxml
 .. _cssselect: https://pypi.python.org/pypi/cssselect
 
-Contents
-========
+Getting Started
+===============
 
 .. toctree::
    :maxdepth: 2

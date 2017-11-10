@@ -1,7 +1,7 @@
 .. _usage:
 
-Usage Guide
-===========
+Usage Examples
+==============
 
 Cron Job
 --------

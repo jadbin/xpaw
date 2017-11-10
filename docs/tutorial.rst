@@ -206,7 +206,7 @@ spider中处理response的函数的返回值需为可迭代对象，如tupe, lis
 
 有关CSS Selector语法的详细信息可以参考 `CSS Selectors <https://www.w3schools.com/cssref/css_selectors.asp>`_ 。
 
-我们也可以选择用XPath来定位quote的各项属性以及 "next page" 所在的节点：
+我们也可以选择用XPath来定位quote的各项属性以及翻页按钮所在的节点：
 
 .. code-block:: python
 
@@ -257,8 +257,7 @@ Storing the Scraped Data
 当爬取工作完成后，xpaw会调用pipeline的 ``close`` 成员函数 (如果存在的话)，我们借机在该函数中将所有爬取到的数据以json的格式写入到文件中。
 
 其实我们也可以选择在spider的 ``close`` 成员函数中完成数据的存储，这样甚至不用定义item和pipeline。
-但是我们更推荐在pipeline中完成数据的存储，这样可以更方便地使用xpaw提供的一些功能。
-关于xpaw提供的各项功能我们会在后续的章节中进行介绍。
+但我们更推荐在pipeline中完成数据的存储，这样在复杂的工程中会使得逻辑更为清晰。
 
 How to Run our Project
 ----------------------
