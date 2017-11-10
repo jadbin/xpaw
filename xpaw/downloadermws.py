@@ -16,21 +16,19 @@ log = logging.getLogger(__name__)
 
 
 class RetryMiddleware:
-    MAX_RETRY_TIMES = 3
     RETRY_ERRORS = (NetworkError,)
-    RETRY_HTTP_STATUS = (500, 502, 503, 504, 408, 429)
 
     def __init__(self, config):
-        if not config.getbool('retry_enabled', True):
+        if not config.getbool('retry_enabled'):
             raise NotEnabled
-        self._max_retry_times = config.getint('max_retry_times', self.MAX_RETRY_TIMES)
-        self._http_status = config.getlist('retry_http_status', self.RETRY_HTTP_STATUS)
+        self._max_retry_times = config.getint('max_retry_times')
+        self._http_status = config.getlist('retry_http_status')
 
     @classmethod
     def from_cluster(cls, cluster):
         return cls(cluster.config)
 
-    async def handle_response(self, request, response):
+    def handle_response(self, request, response):
         for p in self._http_status:
             if self.match_status(p, response.status):
                 return self.retry(request, "http status={}".format(response.status))
@@ -59,7 +57,7 @@ class RetryMiddleware:
             match = not match
         return match
 
-    async def handle_error(self, request, error):
+    def handle_error(self, request, error):
         if isinstance(error, self.RETRY_ERRORS):
             return self.retry(request, "{}: {}".format(type(error).__name__, error))
 
@@ -87,21 +85,21 @@ class DefaultHeadersMiddleware:
     def from_cluster(cls, cluster):
         return cls(cluster.config)
 
-    async def handle_request(self, request):
+    def handle_request(self, request):
         for h in self._headers:
             request.headers.setdefault(h, self._headers[h])
 
 
 class ImitatingProxyMiddleware:
     def __init__(self, config):
-        if not config.getbool('imitating_proxy_enabled', True):
+        if not config.getbool('imitating_proxy_enabled'):
             raise NotEnabled
 
     @classmethod
     def from_cluster(cls, cluster):
         return cls(cluster.config)
 
-    async def handle_request(self, request):
+    def handle_request(self, request):
         ip = "61.%s.%s.%s" % (random.randint(128, 191), random.randint(0, 255), random.randint(1, 254))
         request.headers.setdefault('X-Forwarded-For', ip)
         request.headers.setdefault('Via', '1.1 xpaw')
@@ -202,12 +200,12 @@ class ProxyMiddleware:
 
 class SpeedLimitMiddleware:
     def __init__(self, config, loop=None):
-        if not config.getbool('speed_limit_enabled'):
+        self._rate = config.getint('speed_limit_rate')
+        if self._rate is None:
             raise NotEnabled
-        self._rate = config.getint('speed_limit_rate', 1)
         if self._rate <= 0:
             raise ValueError("rate must be greater than 0")
-        self._burst = config.getint('speed_limit_burst', config.getint('downloader_clients', 1))
+        self._burst = config.getint('speed_limit_burst', config.getint('downloader_clients'))
         if self._burst <= 0:
             raise ValueError('burst must be greater than 0')
         self._interval = 1.0 / self._rate
@@ -237,3 +235,61 @@ class SpeedLimitMiddleware:
     def close(self):
         if self._update_future:
             self._update_future.cancel()
+
+
+class UserAgentMiddleware:
+    DEVICE_TYPE = {'desktop', 'mobile'}
+    BROWSER_TYPE = {'chrome'}
+
+    def __init__(self, config):
+        ua = config.get('user_agent')
+        self._random = config.getbool('random_user_agent')
+        if not ua and not self._random:
+            raise NotEnabled
+        self._device_type = 'desktop'
+        self._browser = 'chrome'
+        self._user_agent = None
+        if ua:
+            self._configure_user_agent(ua)
+
+    @classmethod
+    def from_cluster(cls, cluster):
+        return cls(cluster.config)
+
+    def handle_request(self, request):
+        if self._random:
+            user_agent = self._gen_user_agent(self._device_type, self._browser)
+        else:
+            user_agent = self._user_agent
+        request.headers.setdefault('User-Agent', user_agent)
+
+    def _configure_user_agent(self, ua):
+        if not ua.startswith(':'):
+            self._user_agent = ua
+            return
+        s = ua[1:].split(',')
+        s.reverse()
+        for i in s:
+            if i in self.DEVICE_TYPE:
+                self._device_type = i
+            elif i in self.BROWSER_TYPE:
+                self._browser = i
+            else:
+                raise ValueError('Unknown user agent description: {}'.format(i))
+        self._user_agent = self._gen_user_agent(self._device_type, self._browser)
+
+    @staticmethod
+    def _gen_user_agent(device, browser):
+        if browser == 'chrome':
+            chrome_version = '{}.0.{}.{}'.format(random.randint(50, 60),
+                                                 random.randint(0, 2999), random.randint(0, 99))
+            webkit = '{}.{}'.format(random.randint(531, 600), random.randint(0, 99))
+            if device == 'desktop':
+                os = 'Macintosh; Intel Mac OS X 10_10_4'
+                return ('Mozilla/5.0 ({}) AppleWebKit/{} (KHTML, like Gecko) '
+                        'Chrome/{} Safari/{}').format(os, webkit, chrome_version, webkit)
+            elif device == 'mobile':
+                os = 'iPhone; CPU iPhone OS 10_3 like Mac OS X'
+                mobile = '14E{:03d}'.format(random.randint(0, 999))
+                return ('Mozilla/5.0 ({}) AppleWebKit/{} (KHTML, like Gecko) '
+                        'CriOS/{} Mobile/{} Safari/{}').format(os, webkit, chrome_version, mobile, webkit)

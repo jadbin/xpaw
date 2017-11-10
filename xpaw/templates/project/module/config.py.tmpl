@@ -1,50 +1,57 @@
 # coding=utf-8
 
-# version=${version}
-# Configuration file, created automatically on ${datetime_now}
-
-# ===================================================================
-# Project configuration
-# ===================================================================
+# Configuration file, created by xpaw/${version} on ${datetime_now}
 
 project_name = '${project_name}'
 project_description = ''
 
-downloader_middlewares = [
-    # 'xpaw.downloadermws.ProxyAgentMiddleware',
-    'xpaw.downloadermws.DefaultHeadersMiddleware',
-    'xpaw.downloadermws.ImitatingProxyMiddleware',
-    'xpaw.downloadermws.RetryMiddleware'
-]
-
-spider_middlewares = []
-
+# Configure spider
 spider = '${project_name}.spider.${ProjectName}Spider'
 
+# Configure item pipelines
 item_pipelines = [
     '${project_name}.pipelines.${ProjectName}Pipeline'
 ]
 
-extensions = []
+# Configure downloader clients, i.e. the maximum concurrent requests (default: 100)
+# downloader_clients = 1
 
-# ===================================================================
-# System specific properties
-# ===================================================================
+# Enable cookie jar (disabled by default)
+# cookie_jar_enabled = True
 
-proxy_agent = {
-    'agent_addr': 'http://<address>:<port><path>'
-}
+# Disable SSL verification (enabled by default)
+# verify_ssl = False
 
-default_headers = {
-    'Connection': 'keep-alive',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Upgrade-Insecure-Requests': '1',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36',
-    'Accept-Encoding': 'gzip, deflate, sdch',
-    'Accept-Language': 'zh-CN,zh;q=0.8'
-}
+# Enable and configure speed limit (disabled by default)
+# speed_limit_rate = 1
+# Default burst size equals to downloader clients
+# speed_limit_burst = None
 
-# ===================================================================
-# Project specific properties
-# Add your own properties here
-# ===================================================================
+# Override the default request headers:
+# default_headers = {
+#     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+#     'Accept-Encoding': 'gzip, deflate',
+#     'Accept-Language': 'zh-CN,zh;q=0.8',
+#     'Cache-Control': 'max-age=0',
+#     'Connection': 'keep-alive',
+#     'Upgrade-Insecure-Requests': '1'
+# }
+
+# Configure user agent
+user_agent = ':desktop'
+
+# Enable imitating proxy, i.e. adding 'X-Forwarded-For' and 'Via' headers (disabled by default)
+imitating_proxy_enabled = True
+
+# Configure proxy
+# proxy = None
+# proxy_agent = None
+
+# Enable or disable downloader middlewares
+# downloader_middlewares = {}
+
+# Enable or disable spider middlewares
+# spider_middlewares = {}
+
+# Enable or disable extensions
+# extensions = {}

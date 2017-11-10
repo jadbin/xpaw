@@ -26,9 +26,10 @@ cookie_jar_enabled = False
 downloader_middlewares_base = {
     # cluster side
     'xpaw.downloadermws.SpeedLimitMiddleware': 100,
-    'xpaw.downloadermws.DefaultHeadersMiddleware': 200,
-    'xpaw.downloadermws.ImitatingProxyMiddleware': 300,
-    'xpaw.downloadermws.RetryMiddleware': 600,
+    'xpaw.downloadermws.DefaultHeadersMiddleware': 300,
+    'xpaw.downloadermws.ImitatingProxyMiddleware': 350,
+    'xpaw.downloadermws.UserAgentMiddleware': 400,
+    'xpaw.downloadermws.RetryMiddleware': 500,
     'xpaw.downloadermws.ProxyMiddleware': 700
     # downloader side
 }
@@ -38,6 +39,9 @@ spider_middlewares_base = {
     'xpaw.spidermws.DepthMiddleware': 900
     # spider side
 }
+
+speed_limit_rate = None
+speed_limit_burst = None
 
 default_headers = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
@@ -49,3 +53,15 @@ default_headers = {
 }
 
 user_agent = 'Mozilla/5.0 (compatible; xpaw/{})'.format(version)
+random_user_agent = False
+
+imitating_proxy_enabled = False
+
+retry_enabled = True
+max_retry_times = 3
+retry_http_status = (500, 502, 503, 504, 408, 429)
+
+proxy = None
+proxy_agent = None
+
+max_depth = None

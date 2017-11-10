@@ -17,30 +17,28 @@ class Cluster:
 
 
 class TestImitatingProxyMiddleware:
-    async def test_handle_request(self, loop):
-        mw = ImitatingProxyMiddleware.from_cluster(Cluster(loop=loop))
+    def test_handle_request(self):
+        mw = ImitatingProxyMiddleware.from_cluster(Cluster(imitating_proxy_enabled=True))
         req = HttpRequest("http://httpbin.org")
-        await mw.handle_request(req)
+        mw.handle_request(req)
         assert re.search(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", req.headers["X-Forwarded-For"])
         assert req.headers['Via'] == '1.1 xpaw'
 
-    async def test_not_enabled(self, loop):
+    def test_not_enabled(self):
         with pytest.raises(NotEnabled):
-            ImitatingProxyMiddleware.from_cluster(Cluster(imitating_proxy_enabled=False,
-                                                          loop=loop))
+            ImitatingProxyMiddleware.from_cluster(Cluster())
 
 
 class TestDefaultHeadersMiddleware:
-    async def test_handle_request(self, loop):
+    def test_handle_request(self):
         default_headers = {"User-Agent": "xpaw", "Connection": "keep-alive"}
         req_headers = {"User-Agent": "xpaw-test", "Connection": "keep-alive"}
-        mw = DefaultHeadersMiddleware.from_cluster(Cluster(default_headers=default_headers,
-                                                           loop=loop))
+        mw = DefaultHeadersMiddleware.from_cluster(Cluster(default_headers=default_headers))
         req = HttpRequest("http://httpbin.org", headers={"User-Agent": "xpaw-test"})
-        await mw.handle_request(req)
+        mw.handle_request(req)
         assert req_headers == req.headers
 
-    async def test_not_enabled(self, loop):
+    def test_not_enabled(self, loop):
         with pytest.raises(NotEnabled):
             DefaultHeadersMiddleware.from_cluster(Cluster(loop=loop, default_headers=None))
 
@@ -181,43 +179,41 @@ class TestProxyMiddleware:
 
 
 class TestRetryMiddleware:
-    async def test_handle_reponse(self, loop):
-        mw = RetryMiddleware.from_cluster(Cluster(retry_http_status=(500,),
-                                                  loop=loop))
+    def test_handle_reponse(self):
+        mw = RetryMiddleware.from_cluster(Cluster(retry_http_status=(500,)))
         req = HttpRequest("http://httpbin.org")
         resp = HttpResponse(URL("http://httpbin.org"), 502)
-        assert await mw.handle_response(req, resp) is None
+        assert mw.handle_response(req, resp) is None
         req2 = HttpRequest("http://httpbin.org")
         resp2 = HttpResponse(URL("http://httpbin.org"), 500)
-        retry_req2 = await mw.handle_response(req2, resp2)
+        retry_req2 = mw.handle_response(req2, resp2)
         assert retry_req2.meta['retry_times'] == 1
         assert str(retry_req2.url) == str(req2.url)
         req3 = HttpRequest("http://httpbin.org")
         resp3 = HttpResponse(URL("http://httpbin.org"), 500)
         req3.meta['retry_times'] = 2
-        retry_req3 = await mw.handle_response(req3, resp3)
+        retry_req3 = mw.handle_response(req3, resp3)
         assert retry_req3.meta['retry_times'] == 3
         assert str(retry_req3.url) == str(req3.url)
         req4 = HttpRequest("http://httpbin.org")
         req4.meta['retry_times'] = 3
         resp4 = HttpResponse(URL("http://httpbin.org"), 500)
         with pytest.raises(IgnoreRequest):
-            await mw.handle_response(req4, resp4)
+            mw.handle_response(req4, resp4)
 
-    async def test_handle_error(self, loop):
-        mw = RetryMiddleware.from_cluster(Cluster(loop=loop))
+    def test_handle_error(self):
+        mw = RetryMiddleware.from_cluster(Cluster())
         req = HttpRequest("http://httpbin.org")
         err = ValueError()
-        assert await mw.handle_error(req, err) is None
+        assert mw.handle_error(req, err) is None
         err2 = NetworkError()
-        retry_req2 = await mw.handle_error(req, err2)
+        retry_req2 = mw.handle_error(req, err2)
         assert isinstance(retry_req2, HttpRequest) and str(retry_req2.url) == str(req.url)
 
-    async def test_retry(self, loop):
+    def test_retry(self):
         max_retry_times = 2
         mw = RetryMiddleware.from_cluster(Cluster(max_retry_times=max_retry_times,
-                                                  retry_http_status=(500,),
-                                                  loop=loop))
+                                                  retry_http_status=(500,)))
         req = HttpRequest("http://httpbin.org")
         for i in range(max_retry_times):
             retry_req = mw.retry(req, "")
@@ -226,9 +222,9 @@ class TestRetryMiddleware:
         with pytest.raises(IgnoreRequest):
             mw.retry(req, "")
 
-    async def test_not_enabled(self, loop):
+    def test_not_enabled(self):
         with pytest.raises(NotEnabled):
-            RetryMiddleware.from_cluster(Cluster(retry_enabled=False, loop=loop))
+            RetryMiddleware.from_cluster(Cluster(retry_enabled=False))
 
     def test_match_status(self):
         assert RetryMiddleware.match_status("200", 200) is True
@@ -245,20 +241,17 @@ class TestRetryMiddleware:
 class TestSpeedLimitMiddleware:
     async def test_value_error(self, loop):
         with pytest.raises(ValueError):
-            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_enabled=True,
-                                                      speed_limit_rate=0,
+            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=0,
                                                       speed_limit_burst=1,
                                                       loop=loop))
         with pytest.raises(ValueError):
-            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_enabled=True,
-                                                      speed_limit_rate=1,
+            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=1,
                                                       speed_limit_burst=0,
                                                       loop=loop))
 
     async def test_not_enabled(self, loop):
         with pytest.raises(NotEnabled):
-            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=1,
-                                                      speed_limit_burst=1,
+            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_burst=1,
                                                       loop=loop))
 
     async def test_handle_request(self, loop):
@@ -289,3 +282,49 @@ class TestSpeedLimitMiddleware:
             assert f.cancel() is True
         await asyncio.sleep(0.01, loop=loop)
         assert counter.n <= 105
+
+
+class TestUserAgentMiddleware:
+    def test_not_enabled(self):
+        with pytest.raises(NotEnabled):
+            UserAgentMiddleware.from_cluster(Cluster(user_agent=None))
+
+    def test_static_user_agent(self):
+        user_agent = 'test user agent'
+        mw = UserAgentMiddleware.from_cluster(Cluster(user_agent=user_agent))
+        req = HttpRequest('http://httpbin.org')
+        mw.handle_request(req)
+        assert req.headers.get('User-Agent') == user_agent
+
+    def test_gen_user_agent(self):
+        mw = UserAgentMiddleware.from_cluster(Cluster(user_agent=':desktop,chrome'))
+        req = HttpRequest('http://httpbin.org')
+        mw.handle_request(req)
+        assert 'Chrome' in req.headers.get('User-Agent')
+
+        mw2 = UserAgentMiddleware.from_cluster(Cluster(user_agent=':mobile,chrome'))
+        req2 = HttpRequest('http://httpbin.org')
+        mw2.handle_request(req2)
+        assert 'CriOS' in req2.headers.get('User-Agent') and 'Mobile' in req2.headers.get('User-Agent')
+
+    def test_unknown_user_agent_desciprtion(self):
+        with pytest.raises(ValueError):
+            UserAgentMiddleware.from_cluster(Cluster(user_agent=':unknown'))
+
+    def test_random_user_agent(self):
+        mw = UserAgentMiddleware.from_cluster(Cluster(random_user_agent=True))
+        req = HttpRequest('http://httpbin.org')
+        req2 = HttpRequest('http://httpbin.org')
+        mw.handle_request(req)
+        mw.handle_request(req2)
+        assert 'User-Agent' in req.headers
+        assert req.headers.get('User-Agent') != req2.headers.get('User-Agent')
+        assert 'Chrome' in req.headers.get('User-Agent')
+
+    def test_random_user_agent_under_selection(self):
+        mw = UserAgentMiddleware.from_cluster(Cluster(user_agent=':mobile', random_user_agent=True))
+        for i in range(30):
+            req = HttpRequest('http://httpbin.org')
+            mw.handle_request(req)
+            assert 'User-Agent' in req.headers
+            assert 'CriOS' in req.headers.get('User-Agent') and 'Mobile' in req.headers.get('User-Agent')
