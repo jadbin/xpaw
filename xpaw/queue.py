@@ -16,6 +16,9 @@ class FifoQueue:
         self._queue = deque()
         self._semaphore = Semaphore(0, loop=loop)
 
+    def __len__(self):
+        return len(self._queue)
+
     @classmethod
     def from_cluster(cls, cluster):
         return cls(loop=cluster.loop)
@@ -39,6 +42,9 @@ class PriorityQueue:
     def __init__(self, loop=None):
         self._queue = []
         self._semaphore = Semaphore(0, loop=loop)
+
+    def __len__(self):
+        return len(self._queue)
 
     @classmethod
     def from_cluster(cls, cluster):

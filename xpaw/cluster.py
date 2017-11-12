@@ -53,9 +53,9 @@ class LocalCluster:
         self.extension = ExtensionManager.from_cluster(self)
         log.info('Extensions: %s',
                  [type(i).__module__ + '.' + type(i).__name__ for i in self.extension.components])
-        self._last_request = None
         self._job_futures = None
-        self._job_futures_done = set()
+        self._job_futures_done = None
+        self._req_in_job = None
         self._start_future = None
         self._supervisor_future = None
         self._is_running = False
@@ -70,6 +70,8 @@ class LocalCluster:
         for i in range(downloader_clients):
             f = asyncio.ensure_future(self._pull_requests(i), loop=self.loop)
             self._job_futures.append(f)
+        self._job_futures_done = set()
+        self._req_in_job = [None] * downloader_clients
 
         self.loop.add_signal_handler(signal.SIGINT,
                                      lambda loop=self.loop: asyncio.ensure_future(self.shutdown(), loop=loop))
@@ -104,12 +106,8 @@ class LocalCluster:
 
     async def _supervisor(self):
         timeout = self.config.getfloat("downloader_timeout")
-        task_finished_delay = 2 * timeout
-        self._last_request = time.time()
         while True:
             await asyncio.sleep(timeout, loop=self.loop)
-            if self._start_future.done() and time.time() - self._last_request > task_finished_delay:
-                break
             for i in range(len(self._job_futures)):
                 f = self._job_futures[i]
                 if f.done():
@@ -117,6 +115,15 @@ class LocalCluster:
                         self._job_futures_done.add(i)
                         reason = "cancelled" if f.cancelled() else str(f.exception())
                         log.error("Coro[%s] is shut down: %s", i, reason)
+                        self._req_in_job[i] = None
+            if self._start_future.done() and len(self.queue) <= 0:
+                no_active = True
+                for i in range(len(self._job_futures)):
+                    if self._req_in_job[i]:
+                        no_active = False
+                        break
+                if no_active:
+                    break
         asyncio.ensure_future(self.shutdown(), loop=self.loop)
 
     async def _push_start_requests(self):
@@ -142,8 +149,8 @@ class LocalCluster:
     async def _pull_requests(self, coro_id):
         while True:
             req = await self.queue.pop()
-            self._last_request = time.time()
             log.debug("The request (url=%s) has been pulled by coro[%s]", req.url, coro_id)
+            self._req_in_job[coro_id] = req
             try:
                 resp = await self.downloadermw.download(self.downloader, req)
             except CancelledError:
@@ -154,6 +161,7 @@ class LocalCluster:
                 await self.spidermw.handle_error(self.spider, req, e)
             else:
                 await self._handle_response(req, resp)
+            self._req_in_job[coro_id] = None
 
     async def _handle_response(self, req, resp):
         if isinstance(resp, HttpRequest):
