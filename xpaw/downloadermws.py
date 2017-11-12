@@ -47,12 +47,10 @@ class RetryMiddleware:
         if len(pattern) != n:
             match = False
         else:
-            i = 0
-            while i < n:
+            for i in range(n):
                 if pattern[i] != "x" and pattern[i] != "X" and pattern[i] != s[i]:
                     match = False
                     break
-                i += 1
         if verse:
             match = not match
         return match
