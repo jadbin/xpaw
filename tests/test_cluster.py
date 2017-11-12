@@ -11,8 +11,30 @@ from xpaw.run import run_spider
 from xpaw.handler import every
 from xpaw.item import Item, Field
 from xpaw.errors import IgnoreItem
-from xpaw.spidermws import DepthMiddleware
-from xpaw import defaultconfig
+from xpaw.queue import PriorityQueue
+
+
+class FooSpider(Spider):
+    def start_requests(self):
+        yield HttpRequest('http://localhost:80')
+        yield HttpRequest('http://httpbin.org/get')
+
+    async def parse(self, response):
+        await asyncio.sleep(1, loop=self.cluster.loop)
+        return ()
+
+
+class BadQueue(PriorityQueue):
+    async def pop(self):
+        req = await super().pop()
+        if req.url == 'http://localhost:80':
+            raise RuntimeError('not an error actually')
+        return req
+
+
+def test_coro_terminated():
+    run_spider(FooSpider, downloader_timeout=1, downloader_clients=2, queue_cls=BadQueue, max_retry_times=0)
+    logging.getLogger('xpaw').handlers.clear()
 
 
 class LinkItem(Item):
@@ -152,7 +174,7 @@ def test_run_link_spider():
     link_total = 15
     run_spider(LinkSpider, downloader_timeout=60, log_level='DEBUG', item_pipelines=[LinkPipeline],
                link_data=link_data, link_count=link_count, link_total=link_total, max_retry_times=1,
-               downloader_clients=3, spider_middlewares=[LinkSpiderMiddleware],
+               downloader_clients=10, spider_middlewares=[LinkSpiderMiddleware],
                downloader_middlewares=[LinkDownloaderMiddleware])
     assert len(link_data) == link_total
     for i in range(link_count):
