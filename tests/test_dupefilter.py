@@ -6,6 +6,8 @@ from xpaw.dupefilter import SetDupeFilter
 
 async def run_any_dupe_filter(f):
     r_get = HttpRequest("http://httpbin.org")
+    r_get_port_80 = HttpRequest("http://httpbin.org:80")
+    r_get_port_81 = HttpRequest("http://httpbin.org:81")
     r_get_dont_filter = HttpRequest("http://httpbin.org", dont_filter=True)
     r_get_dir = HttpRequest("http://httpbin.org/")
     r_get_post = HttpRequest("http://httpbin.org/post")
@@ -18,6 +20,8 @@ async def run_any_dupe_filter(f):
     r_get_query_2 = HttpRequest("http://httpbin.org/get?k2=v2&k1=v1")
     r_get_query_param = HttpRequest("http://httpbin.org/get?k1=v1", params={'k2': 'v2'})
     assert await f.is_duplicated(r_get) is False
+    assert await f.is_duplicated(r_get_port_80) is True
+    assert await f.is_duplicated(r_get_port_81) is False
     assert await f.is_duplicated(r_get) is True
     assert await f.is_duplicated(r_get_dont_filter) is False
     assert await f.is_duplicated(r_get_dir) is True

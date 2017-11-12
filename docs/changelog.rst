@@ -14,6 +14,11 @@ New features
 - 添加 ``xpaw.errors.NotEnabled`` ，在中间件/拓展的构造函数中控制抛出该异常来实现开启或禁用该中间件/拓展。
 - 添加UserAgentMiddleware，支持选择PC端或移动端的User-Agent，支持随机User-Agent
 
+Bug fixes
+~~~~~~~~~
+
+- 修复了request的fingerprint计算时没有考虑端口号的bug
+
 Update
 ~~~~~~
 
@@ -22,7 +27,7 @@ Update
 - 中间件的参数配置扁平化，修改了RetryMiddleware、ProxyMiddleware、DepthMiddleware的参数配置方式
 - ForwardedForMiddleware更名为ImitatingProxyMiddleware，新增添加 ``Via`` 请求头的功能
 - 系统配置 ``downloader_verify_ssl`` 更名为 ``verify_ssl`` ， ``downloader_cookie_jar_enabled`` 更名为 ``cookie_jar_enabled``
-- 移除spider middleware的 ``handle_error`` 接口，spider处理流程应当是可控的，不应当抛出异常
+- 更新了downloader和spider相关的错误处理流程
 
 
 0.8.0 (2017-11-5)
@@ -95,7 +100,7 @@ Update
 - 使用config.py替代config.yaml作为配置文件，移除对pyyaml的依赖
 - ForwardedForMiddleware移动到 ``xpaw.downloadermws.headers`` 模块下
 - 修改aiohttp的版本限制为>=2.2.0
-- 更新了中间件的错误处理机制
+- 更新了downloader和spider相关的错误处理流程
 - 不再采用中间件的形式实现请求的去重功能，并移除相关的中间件
 - ProxyAgentMiddleware的 ``proxy_agnet`` 配置下面 ``addr`` 字段更名为 ``agent_addr``
 

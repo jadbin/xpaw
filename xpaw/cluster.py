@@ -86,6 +86,39 @@ class LocalCluster:
             self.loop.close()
             log.info("Cluster is stopped")
 
+    async def shutdown(self):
+        if not self._is_running:
+            return
+        self._is_running = False
+        log.info("Shutdown now")
+        if self._job_futures:
+            for f in self._job_futures:
+                f.cancel()
+        if self._start_future:
+            self._start_future.cancel()
+        if self._supervisor_future:
+            self._supervisor_future.cancel()
+        await self.event_bus.send(events.cluster_shutdown)
+        await asyncio.sleep(0.001, loop=self.loop)
+        self.loop.stop()
+
+    async def _supervisor(self):
+        timeout = self.config.getfloat("downloader_timeout")
+        task_finished_delay = 2 * timeout
+        self._last_request = time.time()
+        while True:
+            await asyncio.sleep(timeout, loop=self.loop)
+            if self._start_future.done() and time.time() - self._last_request > task_finished_delay:
+                break
+            for i in range(len(self._job_futures)):
+                f = self._job_futures[i]
+                if f.done():
+                    if i not in self._job_futures_done:
+                        self._job_futures_done.add(i)
+                        reason = "cancelled" if f.cancelled() else str(f.exception())
+                        log.error("Coro[%s] is shut down: %s", i, reason)
+        asyncio.ensure_future(self.shutdown(), loop=self.loop)
+
     async def _push_start_requests(self):
         try:
             if hasattr(self.spider.start_requests, "cron_job"):
@@ -106,88 +139,53 @@ class LocalCluster:
         except Exception:
             log.warning("Error occurred when generated start requests", exc_info=True)
 
-    async def _supervisor(self):
-        timeout = self.config.getfloat("downloader_timeout")
-        task_finished_delay = 2 * timeout
-        self._last_request = time.time()
-        while True:
-            await asyncio.sleep(timeout, loop=self.loop)
-            if self._start_future.done() and time.time() - self._last_request > task_finished_delay:
-                break
-            for i in range(len(self._job_futures)):
-                f = self._job_futures[i]
-                if f.done():
-                    if i not in self._job_futures_done:
-                        self._job_futures_done.add(i)
-                        reason = "cancelled" if f.cancelled() else str(f.exception())
-                        log.error("Coro[%s] is shut down: %s", i, reason)
-        asyncio.ensure_future(self.shutdown(), loop=self.loop)
-
-    async def shutdown(self):
-        if not self._is_running:
-            return
-        self._is_running = False
-        log.info("Shutdown now")
-        if self._job_futures:
-            for f in self._job_futures:
-                f.cancel()
-        if self._start_future:
-            self._start_future.cancel()
-        if self._supervisor_future:
-            self._supervisor_future.cancel()
-        await self.event_bus.send(events.cluster_shutdown)
-        await asyncio.sleep(0.001, loop=self.loop)
-        self.loop.stop()
-
     async def _pull_requests(self, coro_id):
         while True:
             req = await self.queue.pop()
             self._last_request = time.time()
             log.debug("The request (url=%s) has been pulled by coro[%s]", req.url, coro_id)
             try:
-                result = await self.downloadermw.download(self.downloader, req)
+                resp = await self.downloadermw.download(self.downloader, req)
             except CancelledError:
                 raise
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
                     log.warning("Error occurred when sent request '%s'", req.url, exc_info=True)
-                try:
-                    await self.spidermw.handle_error(self.spider, req, e)
-                except CancelledError:
-                    raise
-                except Exception:
-                    log.warning("Error occurred in error callback", exc_info=True)
+                await self.spidermw.handle_error(self.spider, req, e)
             else:
-                await self._handle_result(req, result)
+                await self._handle_response(req, resp)
 
-    async def _handle_result(self, request, result):
-        if isinstance(result, HttpRequest):
-            await self._push_without_duplicated(result)
-        elif isinstance(result, HttpResponse):
+    async def _handle_response(self, req, resp):
+        if isinstance(resp, HttpRequest):
+            await self._push_without_duplicated(resp)
+        elif isinstance(resp, HttpResponse):
             # bind HttpRequest
-            result.request = request
-            await self.event_bus.send(events.response_received, response=result)
+            resp.request = req
+            await self.event_bus.send(events.response_received, response=resp)
             try:
-                res = await self.spidermw.parse(self.spider, result)
-                async for r in res:
-                    if isinstance(r, HttpRequest):
-                        await self._push_without_duplicated(r)
-                    elif isinstance(r, (BaseItem, dict)):
-                        try:
-                            await self.item_pipeline.handle_item(r)
-                        except CancelledError:
-                            raise
-                        except Exception as e:
-                            if not isinstance(e, IgnoreItem):
-                                log.warning("Error occurred when handled item: %s", r, exc_info=True)
-                            else:
-                                await self.event_bus.send(events.item_ignored, item=r)
-                        else:
-                            await self.event_bus.send(events.item_scraped, item=r)
+                result = await self.spidermw.parse(self.spider, resp)
+                for r in result:
+                    await self._handle_result(r)
             except CancelledError:
                 raise
             except Exception:
-                log.warning("Error occurred when parsed response of '%s'", request.url, exc_info=True)
+                log.warning("Error occurred when parsed response of '%s'", req.url, exc_info=True)
+
+    async def _handle_result(self, result):
+        if isinstance(result, HttpRequest):
+            await self._push_without_duplicated(result)
+        elif isinstance(result, (BaseItem, dict)):
+            try:
+                await self.item_pipeline.handle_item(result)
+            except CancelledError:
+                raise
+            except Exception as e:
+                if not isinstance(e, IgnoreItem):
+                    log.warning("Error occurred when handled item: %s", result, exc_info=True)
+                else:
+                    await self.event_bus.send(events.item_ignored, item=result)
+            else:
+                await self.event_bus.send(events.item_scraped, item=result)
 
     @staticmethod
     def _new_object_from_cluster(cls_path, cluster):

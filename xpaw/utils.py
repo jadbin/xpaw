@@ -82,7 +82,7 @@ def request_fingerprint(request):
         for k, v in request.params.items():
             queries.append('{}={}'.format(k, v))
     queries.sort()
-    sha1.update(to_bytes('{}://{}{}?{}'.format(url.scheme, url.host, url.path, '&'.join(queries))))
+    sha1.update(to_bytes('{}://{}{}:{}?{}'.format(url.scheme, url.host, url.path, url.port, '&'.join(queries))))
     sha1.update(request.body or b'')
     return sha1.hexdigest()
 
@@ -117,10 +117,9 @@ def string_camelcase(s):
 
 class AsyncGenWrapper:
     def __init__(self, gen):
-        if hasattr(gen, "__next__"):
-            self.iter = gen
-        else:
-            self.iter = iter(gen)
+        if not gen:
+            gen = ()
+        self.iter = gen.__iter__()
 
     async def __aiter__(self):
         return self
@@ -130,6 +129,15 @@ class AsyncGenWrapper:
             return next(self.iter)
         except StopIteration:
             raise StopAsyncIteration
+
+
+async def iterable_to_list(gen):
+    res = []
+    if not hasattr(gen, '__aiter__'):
+        gen = AsyncGenWrapper(gen)
+    async for r in gen:
+        res.append(r)
+    return res
 
 
 def cmp(a, b):

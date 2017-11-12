@@ -38,8 +38,6 @@ class LinkPipeline:
         if url == "http://httpbin.org/links/{}".format(self.n):
             raise IgnoreItem
         self.data.add(url)
-        if len(self.data) >= self.tot:
-            asyncio.ensure_future(self.cluster.shutdown(), loop=self.cluster.loop)
 
 
 class MyError(Exception):
@@ -49,7 +47,7 @@ class MyError(Exception):
 class LinkDownloaderMiddleware:
     def handle_request(self, request):
         if request.url == 'http://httpbin.org/status/406':
-            return HttpRequest('http://httpbin.org/status/407', dont_filter=True)
+            return HttpRequest('http://httpbin.org/status/407')
         if request.url == 'http://httpbin.org/status/410':
             raise MyError
 
@@ -62,24 +60,50 @@ class LinkDownloaderMiddleware:
             return HttpRequest('http://httpbin.org/status/411')
 
 
+class LinkSpiderMiddleware:
+    def handle_input(self, response):
+        if response.request.url == 'http://httpbin.org/status/412':
+            raise MyError
+
+    def handle_output(self, response, result):
+        return result
+
+    def handle_error(self, response, error):
+        if isinstance(error, MyError):
+            return ()
+
+
 class LinkSpider(Spider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.link_count = self.config.get('link_count')
+        self.data = self.config.get('link_data')
+        self.tot = self.config.get('link_total')
+
+    def open(self):
+        asyncio.ensure_future(self.supervisor(), loop=self.cluster.loop)
+
+    async def supervisor(self):
+        while True:
+            if len(self.data) >= self.tot:
+                asyncio.ensure_future(self.cluster.shutdown(), loop=self.cluster.loop)
+                break
+            await asyncio.sleep(1, loop=self.cluster.loop)
 
     @every(seconds=30)
     def start_requests(self):
-        yield HttpRequest("http://localhost", errback=self.error_back)
-        yield HttpRequest("http://localhost", errback=self.async_error_back, dont_filter=True)
+        yield HttpRequest("http://localhost:80", errback=self.error_back)
+        yield HttpRequest("http://localhost:81", errback=self.async_error_back)
         yield HttpRequest("http://httpbin.org/status/401", callback=self.generator_parse)
         yield HttpRequest("http://httpbin.org/status/402", callback=self.func_prase)
         yield HttpRequest("http://httpbin.org/status/403", callback=self.async_parse)
         yield HttpRequest("http://httpbin.org/status/404", callback=self.return_list_parse)
         yield HttpRequest("http://httpbin.org/status/405", callback=self.return_none)
-        yield HttpRequest("http://httpbin.org/status/406", dont_filter=True)
+        yield HttpRequest("http://httpbin.org/status/406")
         yield HttpRequest("http://httpbin.org/status/408")
-        yield HttpRequest("http://httpbin.org/status/410", dont_filter=True)
-        yield HttpRequest("http://httpbin.org/links/{}".format(self.link_count), dont_filter=True)
+        yield HttpRequest("http://httpbin.org/status/410")
+        yield HttpRequest("http://httpbin.org/status/412", errback=self.handle_input_error)
+        yield HttpRequest("http://httpbin.org/links/{}".format(self.link_count))
 
     def parse(self, response):
         selector = Selector(response.text)
@@ -88,40 +112,59 @@ class LinkSpider(Spider):
         yield LinkItem(url=response.request.url)
 
     def error_back(self, request, err):
+        self.data.add(request.url)
         raise RuntimeError('not an error actually')
 
     async def async_error_back(self, request, err):
+        self.data.add(request.url)
         raise RuntimeError('not an error actually')
 
     def generator_parse(self, response):
+        self.data.add(response.request.url)
         if response.status / 100 != 2:
             raise RuntimeError('not an error actually')
+        # it will never come here
         yield None
 
     def func_prase(self, response):
+        self.data.add(response.request.url)
         raise RuntimeError('not an error actually')
 
     async def async_parse(self, response):
+        self.data.add(response.request.url)
         raise RuntimeError('not an error actually')
 
     def return_list_parse(self, response):
+        self.data.add(response.request.url)
         return []
 
     def return_none(self, response):
-        pass
+        self.data.add(response.request.url)
+
+    def handle_input_error(self, request, error):
+        assert isinstance(error, MyError)
+        self.data.add(request.url)
 
 
 def test_run_link_spider():
     link_data = set()
     link_count = 5
-    link_total = 7
+    link_total = 15
     run_spider(LinkSpider, downloader_timeout=60, log_level='DEBUG', item_pipelines=[LinkPipeline],
                link_data=link_data, link_count=link_count, link_total=link_total, max_retry_times=1,
-               downloader_clients=1, spider_middlewares=[DepthMiddleware],
+               downloader_clients=3, spider_middlewares=[LinkSpiderMiddleware],
                downloader_middlewares=[LinkDownloaderMiddleware])
     assert len(link_data) == link_total
     for i in range(link_count):
         assert "http://httpbin.org/links/{}/{}".format(link_count, i) in link_data
+    assert "http://localhost:80" in link_data
+    assert "http://localhost:81" in link_data
+    assert "http://httpbin.org/status/401" in link_data
+    assert "http://httpbin.org/status/402" in link_data
+    assert "http://httpbin.org/status/403" in link_data
+    assert "http://httpbin.org/status/404" in link_data
+    assert "http://httpbin.org/status/405" in link_data
     assert "http://httpbin.org/status/409" in link_data
     assert "http://httpbin.org/status/411" in link_data
+    assert "http://httpbin.org/status/412" in link_data
     logging.getLogger('xpaw').handlers.clear()

@@ -94,19 +94,17 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     raise NetworkError(e)
                 else:
                     res = response
-            _res = await self._handle_response(request, res)
-            if _res:
-                res = _res
         except CancelledError:
             raise
         except Exception as e:
             res = await self._handle_error(request, e)
             if isinstance(res, Exception):
                 raise res
-            if res:
-                return res
-        else:
-            return res
+        if isinstance(res, HttpResponse):
+            _res = await self._handle_response(request, res)
+            if _res:
+                res = _res
+        return res
 
     async def _handle_request(self, request):
         for method in self._request_handlers:
