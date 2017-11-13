@@ -28,6 +28,7 @@ Update
 - ForwardedForMiddleware更名为ImitatingProxyMiddleware，新增添加 ``Via`` 请求头的功能
 - 系统配置 ``downloader_verify_ssl`` 更名为 ``verify_ssl`` ， ``downloader_cookie_jar_enabled`` 更名为 ``cookie_jar_enabled``
 - 更新了downloader和spider相关的错误处理流程
+- 更新了判定job结束的逻辑
 
 
 0.8.0 (2017-11-5)

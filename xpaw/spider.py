@@ -87,7 +87,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             if inspect.iscoroutine(res):
                 res = await res
             assert res is None or _isiterable(res), \
-                "Parsing result must be None or an iterable object, got {}".format(type(result).__name__)
+                "Parsing result must be None or an iterable object, got {}".format(type(res).__name__)
             result = await iterable_to_list(res)
         except CancelledError:
             raise

@@ -33,11 +33,15 @@ def configure_logging(name, config):
     log_dateformat = config.get('log_dateformat')
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
-    log_stream_handler = logging.StreamHandler()
-    log_stream_handler.setLevel(log_level)
-    log_formatter = logging.Formatter(log_format, log_dateformat)
-    log_stream_handler.setFormatter(log_formatter)
-    logger.addHandler(log_stream_handler)
+    filename = config.get('log_file')
+    if filename:
+        handler = logging.FileHandler(filename)
+    else:
+        handler = logging.StreamHandler()
+    handler.setLevel(log_level)
+    formatter = logging.Formatter(log_format, log_dateformat)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 
 def get_encoding_from_header(content_type):

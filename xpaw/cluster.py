@@ -1,6 +1,5 @@
 # coding=utf-8
 
-import time
 import asyncio
 import logging
 from os.path import join

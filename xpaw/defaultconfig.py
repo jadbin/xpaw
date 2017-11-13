@@ -5,7 +5,6 @@ from os.path import abspath, join, dirname
 from xpaw import __version__ as version
 
 log_file = None
-log_encoding = 'utf-8'
 log_level = 'INFO'
 log_format = '%(asctime)s %(name)s [%(levelname)s]: %(message)s'
 log_dateformat = '%Y-%m-%d %H:%M:%S'
