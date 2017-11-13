@@ -69,7 +69,7 @@ class CrawlCommand(Command):
 
     @property
     def short_desc(self):
-        return "Start to crawl web pages"
+        return "Run a crawling project"
 
     def add_arguments(self, parser):
         Command.add_arguments(self, parser)

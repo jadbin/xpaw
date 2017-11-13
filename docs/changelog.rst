@@ -3,8 +3,8 @@
 Change log
 ==========
 
-0.9.0 (2017-?-?)
-----------------
+0.9.0 (2017-11-13)
+------------------
 
 New features
 ~~~~~~~~~~~~
@@ -13,6 +13,7 @@ New features
   中间件加载的顺序由配置的权值确定，权值越大越贴近downloader/spider
 - 添加 ``xpaw.errors.NotEnabled`` ，在中间件/拓展的构造函数中控制抛出该异常来实现开启或禁用该中间件/拓展。
 - 添加UserAgentMiddleware，支持选择PC端或移动端的User-Agent，支持随机User-Agent
+- 支持配置日志写入指定文件
 
 Bug fixes
 ~~~~~~~~~
