@@ -48,7 +48,7 @@ async def test_basic_auth(loop):
 
     def validate_response(resp, login):
         assert resp.status == 200
-        data = json.loads(resp.body.decode())
+        data = json.loads(resp.body.decode('utf-8'))
         assert data['authenticated'] is True and data['user'] == login
 
     async def no_auth():
@@ -78,7 +78,7 @@ async def test_params(loop):
 
     def validate_response(resp, d):
         assert resp.status == 200
-        data = json.loads(resp.body.decode())
+        data = json.loads(resp.body.decode('utf-8'))
         assert data['args'] == d
 
     async def query_params():
@@ -136,7 +136,7 @@ async def test_proxy(test_server, loop):
     seed = str(random.randint(0, 2147483647))
     resp = await downloader.download(HttpRequest('http://httpbin.org/get?seed={}'.format(seed),
                                                  proxy='{}:{}'.format(server.host, server.port)))
-    args = json.loads(resp.body.decode())['args']
+    args = json.loads(resp.body.decode('utf-8'))['args']
     assert 'seed' in args and args['seed'] == seed
 
 
@@ -146,7 +146,7 @@ async def test_proxy_auth(test_server, loop):
 
     def validate_response(resp, login):
         assert resp.status == 200
-        data = json.loads(resp.body.decode())
+        data = json.loads(resp.body.decode('utf-8'))
         assert data['authenticated'] is True and data['user'] == login
 
     async def no_auth():
@@ -181,7 +181,7 @@ async def test_headers(loop):
     resp = await downloader.download(HttpRequest("http://httpbin.org/get",
                                                  headers=headers))
     assert resp.status == 200
-    data = json.loads(resp.body.decode())['headers']
+    data = json.loads(resp.body.decode('utf-8'))['headers']
     assert 'User-Agent' in data and data['User-Agent'] == 'xpaw'
     assert 'X-MY-HEADER' not in data
     assert 'X-My-Header' in data and data['X-My-Header'] == 'xpaw-HEADER'
@@ -194,7 +194,7 @@ async def test_post_data(loop):
         json_data = {'key': 'value', 'list': [1, 2], 'obj': {'name': 'my obj'}}
         resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=json_data))
         assert resp.status == 200
-        body = json.loads(resp.body.decode())
+        body = json.loads(resp.body.decode('utf-8'))
         headers = body['headers']
         assert 'Content-Type' in headers and headers['Content-Type'] == 'application/json'
         assert body['json'] == json_data
@@ -203,7 +203,7 @@ async def test_post_data(loop):
         form_data = {'key': 'value', 'list': ['1', '2']}
         resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=FormData(form_data)))
         assert resp.status == 200
-        body = json.loads(resp.body.decode())
+        body = json.loads(resp.body.decode('utf-8'))
         headers = body['headers']
         assert 'Content-Type' in headers and headers['Content-Type'] == 'application/x-www-form-urlencoded'
         assert body['form'] == form_data
@@ -212,14 +212,14 @@ async def test_post_data(loop):
         str_data = 'my str data: 测试数据'
         resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=str_data))
         assert resp.status == 200
-        body = json.loads(resp.body.decode())
+        body = json.loads(resp.body.decode('utf-8'))
         assert body['data'] == str_data
 
     async def post_bytes():
         bytes_data = 'my str data: 测试数据'.encode('gbk')
         resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=bytes_data))
         assert resp.status == 200
-        body = json.loads(resp.body.decode())
+        body = json.loads(resp.body.decode('utf-8'))
         headers = body['headers']
         data = body['data']
         assert 'Content-Type' in headers and headers['Content-Type'] == 'application/octet-stream'

@@ -5,7 +5,7 @@ import sys
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
-with open("README.rst") as fd:
+with open('README.rst', 'r', encoding='utf-8') as fd:
     long_description = fd.read()
 
 
@@ -13,8 +13,8 @@ def read_version():
     p = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                      "xpaw",
                      "version.py")
-    with open(p, "rb") as f:
-        return f.read().decode("utf-8").split("=")[-1].strip().strip('"')
+    with open(p, 'r', encoding='utf-8') as f:
+        return f.read().split("=")[-1].strip().strip('"')
 
 
 class PyTest(TestCommand):
