@@ -117,7 +117,7 @@ Writing our Spider
 Generation of start requests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-xpaw在加载spider时会调用 ``start_requests`` 成员函数来获取整个爬取过程的入口链接，我们需要在该函数中生成入口链接并用HttpRequest进行封装。
+xpaw在加载spider后会调用其 ``start_requests`` 函数来获取整个爬取过程的入口链接，我们需要在该函数中生成入口链接并用HttpRequest进行封装。
 在这个任务中入口链接选择网站的首页即可。
 HttpRequest的 ``callback`` 用来指定该request对应的response由哪个函数来处理。
 
@@ -253,11 +253,11 @@ Storing the Scraped Data
             with open(join(home_dir, 'quotes.json'), 'w') as f:
                 json.dump(self.data, f, ensure_ascii=False, indent=4)
 
-对于spider生成的item，xpaw会调用pipeline的 ``handle_item`` 成员函数对其进行处理，我们在该函数中将数据暂存到一个list中。
-当爬取工作完成后，xpaw会调用pipeline的 ``close`` 成员函数 (如果存在的话)，我们借机在该函数中将所有爬取到的数据以json的格式写入到文件中。
+对于spider生成的item，xpaw会调用pipeline的 ``handle_item`` 函数对其进行处理，我们在该函数中将数据暂存到一个list中。
+当爬取工作完成后，xpaw会调用pipeline的 ``close`` 函数 (如果存在的话)，我们借机在该函数中将所有爬取到的数据以json的格式写入到文件中。
 
-其实我们也可以选择在spider的 ``close`` 成员函数中完成数据的存储，这样甚至不用定义item和pipeline。
-但我们更推荐在pipeline中完成数据的存储，这样在复杂的工程中会使得逻辑更为清晰。
+其实我们也可以选择在spider的 ``close`` 函数中完成数据的存储，这样甚至不用定义item和pipeline。
+不过如果是在一些较为复杂的工程中，我们还是更推荐在pipeline中实现数据的存储，这样会使得逻辑更为清晰。
 
 How to Run our Project
 ----------------------

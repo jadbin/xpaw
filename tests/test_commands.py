@@ -50,7 +50,6 @@ def test_init(tmpdir, capsys):
     logging.getLogger('xpaw').handlers.clear()
 
 
-
 def test_init_no_project_dir(capsys):
     with pytest.raises(SystemExit) as excinfo:
         main(argv=['xpaw', 'init'])

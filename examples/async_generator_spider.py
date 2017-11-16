@@ -3,10 +3,12 @@
 from xpaw import Spider, HttpRequest, Selector
 from xpaw.run import run_spider
 
+
 class AsyncGeneratorSpider(Spider):
     """
     Need Python 3.6+
     """
+
     async def start_requests(self):
         yield HttpRequest("http://quotes.toscrape.com/", callback=self.parse)
 
@@ -15,6 +17,7 @@ class AsyncGeneratorSpider(Spider):
         tags = selector.xpath("//div[contains(@class, 'tags-box')]//a").text
         self.log("Top ten tags: %s", tags)
         yield HttpRequest("http://quotes.toscrape.com/", callback=self.parse)
+
 
 if __name__ == '__main__':
     run_spider(AsyncGeneratorSpider, log_level="DEBUG")
