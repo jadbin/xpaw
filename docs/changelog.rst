@@ -3,6 +3,10 @@
 Change log
 ==========
 
+0.9.1 (2017-?-?)
+----------------
+
+
 0.9.0 (2017-11-13)
 ------------------
 
@@ -20,8 +24,8 @@ Bug fixes
 
 - 修复了request的fingerprint计算时没有考虑端口号的bug
 
-Update
-~~~~~~
+Refactoring
+~~~~~~~~~~~
 
 - 移除ResponseNotMatchMiddleware
 - 移除ProxyAgentMiddle，原有功能并入ProxyMiddleware
@@ -53,8 +57,8 @@ New features
 - 支持设定HTTP请求的优先级并按优先级进行爬取
 - 添加item、pipeline模块，支持spider在处理response时返回BaseItem的实例或dict，并交由用户自定义的item pipelines进行处理
 
-Update
-~~~~~~
+Refactoring
+~~~~~~~~~~~
 
 - 实例化中间件的classmethod ``from_config`` 更改为 ``from_cluster`` ，现在 ``config`` 参数可以通过 ``cluster.config`` 获取
 - queue组件的 ``push`` , ``pop`` 函数，以及dupefilter组件的 ``is_duplicated`` 函数改为async类型
@@ -80,8 +84,8 @@ New features
 - HttpRequest添加 ``dont_filter`` 字段，为 ``True`` 时表示该请求不会被过滤
 - ``xpaw.run`` 模块中添加 ``run_spider`` 函数，便于在python代码中直接运行Spider类
 
-Update
-~~~~~~
+Refactoring
+~~~~~~~~~~~
 
 - ``xpaw.utils.run`` 模块中 ``run_crawler`` 函数移动至 ``xpaw.run`` 模块
 - 原utils, commands, downloadersmws, spidermws各合并为一个模块
@@ -96,8 +100,8 @@ New features
 - 使用继承Dupefilter的去重过滤器来实现去重功能，系统配置添加 ``dupefilter_cls`` 项，用于替换默认的去重过滤器
 - ``xpaw.utils.run`` 模块中添加 ``run_crawler`` 函数，便于在python代码中控制开启爬虫
 
-Update
-~~~~~~
+Refactoring
+~~~~~~~~~~~
 
 - 使用config.py替代config.yaml作为配置文件，移除对pyyaml的依赖
 - ForwardedForMiddleware移动到 ``xpaw.downloadermws.headers`` 模块下
@@ -120,8 +124,8 @@ Bug fixes
 
 - ResponseMatchMiddleware的配置修改为列表
 
-Update
-~~~~~~
+Refactoring
+~~~~~~~~~~~
 
 - middleware的顺序修改为依次向downloader/spider靠近，层层包裹
 - 移除任务配置中随机生成的 ``task_id``
@@ -135,17 +139,14 @@ Bug fixes
 
 - HttpResponse中的 ``url`` 字段源于aiohttp返回的ClientResponse中的 ``url`` 字段，实际应为 ``URL`` 对象
 
-Update
-~~~~~~
+Refactoring
+~~~~~~~~~~~
 
 - LocalCluster启动时不再新建一个线程
 
 
 0.6.3 (2017-05-01)
 ------------------
-
-Update
-~~~~~~
 
 - 优化日志工具中设置日志的接口
 
@@ -174,8 +175,8 @@ New features
 - 添加SpeedLimitMiddleware，用于爬虫限速
 - 添加ProxyMiddleware，用于为请求添加指定代理
 
-Update
-~~~~~~
+Refactoring
+~~~~~~~~~~~
 
 - 移除MongoDedupeMiddleware及对pymongo的依赖
 - 修改ProxyAgentMiddleware、RetryMiddleware在配置文件中的参数格式
@@ -185,4 +186,4 @@ Update
 0.6.0 (2017-03-16)
 ------------------
 
-开始投入试用的第一个版本。
+开始投入试用的第一个版本

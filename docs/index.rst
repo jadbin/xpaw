@@ -83,6 +83,15 @@ Getting Started
    tutorial
    usage
 
+Basic Concept
+=============
+
+.. toctree::
+   :maxdepth: 2
+
+   architecture
+   spider
+
 All the Rest
 ============
 

@@ -15,4 +15,4 @@ class RunningSingleSpider(Spider):
 
 
 if __name__ == '__main__':
-    run_spider(RunningSingleSpider, log_level="DEBUG")
+    run_spider(RunningSingleSpider, log_level='DEBUG')

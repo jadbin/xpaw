@@ -1,6 +1,6 @@
-.. _tutorial:
-
 .. include:: <isonum.txt>
+
+.. _tutorial:
 
 Tutorial
 ========
@@ -123,7 +123,7 @@ HttpRequest的 ``callback`` 用来指定该request对应的response由哪个函�
 
 .. note::
 
-    - ``start_requests`` 函数的返回值需为可迭代对象，如tupe, list, generator等。
+    - ``start_requests`` 函数的返回值需为可迭代对象，如tuple, list, generator等。
     - ``callback`` 只能指定为spider自身的成员函数。
 
 Extracting data & links
@@ -131,7 +131,7 @@ Extracting data & links
 
 xpaw成功获取到response之后，会调用在request中指定的 ``callback`` 函数来处理response；
 如果没有指定则会默认调用spider中名为 "parse" 的函数，这时如果没有定义 "parse" 函数，则会抛出异常。
-spider中处理response的函数的返回值需为可迭代对象，如tupe, list, generator等。
+spider中处理response的函数的返回值需为可迭代对象，如tuple, list, generator等。
 
 在 ``parse`` 函数中我们需要提取出quote的各项属性和翻页链接。
 通过查看网页的源代码，我们发现每个quote是用类似如下的HTML代码进行描述的：
@@ -204,7 +204,7 @@ spider中处理response的函数的返回值需为可迭代对象，如tupe, lis
         yield HttpRequest(next_page_url, callback=self.parse)
     ...
 
-有关CSS Selector语法的详细信息可以参考 `CSS Selectors <https://www.w3schools.com/cssref/css_selectors.asp>`_ 。
+有关CSS Selector语法的详细信息可以参考 `CSS Selectors <http://w3schools.bootcss.com/cssref/css_selectors.html>`_ 。
 
 我们也可以选择用XPath来定位quote的各项属性以及翻页按钮所在的节点：
 
@@ -222,11 +222,11 @@ spider中处理response的函数的返回值需为可迭代对象，如tupe, lis
     next_page = selector.xpath('//li[@class="next"]/a/@href')
     ...
 
-有关XPath的详细信息可以参考 `XPath Tutorial <https://www.w3schools.com/xml/xpath_intro.asp>`_ 。
+有关XPath的详细信息可以参考 `XPath Syntax <http://w3schools.bootcss.com/xsl/xpath_syntax.html>`_ 。
 
 .. note::
 
-    - spider中处理response的函数的返回值需为可迭代对象，如tupe, list, generator等。
+    - spider中处理response的函数的返回值需为可迭代对象，如tuple, list, generator等。
     - 在提取链接时我们不需要关注提取出URL是否重复了，xpaw会自动帮我们完成URL去重的工作。
 
 Storing the Scraped Data

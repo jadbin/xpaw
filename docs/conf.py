@@ -95,9 +95,16 @@ html_theme = 'alabaster'
 # documentation.
 #
 html_theme_options = {
+    'description': 'Async web scraping framework',
+    'github_user': 'jadbin',
+    'github_repo': 'xpaw',
+    'github_button': False,
+    'travis_button': True,
     'font_family': "'goudy old style', 'minion pro', 'bell mt', Georgia, serif",
     'font_size': '14px',
-    'code_font_size': '12px'
+    'code_font_size': '12px',
+    'note_bg': '#E5ECD1',
+    'note_border': '#BFCF8C',
 }
 
 # Custom sidebar templates, maps document names to template names.

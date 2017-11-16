@@ -18,4 +18,4 @@ class CronJobSpider(Spider):
 
 
 if __name__ == '__main__':
-    run_spider(CronJobSpider, log_level="DEBUG")
+    run_spider(CronJobSpider, log_level='DEBUG')
