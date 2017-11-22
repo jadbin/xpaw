@@ -5,7 +5,7 @@ import logging
 from os.path import isfile, isdir, join
 
 from xpaw.cli import main
-from xpaw import __version__
+from xpaw.version import __version__
 
 
 def test_print_help(capsys):

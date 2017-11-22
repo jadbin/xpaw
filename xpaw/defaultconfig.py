@@ -2,7 +2,7 @@
 
 from os.path import abspath, join, dirname
 
-from xpaw import __version__ as version
+from xpaw.version import __version__ as version
 
 log_file = None
 log_level = 'INFO'

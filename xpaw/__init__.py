@@ -1,12 +1,7 @@
 # coding=utf-8
 
-
-from .version import __version__
-
 # Add patch to avoid 'TIME_WAIT'
 from . import _patch
-
-del _patch
 
 from aiohttp import FormData
 
@@ -17,5 +12,7 @@ from .downloader import Downloader
 from .item import Item, Field
 from .handler import every
 
-__all__ = ('__version__', 'FormData', 'HttpRequest', 'HttpResponse', 'Downloader', 'Spider', 'Selector',
+__all__ = ('FormData', 'HttpRequest', 'HttpResponse', 'Downloader', 'Spider', 'Selector',
            'Item', 'Field', 'every')
+
+del _patch
