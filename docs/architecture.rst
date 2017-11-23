@@ -16,7 +16,7 @@ Data Flow
 
 1. cluster从spider中获取初始的requests。
 2. cluster将得到的初始的requests放入到queue中。
-3. cluster不停地轮询queue并从中获取待处理的request。
+3. cluster不停地从queue中获取待处理的request。
 4. cluster将request交由downloader发起实际的请求。
 5. downloader将请求得到response返回给cluster。
 6. cluster将得到的response交由spider中指定的处理函数进行处理。

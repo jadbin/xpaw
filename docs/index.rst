@@ -83,8 +83,8 @@ Getting Started
    tutorial
    usage
 
-Basic Concept
-=============
+Basic Concepts
+==============
 
 .. toctree::
    :maxdepth: 2
