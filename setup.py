@@ -34,7 +34,7 @@ def main():
         "lxml>=4.1.0",
         "cssselect>=1.0.1"
     ]
-    tests_requires = install_requires + ["pytest", "pytest-aiohttp"]
+    tests_requires = install_requires + ["pytest", "pytest-aiohttp>=0.1.3"]
     setup(
         name="xpaw",
         version=read_version(),
