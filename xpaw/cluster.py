@@ -60,6 +60,8 @@ class LocalCluster:
         self._is_running = False
 
     def start(self):
+        if self._is_running:
+            return
         asyncio.ensure_future(self.event_bus.send(events.cluster_start), loop=self.loop)
         self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
         self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.loop)
