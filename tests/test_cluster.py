@@ -33,7 +33,7 @@ class BadQueue(PriorityQueue):
 
 
 def test_coro_terminated():
-    run_spider(FooSpider, downloader_timeout=1, downloader_clients=2, queue_cls=BadQueue, max_retry_times=0)
+    run_spider(FooSpider, downloader_clients=2, queue_cls=BadQueue, max_retry_times=0)
     logging.getLogger('xpaw').handlers.clear()
 
 
