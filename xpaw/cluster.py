@@ -117,15 +117,19 @@ class LocalCluster:
                         reason = "cancelled" if f.cancelled() else str(f.exception())
                         log.error("Coro[%s] is shut down: %s", i, reason)
                         self._req_in_job[i] = None
-            if self._start_future.done() and len(self.queue) <= 0:
-                no_active = True
-                for i in range(len(self._job_futures)):
-                    if self._req_in_job[i]:
-                        no_active = False
-                        break
-                if no_active:
-                    break
+            if self._all_done():
+                break
         asyncio.ensure_future(self.shutdown(), loop=self.loop)
+
+    def _all_done(self):
+        if self._start_future.done() and len(self.queue) <= 0:
+            no_active = True
+            for i in range(len(self._job_futures)):
+                if self._req_in_job[i]:
+                    no_active = False
+                    break
+            return no_active
+        return False
 
     async def _push_start_requests(self):
         try:
@@ -163,6 +167,9 @@ class LocalCluster:
             else:
                 await self._handle_response(req, resp)
             self._req_in_job[coro_id] = None
+            # check if it's all done
+            if self._all_done():
+                asyncio.ensure_future(self.shutdown(), loop=self.loop)
 
     async def _handle_response(self, req, resp):
         if isinstance(resp, HttpRequest):
