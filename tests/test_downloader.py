@@ -10,6 +10,7 @@ from aiohttp import web
 from aiohttp.helpers import BasicAuth
 from multidict import MultiDict
 from aiohttp import FormData
+import async_timeout
 
 from xpaw.http import HttpRequest
 from xpaw.downloader import Downloader, DownloaderMiddlewareManager
@@ -117,7 +118,7 @@ async def make_proxy_server(test_server, loop):
         else:
             auth = BasicAuth.decode(auth_str)
         async with aiohttp.ClientSession(loop=loop) as session:
-            with aiohttp.Timeout(60, loop=loop):
+            with async_timeout.timeout(60, loop=loop):
                 async with session.request("GET", request.raw_path, auth=auth) as resp:
                     body = await resp.read()
                     return web.Response(status=resp.status,

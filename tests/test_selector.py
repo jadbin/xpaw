@@ -65,8 +65,8 @@ class TestSelector:
         assert s.xpath("//meta/@charset")[0].text == "gbk"
         content_type = s.xpath("//meta[@http-equiv='Content-Type']/@content")[0].text
         assert content_type == "text/html; charset=gbk"
-        mtype, stype, _, params = parse_mimetype(content_type)
-        assert mtype == "text" and stype == "html" and params.get("charset") == "gbk"
+        mimetype = parse_mimetype(content_type)
+        assert mimetype.type == "text" and mimetype.subtype == "html" and mimetype.parameters.get("charset") == "gbk"
 
     def test_wrong_arguments(self):
         html = b"<html></html>"

@@ -56,7 +56,7 @@ http://xpaw.readthedocs.io/
 Requirements
 ============
 
-- Python >= 3.5
+- Python >= 3.5.3
 - `aiohttp`_
 - `lxml`_
 - `cssselect`_

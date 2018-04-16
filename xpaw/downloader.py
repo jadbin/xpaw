@@ -6,6 +6,7 @@ import inspect
 from asyncio import CancelledError
 
 import aiohttp
+import async_timeout
 
 from .middleware import MiddlewareManager
 from .http import HttpRequest, HttpResponse
@@ -34,7 +35,7 @@ class Downloader:
                                          cookies=request.cookies,
                                          cookie_jar=self._cookie_jar,
                                          loop=self._loop) as session:
-            with aiohttp.Timeout(timeout, loop=self._loop):
+            with async_timeout.timeout(timeout, loop=self._loop):
                 if isinstance(request.body, dict):
                     data, json = None, request.body
                 else:

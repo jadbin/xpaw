@@ -27,12 +27,12 @@ class PyTest(TestCommand):
 
 
 def main():
-    if sys.version_info < (3, 5):
-        raise RuntimeError("Python 3.5+ is required")
+    if sys.version_info < (3, 5, 3):
+        raise RuntimeError("The minimal supported Python version is 3.5.3")
     install_requires = [
-        "aiohttp>=2.3.2",
-        "lxml>=4.1.0",
-        "cssselect>=1.0.1"
+        "aiohttp>=3.1.3,<4.0",
+        "lxml>=4.1.0,<5.0",
+        "cssselect>=1.0.3,<2.0"
     ]
     tests_requires = install_requires + ["pytest", "pytest-aiohttp>=0.1.3"]
     setup(

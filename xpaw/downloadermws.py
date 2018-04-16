@@ -7,6 +7,7 @@ import asyncio
 from asyncio import CancelledError
 
 import aiohttp
+import async_timeout
 from yarl import URL
 
 from .errors import IgnoreRequest, NetworkError, NotEnabled
@@ -167,7 +168,7 @@ class ProxyMiddleware:
     async def _update_proxy_list(self):
         try:
             async with aiohttp.ClientSession(loop=self._loop) as session:
-                with aiohttp.Timeout(self.TIMEOUT, loop=self._loop):
+                with async_timeout.timeout(self.TIMEOUT, loop=self._loop):
                     async with session.get(self._agent_addr) as resp:
                         body = await resp.read()
                         proxy_list = json.loads(body.decode(encoding="utf-8"))
