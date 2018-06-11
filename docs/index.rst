@@ -16,7 +16,7 @@ Key Features
 Installation
 ============
 
-安装xpaw需要Python 3.5及更高版本的环境支持。
+安装xpaw需要Python 3.5.3及更高版本的环境支持。
 
 可以使用如下命令安装xpaw:
 

@@ -38,21 +38,10 @@ class Command:
         return self.short_desc
 
     def add_arguments(self, parser):
-        parser.add_argument("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE",
-                            help="set/override setting (may be repeated)")
-        parser.add_argument("-l", "--log-level", dest="log_level", metavar="LEVEL",
-                            help="log level")
+        pass
 
     def process_arguments(self, args):
-        # setting
-        try:
-            self.config.update(dict(x.split("=", 1) for x in args.set), priority="cmdline")
-        except ValueError:
-            raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
-
-        # logger
-        if args.log_level:
-            self.config.set("log_level", args.log_level, priority="cmdline")
+        pass
 
     def run(self, args):
         raise NotImplementedError
@@ -72,12 +61,23 @@ class CrawlCommand(Command):
         return "Run a crawling project"
 
     def add_arguments(self, parser):
-        Command.add_arguments(self, parser)
-
         parser.add_argument("project_dir", metavar="project_dir", nargs="?", help="project directory")
+        parser.add_argument("-l", "--log-level", dest="log_level", metavar="LEVEL",
+                            help="log level")
+        parser.add_argument("--log-file", dest="log_file", metavar="FILE",
+                            help="log file")
+        parser.add_argument("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE",
+                            help="set/override setting (may be repeated)")
 
     def process_arguments(self, args):
-        Command.process_arguments(self, args)
+        if args.log_level:
+            self.config.set("log_level", args.log_level)
+        if args.log_file:
+            self.config.set('log_file', args.log_file)
+        try:
+            self.config.update(dict(x.split("=", 1) for x in args.set))
+        except ValueError:
+            raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
 
     def run(self, args):
         if not args.project_dir:
@@ -115,13 +115,9 @@ class InitCommand(Command):
         return "Initialize a crawling project"
 
     def add_arguments(self, parser):
-        Command.add_arguments(self, parser)
-
         parser.add_argument("project_dir", metavar="project_dir", nargs="?", help="project directory")
 
     def process_arguments(self, args):
-        Command.process_arguments(self, args)
-
         if args.project_dir:
             if not exists(args.project_dir):
                 os.mkdir(args.project_dir, mode=0o775)
@@ -187,9 +183,6 @@ class VersionCommand(Command):
     @property
     def short_desc(self):
         return "Print the version"
-
-    def add_arguments(self, parser):
-        Command.add_arguments(self, parser)
 
     def run(self, args):
         print("xpaw version {}".format(__version__))

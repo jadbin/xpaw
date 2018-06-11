@@ -86,7 +86,6 @@ class LocalCluster:
         except Exception:
             log.error("Fatal error occurred while running cluster", exc_info=True)
         finally:
-            self.loop.close()
             log.info("Cluster is stopped")
 
     async def shutdown(self):
@@ -97,10 +96,13 @@ class LocalCluster:
         if self._job_futures:
             for f in self._job_futures:
                 f.cancel()
+            self._job_futures = None
         if self._start_future:
             self._start_future.cancel()
+            self._start_future = None
         if self._supervisor_future:
             self._supervisor_future.cancel()
+            self._supervisor_future = None
         await self.event_bus.send(events.cluster_shutdown)
         await asyncio.sleep(0.001, loop=self.loop)
         self.loop.stop()
@@ -233,5 +235,5 @@ class LocalCluster:
                 if not key.startswith("_"):
                     value = getattr(module, key)
                     if not isinstance(value, (types.FunctionType, types.ModuleType, type)):
-                        task_config.set(key.lower(), value, "project")
+                        task_config.set(key.lower(), value)
         return task_config

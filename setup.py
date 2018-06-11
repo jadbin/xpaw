@@ -62,7 +62,7 @@ def main():
             "Programming Language :: Python :: 3.6",
             "Topic :: Internet :: WWW/HTTP",
             "Topic :: Software Development :: Libraries :: Application Frameworks"
-        ],
+        ]
     )
 
 
