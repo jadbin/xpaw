@@ -12,6 +12,7 @@ from yarl import URL
 
 from .errors import IgnoreRequest, NetworkError, NotEnabled
 from .utils import parse_url
+from .version import __version__
 
 log = logging.getLogger(__name__)
 
@@ -101,7 +102,7 @@ class ImitatingProxyMiddleware:
     def handle_request(self, request):
         ip = "61.%s.%s.%s" % (random.randint(128, 191), random.randint(0, 255), random.randint(1, 254))
         request.headers.setdefault('X-Forwarded-For', ip)
-        request.headers.setdefault('Via', '1.1 xpaw')
+        request.headers.setdefault('Via', '{} xpaw'.format(__version__))
 
 
 class ProxyMiddleware:
@@ -199,12 +200,12 @@ class ProxyMiddleware:
 
 class SpeedLimitMiddleware:
     def __init__(self, config, loop=None):
-        self._rate = config.getint('speed_limit_rate')
-        if self._rate is None:
+        if not config.getbool('speed_limit_enabled'):
             raise NotEnabled
+        self._rate = config.getint('speed_limit_rate')
         if self._rate <= 0:
             raise ValueError("rate must be greater than 0")
-        self._burst = config.getint('speed_limit_burst', config.getint('downloader_clients'))
+        self._burst = config.getint('speed_limit_burst')
         if self._burst <= 0:
             raise ValueError('burst must be greater than 0')
         self._interval = 1.0 / self._rate

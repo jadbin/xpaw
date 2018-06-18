@@ -39,8 +39,9 @@ spider_middlewares_base = {
     # spider side
 }
 
-speed_limit_rate = None
-speed_limit_burst = None
+speed_limit_enabled = False
+speed_limit_rate = 1
+speed_limit_burst = 1
 
 default_headers = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
