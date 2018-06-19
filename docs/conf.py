@@ -100,7 +100,7 @@ html_theme_options = {
     'github_repo': 'xpaw',
     'github_button': False,
     'travis_button': True,
-    'font_family': "'goudy old style', 'minion pro', 'bell mt', Georgia, serif",
+    'font_family': '"Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif',
     'font_size': '14px',
     'code_font_size': '12px',
     'note_bg': '#E5ECD1',

@@ -78,15 +78,18 @@ Getting Started
 ===============
 
 .. toctree::
+   :caption: Getting Started
    :maxdepth: 2
 
-   tutorial
+   tutorial1
+   tutorial2
    usage
 
-Basic Concepts
-==============
+References
+==========
 
 .. toctree::
+   :caption: References
    :maxdepth: 2
 
    architecture
@@ -96,6 +99,7 @@ All the Rest
 ============
 
 .. toctree::
+   :caption: All the Rest
    :maxdepth: 1
 
    changelog
