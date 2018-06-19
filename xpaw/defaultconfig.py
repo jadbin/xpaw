@@ -65,3 +65,5 @@ proxy = None
 proxy_agent = None
 
 max_depth = None
+
+daemon = False

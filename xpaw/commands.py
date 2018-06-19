@@ -12,6 +12,7 @@ from .utils import string_camelcase, render_templatefile
 from .version import __version__
 from .cluster import LocalCluster
 from .utils import configure_logging
+from . import utils
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class Command:
 class CrawlCommand(Command):
     @property
     def syntax(self):
-        return "<project_dir>"
+        return "[OPTIONS] <PATH>"
 
     @property
     def name(self):
@@ -58,21 +59,27 @@ class CrawlCommand(Command):
 
     @property
     def short_desc(self):
-        return "Run a crawling project"
+        return "Start to crawl web pages"
 
     def add_arguments(self, parser):
-        parser.add_argument("project_dir", metavar="project_dir", nargs="?", help="project directory")
+        parser.add_argument("path", metavar="PATH", nargs="?", help="source code path")
+        parser.add_argument('-d', '--daemon', dest='daemon', action='store_true',
+                            help='run in daemon mode')
         parser.add_argument("-l", "--log-level", dest="log_level", metavar="LEVEL",
                             help="log level")
         parser.add_argument("--log-file", dest="log_file", metavar="FILE",
                             help="log file")
         parser.add_argument("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE",
-                            help="set/override setting (may be repeated)")
+                            help="set/override setting (can be repeated)")
 
     def process_arguments(self, args):
-        if args.log_level:
+        if not args.path:
+            raise UsageError()
+        if args.daemon is not None:
+            self.config.set('daemon', args.daemon)
+        if args.log_level is not None:
             self.config.set("log_level", args.log_level)
-        if args.log_file:
+        if args.log_file is not None:
             self.config.set('log_file', args.log_file)
         try:
             self.config.update(dict(x.split("=", 1) for x in args.set))
@@ -80,15 +87,15 @@ class CrawlCommand(Command):
             raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
 
     def run(self, args):
-        if not args.project_dir:
-            raise UsageError()
-        if not isfile(join(args.project_dir, "setup.cfg")):
+        if not isfile(join(args.path, "setup.cfg")):
             self.exitcode = 1
-            print("Error: Cannot find 'setup.cfg' in {}".format(abspath(args.project_dir)))
+            print("Error: Cannot find 'setup.cfg' in {}".format(abspath(args.path)))
             return
 
+        if self.config.getbool('daemon'):
+            utils.be_daemon()
         configure_logging("xpaw", self.config)
-        cluster = LocalCluster(args.project_dir, self.config)
+        cluster = LocalCluster(args.path, self.config)
         cluster.start()
 
 
@@ -104,7 +111,7 @@ class InitCommand(Command):
 
     @property
     def syntax(self):
-        return "<project_dir>"
+        return "<DIR>"
 
     @property
     def name(self):
@@ -115,7 +122,7 @@ class InitCommand(Command):
         return "Initialize a crawling project"
 
     def add_arguments(self, parser):
-        parser.add_argument("project_dir", metavar="project_dir", nargs="?", help="project directory")
+        parser.add_argument("project_dir", metavar="DIR", nargs="?", help="project directory")
 
     def process_arguments(self, args):
         if args.project_dir:
