@@ -8,6 +8,7 @@ from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
 from xpaw.errors import IgnoreRequest, NetworkError, NotEnabled
+from xpaw.version import __version__
 
 
 class Cluster:
@@ -22,7 +23,7 @@ class TestImitatingProxyMiddleware:
         req = HttpRequest("http://httpbin.org")
         mw.handle_request(req)
         assert re.search(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", req.headers["X-Forwarded-For"])
-        assert req.headers['Via'] == '1.1 xpaw'
+        assert req.headers['Via'] == '{} xpaw'.format(__version__)
 
     def test_not_enabled(self):
         with pytest.raises(NotEnabled):
@@ -241,17 +242,20 @@ class TestRetryMiddleware:
 class TestSpeedLimitMiddleware:
     async def test_value_error(self, loop):
         with pytest.raises(ValueError):
-            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=0,
+            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_enabled=True,
+                                                      speed_limit_rate=0,
                                                       speed_limit_burst=1,
                                                       loop=loop))
         with pytest.raises(ValueError):
-            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=1,
+            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_enabled=True,
+                                                      speed_limit_rate=1,
                                                       speed_limit_burst=0,
                                                       loop=loop))
 
     async def test_not_enabled(self, loop):
         with pytest.raises(NotEnabled):
-            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_burst=1,
+            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=1,
+                                                      speed_limit_burst=1,
                                                       loop=loop))
 
     async def test_handle_request(self, loop):
