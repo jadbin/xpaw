@@ -88,6 +88,9 @@ class LocalCluster:
         finally:
             log.info("Cluster is stopped")
 
+    def close(self):
+        self.loop.close()
+
     async def shutdown(self):
         if not self._is_running:
             return

@@ -42,6 +42,12 @@ def configure_logging(name, config):
     formatter = logging.Formatter(log_format, log_dateformat)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+    return handler
+
+
+def remove_logger(name, handler):
+    logger = logging.getLogger(name)
+    logger.removeHandler(handler)
 
 
 def get_encoding_from_header(content_type):
