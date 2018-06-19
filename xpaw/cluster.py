@@ -12,7 +12,6 @@ from asyncio import CancelledError
 
 from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
-from .utils import load_object
 from .errors import IgnoreRequest, IgnoreItem
 from .downloader import DownloaderMiddlewareManager
 from .spider import SpiderMiddlewareManager
@@ -22,12 +21,14 @@ from . import events
 from .extension import ExtensionManager
 from .item import BaseItem
 from .pipeline import ItemPipelineManager
+from . import utils
 
 log = logging.getLogger(__name__)
 
 
 class LocalCluster:
     def __init__(self, proj_dir=None, config=None):
+        self.log_handler = None
         self.config = self._load_task_config(proj_dir, config)
         self.loop = asyncio.new_event_loop()
         self.event_bus = EventBus()
@@ -89,7 +90,11 @@ class LocalCluster:
             log.info("Cluster is stopped")
 
     def close(self):
-        self.loop.close()
+        if self.log_handler:
+            utils.remove_logger('xpaw', self.log_handler)
+            self.log_handler = None
+        if self.loop:
+            self.loop.close()
 
     async def shutdown(self):
         if not self._is_running:
@@ -211,7 +216,7 @@ class LocalCluster:
 
     @staticmethod
     def _new_object_from_cluster(cls_path, cluster):
-        obj_cls = load_object(cls_path)
+        obj_cls = utils.load_object(cls_path)
         if hasattr(obj_cls, "from_cluster"):
             obj = obj_cls.from_cluster(cluster)
         else:
@@ -223,12 +228,11 @@ class LocalCluster:
             await self.event_bus.send(events.request_scheduled, request=request)
             await self.queue.push(request)
 
-    @staticmethod
-    def _load_task_config(proj_dir=None, base_config=None):
+    def _load_task_config(self, proj_dir=None, base_config=None):
         if proj_dir is not None and proj_dir not in sys.path:
             # add project path
             sys.path.append(proj_dir)
-        task_config = base_config or Config()
+        task_config = Config()
         if proj_dir is not None:
             config_parser = ConfigParser()
             config_parser.read(join(proj_dir, "setup.cfg"))
@@ -240,4 +244,10 @@ class LocalCluster:
                     value = getattr(module, key)
                     if not isinstance(value, (types.FunctionType, types.ModuleType, type)):
                         task_config.set(key.lower(), value)
+        task_config.update(base_config)
+
+        if task_config.getbool('daemon'):
+            utils.be_daemon()
+        self.log_handler = utils.configure_logger('xpaw', task_config)
+
         return task_config

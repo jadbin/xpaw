@@ -31,5 +31,5 @@ class UsageError(Exception):
     """
 
     def __init__(self, *args, **kwargs):
-        self.print_help = kwargs.pop('print_help', True)
+        self.print_help = kwargs.pop('print_help', False)
         super().__init__(*args, **kwargs)

@@ -1,25 +1,28 @@
 # coding=utf-8
 
 import os
-from os.path import exists, join, abspath, isfile, isdir, basename
+from os.path import exists, join, abspath, isfile, isdir, basename, dirname, split, splitext
 from shutil import move, copy2, copystat, ignore_patterns
 from datetime import datetime
 import logging.config
+from importlib import import_module
+import sys
+import inspect
 
 from .errors import UsageError
-from .config import Config
+from .config import BaseConfig
 from .utils import string_camelcase, render_templatefile
 from .version import __version__
-from .cluster import LocalCluster
-from .utils import configure_logging
-from . import utils
+from . import defaultconfig as dc
+from .run import run_cluster
+from .spider import Spider
 
 log = logging.getLogger(__name__)
 
 
 class Command:
     def __init__(self):
-        self.config = Config()
+        self.config = BaseConfig()
         self.exitcode = 0
 
     @property
@@ -48,6 +51,21 @@ class Command:
         raise NotImplementedError
 
 
+def _import_spider(file):
+    file = abspath(file)
+    d, f = split(file)
+    m, ext = splitext(f)
+    if ext != '.py':
+        raise UsageError('\'{}\' is not a python module'.format(file))
+    if d not in sys.path:
+        sys.path.append(d)
+    module = import_module(m)
+    for v in vars(module).values():
+        if inspect.isclass(v) and issubclass(v, Spider) and v.__module__ == module.__name__:
+            return v
+    raise UsageError('Cannot find spider in \'{}\''.format(file))
+
+
 class CrawlCommand(Command):
     @property
     def syntax(self):
@@ -62,19 +80,18 @@ class CrawlCommand(Command):
         return "Start to crawl web pages"
 
     def add_arguments(self, parser):
-        parser.add_argument("path", metavar="PATH", nargs="?", help="source code path")
-        parser.add_argument('-d', '--daemon', dest='daemon', action='store_true',
+        parser.add_argument("path", metavar="PATH", nargs=1, help="project directory or spider file")
+        parser.add_argument('-d', '--daemon', dest='daemon', action='store_true', default=dc.daemon,
                             help='run in daemon mode')
-        parser.add_argument("-l", "--log-level", dest="log_level", metavar="LEVEL",
+        parser.add_argument("-l", "--log-level", dest="log_level", metavar="LEVEL", default=dc.log_level,
                             help="log level")
-        parser.add_argument("--log-file", dest="log_file", metavar="FILE",
+        parser.add_argument("--log-file", dest="log_file", metavar="FILE", default=dc.log_file,
                             help="log file")
         parser.add_argument("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE",
                             help="set/override setting (can be repeated)")
 
     def process_arguments(self, args):
-        if not args.path:
-            raise UsageError()
+        args.path = args.path[0]
         if args.daemon is not None:
             self.config.set('daemon', args.daemon)
         if args.log_level is not None:
@@ -84,31 +101,23 @@ class CrawlCommand(Command):
         try:
             self.config.update(dict(x.split("=", 1) for x in args.set))
         except ValueError:
-            raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
+            raise UsageError("Invalid -s value, use -s NAME=VALUE")
 
     def run(self, args):
-        if not isfile(join(args.path, "setup.cfg")):
-            self.exitcode = 1
-            print("Error: Cannot find 'setup.cfg' in {}".format(abspath(args.path)))
-            return
-
-        if self.config.getbool('daemon'):
-            utils.be_daemon()
-        configure_logging("xpaw", self.config)
-        cluster = LocalCluster(args.path, self.config)
-        cluster.start()
+        if isfile(args.path):
+            spider = _import_spider(args.path)
+            self.config['spider'] = spider
+            run_cluster(proj_dir=None, config=self.config)
+        elif isdir(args.path):
+            run_cluster(proj_dir=args.path, config=self.config)
+        else:
+            raise UsageError('Cannot find \'{}\''.format(args.path))
 
 
 _ignore_file_type = ignore_patterns("*.pyc")
 
 
 class InitCommand(Command):
-    def __init__(self):
-        super().__init__()
-
-        self.steps_total = 0
-        self.steps_count = 0
-
     @property
     def syntax(self):
         return "<DIR>"
@@ -122,29 +131,27 @@ class InitCommand(Command):
         return "Initialize a crawling project"
 
     def add_arguments(self, parser):
-        parser.add_argument("project_dir", metavar="DIR", nargs="?", help="project directory")
+        parser.add_argument("project_dir", metavar="DIR", nargs=1,
+                            help="project directory, the last part of the path is the project name")
+        parser.add_argument('--templates', metavar='DIR', default=join(dirname(__file__), 'templates'),
+                            help='the directory of templates')
 
     def process_arguments(self, args):
-        if args.project_dir:
-            if not exists(args.project_dir):
-                os.mkdir(args.project_dir, mode=0o775)
+        args.project_dir = args.project_dir[0]
+        if not exists(args.project_dir):
+            os.mkdir(args.project_dir, mode=0o775)
 
     def run(self, args):
-        if not args.project_dir:
-            raise UsageError()
-
         project_dir = abspath(args.project_dir)
         project_name = basename(project_dir)
+        templates_dir = abspath(args.templates)
 
         if exists(join(project_dir, "setup.cfg")):
             self.exitcode = 1
             print("Error: setup.cfg already exists in {}".format(project_dir))
             return
 
-        self._init_project(args.project_dir, project_name)
-
-    def _init_project(self, project_dir, project_name):
-        self._copytree(join(self.config["templates_dir"], "project"), project_dir)
+        self._copytree(join(templates_dir, 'project'), project_dir)
         move(join(project_dir, "module"), join(project_dir, project_name))
         self._render_files(project_dir,
                            lambda f: render_templatefile(f, version=__version__,

@@ -27,15 +27,15 @@ def load_object(path):
     return path
 
 
-def configure_logging(name, config):
+def configure_logger(name, config):
     log_level = config.get('log_level')
     log_format = config.get('log_format')
     log_dateformat = config.get('log_dateformat')
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
-    filename = config.get('log_file')
-    if filename:
-        handler = logging.FileHandler(filename)
+    log_file = config.get('log_file')
+    if log_file:
+        handler = logging.FileHandler(log_file)
     else:
         handler = logging.StreamHandler()
     handler.setLevel(log_level)
