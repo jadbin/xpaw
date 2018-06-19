@@ -1,15 +1,10 @@
 # coding=utf-8
 
-from os.path import isfile, join, abspath
-
 from .config import Config
 from .cluster import LocalCluster
 
 
 def run_crawler(proj_dir, **kwargs):
-    if not isfile(join(proj_dir, "setup.cfg")):
-        raise FileNotFoundError("Cannot find 'setup.cfg' in {}".format(abspath(proj_dir)))
-
     config = Config(kwargs)
     run_cluster(proj_dir=proj_dir, config=config)
 

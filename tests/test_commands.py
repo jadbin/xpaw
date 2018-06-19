@@ -74,5 +74,5 @@ def test_crawl_no_project_dir(capsys):
 def test_crawl_no_setup_cfg(tmpdir, capsys):
     with pytest.raises(SystemExit) as excinfo:
         main(argv=['xpaw', 'crawl', str(tmpdir)])
-    assert excinfo.value.code == 1
+    assert excinfo.value.code == 2
     _, _ = capsys.readouterr()

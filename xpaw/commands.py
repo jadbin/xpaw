@@ -109,6 +109,8 @@ class CrawlCommand(Command):
             self.config['spider'] = spider
             run_cluster(proj_dir=None, config=self.config)
         elif isdir(args.path):
+            if not isfile(join(args.path, "setup.cfg")):
+                raise UsageError("Cannot find 'setup.cfg' in {}".format(abspath(args.path)))
             run_cluster(proj_dir=args.path, config=self.config)
         else:
             raise UsageError('Cannot find \'{}\''.format(args.path))
