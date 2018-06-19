@@ -160,7 +160,7 @@ class LocalCluster:
         except CancelledError:
             raise
         except Exception:
-            log.warning("Error occurred when generated start requests", exc_info=True)
+            log.warning("Failed to generate start requests", exc_info=True)
 
     async def _pull_requests(self, coro_id):
         while True:
@@ -173,7 +173,7 @@ class LocalCluster:
                 raise
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
-                    log.warning("Error occurred when sent request '%s'", req.url, exc_info=True)
+                    log.warning("Failed to send request '%s'", req.url, exc_info=True)
                 await self.spidermw.handle_error(self.spider, req, e)
             else:
                 await self._handle_response(req, resp)
@@ -196,7 +196,7 @@ class LocalCluster:
             except CancelledError:
                 raise
             except Exception:
-                log.warning("Error occurred when parsed response of '%s'", req.url, exc_info=True)
+                log.warning("Failed to parse the response of '%s'", req.url, exc_info=True)
 
     async def _handle_result(self, result):
         if isinstance(result, HttpRequest):
@@ -208,7 +208,7 @@ class LocalCluster:
                 raise
             except Exception as e:
                 if not isinstance(e, IgnoreItem):
-                    log.warning("Error occurred when handled item: %s", result, exc_info=True)
+                    log.warning("Failed to handle item: %s", result, exc_info=True)
                 else:
                     await self.event_bus.send(events.item_ignored, item=result)
             else:

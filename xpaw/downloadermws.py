@@ -181,7 +181,7 @@ class ProxyMiddleware:
         except CancelledError:
             raise
         except Exception:
-            log.warning("Error occurred when updated proxy list", exc_info=True)
+            log.warning("Failed to update proxy list", exc_info=True)
 
     async def _update_proxy_list_task(self):
         while True:

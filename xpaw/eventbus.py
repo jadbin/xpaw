@@ -16,7 +16,7 @@ class EventBus:
         if event not in self._refs:
             self._refs[event] = {}
         if not hasattr(receiver, '__func__') or not hasattr(receiver, '__self__'):
-            raise ValueError("Fail to subscribe, {} has no attribute '__func__' or '__self__'".format(receiver))
+            raise ValueError("Failed to subscribe, {} has no attribute '__func__' or '__self__'".format(receiver))
         i = self._calc_id(receiver)
         if i in self._refs[event]:
             f = self._refs[event][i]()
@@ -46,7 +46,7 @@ class EventBus:
                 except CancelledError:
                     raise
                 except Exception:
-                    log.warning("Error occurred when sent a event.", exc_info=True)
+                    log.warning("Failed to send a event", exc_info=True)
         for i in del_list:
             del self._refs[event][i]
         del del_list

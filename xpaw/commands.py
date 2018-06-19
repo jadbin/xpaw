@@ -148,7 +148,7 @@ class InitCommand(Command):
 
         if exists(join(project_dir, "setup.cfg")):
             self.exitcode = 1
-            print("Error: setup.cfg already exists in {}".format(project_dir))
+            print("'setup.cfg' already exists in {}".format(project_dir))
             return
 
         self._copytree(join(templates_dir, 'project'), project_dir)
