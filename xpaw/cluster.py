@@ -97,6 +97,7 @@ class LocalCluster:
             for f in self._job_futures:
                 f.cancel()
             self._job_futures = None
+            self._job_futures_done = None
         if self._start_future:
             self._start_future.cancel()
             self._start_future = None

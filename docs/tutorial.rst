@@ -31,7 +31,7 @@ tags           quote的标签列表
         "tags": ["edison", "failure", "inspirational", "paraphrased"]
     }
 
-接下来我们会以project的形式构建爬虫，完整代码位于 `demos/quotes <https://github.com/jadbin/xpaw/tree/master/demos/quotes>`_ 中。
+接下来我们会以project的形式构建爬虫，完整代码位于 `examples/quotes <https://github.com/jadbin/xpaw/tree/master/examples/quotes>`_ 中。
 
 Creating our Project
 --------------------
