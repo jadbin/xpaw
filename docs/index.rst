@@ -74,32 +74,33 @@ Requirements
 .. _lxml: https://pypi.python.org/pypi/lxml
 .. _cssselect: https://pypi.python.org/pypi/cssselect
 
-Getting Started
-===============
+Table of Contents
+=================
 
 .. toctree::
-   :caption: Getting Started
-   :maxdepth: 2
+    :caption: Getting Started
+    :maxdepth: 2
 
-   tutorial1
-   tutorial2
-   usage
-
-References
-==========
+    tutorial1
+    tutorial2
+    usage
 
 .. toctree::
-   :caption: References
-   :maxdepth: 2
+    :caption: Basic References
+    :maxdepth: 2
 
-   architecture
-   spider
-
-All the Rest
-============
+    spider
+    settings
 
 .. toctree::
-   :caption: All the Rest
-   :maxdepth: 1
+    :caption: Advanced Usage
+    :maxdepth: 2
 
-   changelog
+    architecture
+    core_api
+
+.. toctree::
+    :caption: All the Rest
+    :maxdepth: 1
+
+    changelog

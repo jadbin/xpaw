@@ -3,6 +3,30 @@
 Change log
 ==========
 
+0.10.0 (2018-06-??)
+-------------------
+
+New features
+~~~~~~~~~~~~
+
+- ``xpaw crawl`` 支持直接运行spider
+- ``xpaw crawl`` 支持指定配置文件
+- 提供了daemon模式运行爬虫
+
+Bug fixes
+~~~~~~~~~
+
+- 运行spider结束时移除配置的log handler，避免先后多次运行spider时打印多余的日志
+
+Refactoring
+~~~~~~~~~~~
+
+- 移除爬虫工程的入口文件setup.cfg，直接通过工程根目录下的config.py完成配置
+- 通过 ``speed_limit_enabled`` 控制限速插件SpeedLimitMiddleware的开启/关闭，默认为关闭状态
+- 配置项 ``verify_ssl`` 的默认值更改为 ``False``
+- 配置项 ``proxy_agent`` 更名为 ``proxy_provider``
+
+
 0.9.1 (2018-04-16)
 ------------------
 
@@ -119,7 +143,7 @@ Refactoring
 - 修改aiohttp的版本限制为>=2.2.0
 - 更新了downloader和spider相关的错误处理流程
 - 不再采用中间件的形式实现请求的去重功能，并移除相关的中间件
-- ProxyAgentMiddleware的 ``proxy_agnet`` 配置下面 ``addr`` 字段更名为 ``agent_addr``
+- ProxyAgentMiddleware的 ``proxy_agent`` 配置下面 ``addr`` 字段更名为 ``agent_addr``
 
 
 0.6.5 (2017-05-09)

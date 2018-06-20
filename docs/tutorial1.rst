@@ -74,7 +74,7 @@ Spider Overview
 
         def close(self):
             with open('quotes.json', 'w') as f:
-                json.dump(self.quotes, f)
+                json.dump(self.quotes, f, ensure_ascii=False, indent=4)
 
 
     if __name__ == '__main__':
@@ -109,6 +109,9 @@ xpaw成功获取到response之后，会调用在request中指定的 ``callback``
     - spider中处理response的函数的返回值需为可迭代对象，如tuple, list, generator等。
     - 在提取链接时我们不需要关注提取出URL是否重复了，xpaw会自动帮我们完成URL去重的工作。
 
+HTML Features of Data
+^^^^^^^^^^^^^^^^^^^^^
+
 首先我们关注如何提取网页中的quote。
 
 通过查看网页的源代码，我们发现每个quote是用类似如下的HTML代码进行描述的：
@@ -137,6 +140,9 @@ xpaw成功获取到response之后，会调用在request中指定的 ``callback``
 - **author_url** : <small>标签紧邻的<a>标签的href属性
 - **tags** : 所有class=tag的<a>标签中
 
+HTML Features of Links
+^^^^^^^^^^^^^^^^^^^^^^
+
 接下来我们关注如何提取网页中的链接。
 
 同样的，通过查看网页原代码，我们看到 "Next |rarr|" 附近的HTML代码:
@@ -156,6 +162,9 @@ xpaw成功获取到response之后，会调用在request中指定的 ``callback``
 
 
 我们发现翻页 "Next |rarr|" 的对应着class=next的<li>标签中的<a>标签的href属性。
+
+Extracting Data & Links
+^^^^^^^^^^^^^^^^^^^^^^^
 
 在得到了数据以及链接相关的HTML特征之后，我们将特征用CSS Selector语法对其描述，并借助selector的提取quote和翻页的链接:
 
@@ -206,7 +215,7 @@ Storing Data
 
     def close(self):
         with open('quotes.json', 'w') as f:
-            json.dump(self.quotes, f)
+            json.dump(self.quotes, f, ensure_ascii=False, indent=4)
 
 Running Spider
 --------------

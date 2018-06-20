@@ -28,10 +28,9 @@ Creating our Project
 工程的目录结构如下::
 
     quotes/                   # 工程根目录
-        setup.cfg             # 部署的配置文件
+        config.py             # 工程的配置文件
         quotes/               # 工程的Python模块目录，在该目录下编写Python代码
             __init__.py
-            config.py         # 工程的配置文件
             items.py          # 默认生成的数据类型模块
             pipelines.py      # 默认生成的数据处理模块
             spider.py         # 默认生成的爬虫模块

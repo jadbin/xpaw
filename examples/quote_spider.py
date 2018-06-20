@@ -30,7 +30,7 @@ class QuotesSpider(Spider):
 
     def close(self):
         with open('quotes.json', 'w') as f:
-            json.dump(self.quotes, f)
+            json.dump(self.quotes, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == '__main__':
