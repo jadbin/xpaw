@@ -53,10 +53,10 @@ def make_another_proxy_list():
 
 
 def make_detail_proxy_list():
-    return [{'addr': '127.0.0.1:3128'},
-            {'addr': '127.0.0.2:3128', 'scheme': 'http'},
-            {'addr': '127.0.0.3:3128', 'scheme': 'https', 'auth': 'root:123456'},
-            {'addr': '127.0.0.4:3128', 'scheme': 'http,https'}]
+    return [{'address': '127.0.0.1:3128'},
+            {'address': '127.0.0.2:3128', 'scheme': 'http'},
+            {'address': '127.0.0.3:3128', 'scheme': 'https', 'auth': 'root:123456'},
+            {'address': '127.0.0.4:3128', 'scheme': 'http,https'}]
 
 
 async def make_proxy_agent(test_server):

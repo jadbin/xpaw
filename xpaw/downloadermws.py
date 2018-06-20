@@ -153,7 +153,7 @@ class ProxyMiddleware:
         if isinstance(p, str):
             addr = p
         elif isinstance(p, dict):
-            addr = p.get('addr')
+            addr = p.get('address')
             auth = p.get('auth')
             scheme = p.get('scheme')
         if addr:

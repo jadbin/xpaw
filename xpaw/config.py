@@ -111,8 +111,7 @@ class Config(BaseConfig):
     def __init__(self, values=None):
         super().__init__()
         for v in KNOWN_SETTINGS.values():
-            if v.default is not None:
-                self.set(v.name, v.value)
+            self.set(v.name, v.value)
         self.update(values)
 
 
@@ -216,21 +215,6 @@ class CookieJarEnabled(Setting):
     help = 'enable cookie jar'
 
 
-class SpeedLimitEnabled(Setting):
-    name = 'speed_limit_enabled'
-    default = False
-
-
-class SpeedLimitRate(Setting):
-    name = 'speed_limit_rate'
-    default = 1
-
-
-class SpeedLimitBurst(Setting):
-    name = 'speed_limit_burst'
-    default = 1
-
-
 class DefaultHeaders(Setting):
     name = 'default_headers'
     default = {
@@ -258,6 +242,14 @@ class ImitatingProxyEnabled(Setting):
     default = False
 
 
+class Proxy(Setting):
+    name = 'proxy'
+
+
+class ProxyAgent(Setting):
+    name = 'proxy_agent'
+
+
 class RetryEnabled(Setting):
     name = 'retry_enabled'
     default = True
@@ -273,12 +265,19 @@ class RetryHttpStatus(Setting):
     default = (500, 502, 503, 504, 408, 429)
 
 
-class Proxy(Setting):
-    name = 'proxy'
+class SpeedLimitEnabled(Setting):
+    name = 'speed_limit_enabled'
+    default = False
 
 
-class ProxyAgent(Setting):
-    name = 'proxy_agent'
+class SpeedLimitRate(Setting):
+    name = 'speed_limit_rate'
+    default = 1
+
+
+class SpeedLimitBurst(Setting):
+    name = 'speed_limit_burst'
+    default = 1
 
 
 class MaxDepth(Setting):

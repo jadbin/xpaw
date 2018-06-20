@@ -10,12 +10,11 @@ from importlib import import_module
 import string
 from urllib.parse import urlsplit
 from os.path import isfile
+import inspect
 
 from yarl import URL
 from multidict import MultiDict
 from aiohttp.helpers import BasicAuth
-
-from .config import KNOWN_SETTINGS
 
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
@@ -219,5 +218,5 @@ def load_config(fname):
 
 def iter_settings(config):
     for key, value in config.items():
-        if key in KNOWN_SETTINGS:
+        if not key.startswith('_') and not inspect.ismodule(value):
             yield key, value
