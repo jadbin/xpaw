@@ -10,10 +10,9 @@ import sys
 import inspect
 
 from .errors import UsageError
-from .config import BaseConfig
+from . import config
 from .utils import string_camelcase, render_templatefile
 from .version import __version__
-from . import defaultconfig as dc
 from .run import run_cluster
 from .spider import Spider
 from . import utils
@@ -23,8 +22,12 @@ log = logging.getLogger(__name__)
 
 class Command:
     def __init__(self):
-        self.config = BaseConfig()
+        self.config = config.BaseConfig()
         self.exitcode = 0
+        self.settings = self._import_settings()
+
+    def _import_settings(self):
+        return []
 
     @property
     def name(self):
@@ -43,10 +46,14 @@ class Command:
         return self.short_desc
 
     def add_arguments(self, parser):
-        pass
+        for s in self.settings:
+            s.add_argument(parser)
 
     def process_arguments(self, args):
-        pass
+        for s in self.settings:
+            v = getattr(args, s.name)
+            if v is not None:
+                self.config.set(s.name, v)
 
     def run(self, args):
         raise NotImplementedError
@@ -80,30 +87,27 @@ class CrawlCommand(Command):
     def short_desc(self):
         return "Start to crawl web pages"
 
+    def _import_settings(self):
+        settings = (config.Daemon, config.LogLevel, config.LogFile,
+                    config.DownloaderClients, config.DownloaderTimeout,
+                    config.VerifySsl, config.CookieJarEnabled,
+                    config.MaxDepth)
+        return [config.KNOWN_SETTINGS[i.name] for i in settings]
+
     def add_arguments(self, parser):
         parser.add_argument("path", metavar="PATH", nargs=1, help="project directory or spider file")
         parser.add_argument('-c', '--config', dest='config', metavar='FILE',
                             help='configuration file')
-        parser.add_argument('-d', '--daemon', dest='daemon', action='store_true', default=dc.daemon,
-                            help='run in daemon mode')
-        parser.add_argument("-l", "--log-level", dest="log_level", metavar="LEVEL", default=dc.log_level,
-                            help="log level")
-        parser.add_argument("--log-file", dest="log_file", metavar="FILE", default=dc.log_file,
-                            help="log file")
+        super().add_arguments(parser)
         parser.add_argument("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE",
                             help="set/override setting (can be repeated)")
 
     def process_arguments(self, args):
         args.path = args.path[0]
-        if args.config:
+        if args.config is not None:
             for k, v in utils.iter_settings(utils.load_config(args.config)):
-                self.config[k] = v
-        if args.daemon is not None:
-            self.config.set('daemon', args.daemon)
-        if args.log_level is not None:
-            self.config.set("log_level", args.log_level)
-        if args.log_file is not None:
-            self.config.set('log_file', args.log_file)
+                self.config.set(k, v)
+        super().process_arguments(args)
         try:
             self.config.update(dict(x.split("=", 1) for x in args.set))
         except ValueError:
@@ -112,7 +116,7 @@ class CrawlCommand(Command):
     def run(self, args):
         if isfile(args.path):
             spider = _import_spider(args.path)
-            self.config['spider'] = spider
+            self.config.set('spider', spider)
             run_cluster(proj_dir=None, config=self.config)
         elif isdir(args.path):
             run_cluster(proj_dir=args.path, config=self.config)
@@ -170,8 +174,7 @@ class InitCommand(Command):
                                                          project_name=project_name,
                                                          ProjectName=string_camelcase(project_name)))
 
-        print("New project '{}', created in:".format(project_name,
-                                                     self.config["templates_dir"]))
+        print("New project '{}', created in:".format(project_name))
         print("    {}".format(abspath(project_dir)))
 
     def _copytree(self, src, dst):

@@ -1,7 +1,6 @@
 # coding=utf-8
 
-from xpaw.config import BaseConfig, Config
-from xpaw import defaultconfig
+from xpaw.config import BaseConfig, Config, KNOWN_SETTINGS
 
 
 class TestBaseConfig:
@@ -139,4 +138,4 @@ def test_config():
     c = Config()
     assert len(c) > 0
     for k in c:
-        assert getattr(defaultconfig, k) == c.get(k)
+        assert k in KNOWN_SETTINGS and c.get(k) == KNOWN_SETTINGS[k].value

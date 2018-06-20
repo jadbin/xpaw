@@ -2,9 +2,9 @@
 
 import copy
 from collections import MutableMapping
-import types
+import inspect
 
-from . import defaultconfig
+from .version import __version__
 
 
 class BaseConfig(MutableMapping):
@@ -110,9 +110,245 @@ def getlist(v):
 class Config(BaseConfig):
     def __init__(self, values=None):
         super().__init__()
-        for key in dir(defaultconfig):
-            if not key.startswith("_"):
-                value = getattr(defaultconfig, key)
-                if not isinstance(value, (types.FunctionType, types.ModuleType, type)):
-                    self.set(key.lower(), value)
+        for v in KNOWN_SETTINGS.values():
+            if v.default is not None:
+                self.set(v.name, v.value)
         self.update(values)
+
+
+class Setting:
+    name = None
+    cli = None
+    metavar = None
+    default = None
+    action = None
+    type = None
+    nargs = None
+    help = None
+
+    def __init__(self):
+        self.value = self.default
+
+    def add_argument(self, parser):
+        if self.cli is None:
+            return
+        args = tuple(self.cli)
+        kwargs = {'dest': self.name,
+                  'help': self.help}
+        if self.metavar is not None:
+            kwargs['metavar'] = self.metavar
+        if self.default is not None:
+            kwargs['default'] = self.default
+        if self.action is not None:
+            kwargs['action'] = self.action
+        if self.type is not None:
+            kwargs['type'] = self.type
+        if self.nargs is not None:
+            kwargs['nargs'] = self.nargs
+
+        parser.add_argument(*args, **kwargs)
+
+
+class Daemon(Setting):
+    name = 'daemon'
+    cli = ['-d', '--daemon']
+    action = 'store_true'
+    default = False
+    help = 'run in daemon mode'
+
+
+class LogFile(Setting):
+    name = 'log_file'
+    cli = ['--log-file']
+    metavar = 'FILE'
+    help = 'log file'
+
+
+class LogLevel(Setting):
+    name = 'log_level'
+    cli = ['-l', '--log-level']
+    metavar = 'LEVEL'
+    default = 'INFO'
+    help = 'log level'
+
+
+class LogFormat(Setting):
+    name = 'log_format'
+    default = '%(asctime)s %(name)s [%(levelname)s] %(message)s'
+
+
+class LogDateformat(Setting):
+    name = 'log_dateformat'
+    default = '%Y-%m-%d %H:%M:%S'
+
+
+class DownloaderClients(Setting):
+    name = 'downloader_clients'
+    cli = ['--downloader-clients']
+    metavar = 'INT'
+    type = int
+    default = 100
+    help = 'the number of downloader clients'
+
+
+class DownloaderTimeout(Setting):
+    name = 'downloader_timeout'
+    cli = ['--downloader-timeout']
+    metavar = 'INT'
+    type = int
+    default = 20
+    help = 'timeout of downloader in seconds'
+
+
+class VerifySsl(Setting):
+    name = 'verify_ssl'
+    cli = ['--verify-ssl']
+    action = 'store_true'
+    default = False
+    help = 'verify ssl certifications'
+
+
+class CookieJarEnabled(Setting):
+    name = 'cookie_jar_enabled'
+    cli = ['--cookie-jar-enabled']
+    action = 'store_true'
+    default = False
+    help = 'enable cookie jar'
+
+
+class SpeedLimitEnabled(Setting):
+    name = 'speed_limit_enabled'
+    default = False
+
+
+class SpeedLimitRate(Setting):
+    name = 'speed_limit_rate'
+    default = 1
+
+
+class SpeedLimitBurst(Setting):
+    name = 'speed_limit_burst'
+    default = 1
+
+
+class DefaultHeaders(Setting):
+    name = 'default_headers'
+    default = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.8',
+        'Cache-Control': 'max-age=0',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+    }
+
+
+class UserAgent(Setting):
+    name = 'user_agent'
+    default = 'Mozilla/5.0 (compatible; xpaw/{})'.format(__version__)
+
+
+class RandomUserAgent(Setting):
+    name = 'random_user_agent'
+    default = False
+
+
+class ImitatingProxyEnabled(Setting):
+    name = 'imitating_proxy_enabled'
+    default = False
+
+
+class RetryEnabled(Setting):
+    name = 'retry_enabled'
+    default = True
+
+
+class MaxRetryTimes(Setting):
+    name = 'max_retry_times'
+    default = 3
+
+
+class RetryHttpStatus(Setting):
+    name = 'retry_http_status'
+    default = (500, 502, 503, 504, 408, 429)
+
+
+class Proxy(Setting):
+    name = 'proxy'
+
+
+class ProxyAgent(Setting):
+    name = 'proxy_agent'
+
+
+class MaxDepth(Setting):
+    name = 'max_depth'
+    cli = ['--max-depth']
+    metavar = 'INT'
+    type = int
+    help = 'maximum depth of spider'
+
+
+class StatsCenterCls(Setting):
+    name = 'stats_center_cls'
+    default = 'xpaw.statscenter.StatsCenter'
+
+
+class QueueCls(Setting):
+    name = 'queue_cls'
+    default = 'xpaw.queue.PriorityQueue'
+
+
+class DupeFilterCls(Setting):
+    name = 'dupe_filter_cls'
+    default = 'xpaw.dupefilter.SetDupeFilter'
+
+
+class DownloaderMiddlewaresBase(Setting):
+    name = 'downloader_middlewares_base'
+    default = {
+        # cluster side
+        'xpaw.downloadermws.SpeedLimitMiddleware': 100,
+        'xpaw.downloadermws.DefaultHeadersMiddleware': 300,
+        'xpaw.downloadermws.ImitatingProxyMiddleware': 350,
+        'xpaw.downloadermws.UserAgentMiddleware': 400,
+        'xpaw.downloadermws.RetryMiddleware': 500,
+        'xpaw.downloadermws.ProxyMiddleware': 700
+        # downloader side
+    }
+
+
+class SpiderMiddlewaresBase(Setting):
+    name = 'spider_middlewares_base'
+    default = {
+        # cluster side
+        'xpaw.spidermws.DepthMiddleware': 900
+        # spider side
+    }
+
+
+class Spider(Setting):
+    name = 'spider'
+
+
+class DownloaderMiddlewares(Setting):
+    name = 'downloader_middlewares'
+
+
+class SpiderMiddlewares(Setting):
+    name = 'spider_middlewares'
+
+
+class ItemPipelines(Setting):
+    name = 'item_pipelines'
+
+
+class Extensions(Setting):
+    name = 'extensions'
+
+
+KNOWN_SETTINGS = {}
+
+for _v in list(vars().values()):
+    if inspect.isclass(_v) and issubclass(_v, Setting) and _v.name is not None:
+        KNOWN_SETTINGS[_v.name] = _v()

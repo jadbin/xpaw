@@ -233,8 +233,8 @@ class LocalCluster:
         if proj_dir is not None:
             config_file = join(proj_dir, 'config.py')
             if isfile(config_file):
-                for key, value in utils.iter_settings(utils.load_config(config_file)):
-                    task_config.set(key, value)
+                for k, v in utils.iter_settings(utils.load_config(config_file)):
+                    task_config.set(k, v)
             else:
                 log.warning('Cannot find config.py in %s', proj_dir)
         task_config.update(base_config)
