@@ -246,8 +246,8 @@ class Proxy(Setting):
     name = 'proxy'
 
 
-class ProxyAgent(Setting):
-    name = 'proxy_agent'
+class ProxyProvider(Setting):
+    name = 'proxy_provider'
 
 
 class RetryEnabled(Setting):

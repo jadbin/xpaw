@@ -45,7 +45,7 @@ imitating_proxy_enabled = True
 
 # Configure proxy
 # proxy = None
-# proxy_agent = None
+# proxy_provider = None
 
 # Enable or disable downloader middlewares
 # downloader_middlewares = {}

@@ -25,16 +25,19 @@ class PyTest(TestCommand):
         errno = subprocess.call([sys.executable, '-m', 'pytest', 'tests'])
         raise SystemExit(errno)
 
+install_requires = [
+    'aiohttp>=3.1.3,<4.0',
+    'lxml>=4.1.0,<5.0',
+    'cssselect>=1.0.3,<2.0'
+]
+
+tests_requires = install_requires + ['pytest', 'pytest-aiohttp>=0.3.0,<0.4']
+
 
 def main():
     if sys.version_info < (3, 5, 3):
         raise RuntimeError("The minimal supported Python version is 3.5.3")
-    install_requires = [
-        "aiohttp>=3.1.3,<4.0",
-        "lxml>=4.1.0,<5.0",
-        "cssselect>=1.0.3,<2.0"
-    ]
-    tests_requires = install_requires + ["pytest", "pytest-aiohttp>=0.1.3"]
+
     setup(
         name="xpaw",
         version=read_version(),

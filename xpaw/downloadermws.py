@@ -112,12 +112,12 @@ class ProxyMiddleware:
     def __init__(self, config, loop=None):
         self._proxies = {'http': [], 'https': []}
         proxy = config.getlist('proxy', [])
-        proxy_agent = config.get('proxy_agent')
-        if not proxy and not proxy_agent:
+        proxy_provider = config.get('proxy_provider')
+        if not proxy and not proxy_provider:
             raise NotEnabled
         for p in proxy:
             self._append_proxy(p)
-        self._agent_addr = parse_url(proxy_agent)
+        self._proxy_provider = parse_url(proxy_provider)
         self._loop = loop or asyncio.get_event_loop()
         self._update_lock = asyncio.Lock(loop=self._loop)
         self._update_future = None
@@ -140,7 +140,7 @@ class ProxyMiddleware:
     async def get_proxy(self, scheme):
         if scheme not in self._proxies:
             return
-        if self._agent_addr:
+        if self._proxy_provider:
             async with self._update_lock:
                 if len(self._proxies[scheme]) <= 0:
                     await self._update_proxy_list()
@@ -170,7 +170,7 @@ class ProxyMiddleware:
         try:
             async with aiohttp.ClientSession(loop=self._loop) as session:
                 with async_timeout.timeout(self.TIMEOUT, loop=self._loop):
-                    async with session.get(self._agent_addr) as resp:
+                    async with session.get(self._proxy_provider) as resp:
                         body = await resp.read()
                         proxy_list = json.loads(body.decode(encoding="utf-8"))
                         if proxy_list:
@@ -190,12 +190,13 @@ class ProxyMiddleware:
             await asyncio.sleep(self.UPDATE_INTERVAL, loop=self._loop)
 
     def open(self):
-        if self._agent_addr:
+        if self._proxy_provider:
             self._update_future = asyncio.ensure_future(self._update_proxy_list_task(), loop=self._loop)
 
     def close(self):
         if self._update_future:
             self._update_future.cancel()
+            self._update_future = None
 
 
 class SpeedLimitMiddleware:

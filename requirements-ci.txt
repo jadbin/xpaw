@@ -3,4 +3,4 @@ pytest
 pytest-cov
 coverage
 coveralls
-pytest-aiohttp>=0.3.0
+pytest-aiohttp>=0.3.0,<0.4
