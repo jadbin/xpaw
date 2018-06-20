@@ -1,26 +1,22 @@
 language: python
-python:
-  - 3.5
-  - 3.6
-
 sudo: false
-
-cache:
-  directories:
-    - $HOME/.cache/pip
-before_cache:
-  - rm -f $HOME/.cache/pip/log/debug.log
-
-install:
-  - pip install -r requirements-ci.txt
-
-script:
-  - pytest --cov=xpaw tests
-
-after_success:
-  - coveralls
-
 branches:
   only:
     - master
     - develop
+matrix:
+  include:
+    - python: 3.5
+      env: TOXENV=py35
+    - python: 3.6
+      env: TOXENV=py36
+cache:
+  directories:
+    - $HOME/.cache/pip
+    - .tox
+install:
+  - pip install tox
+script:
+  - tox
+after_success:
+  - coveralls
