@@ -1,6 +1,6 @@
 # coding=utf-8
 
-# Configuration file, created by xpaw/0.9.0 on Nov 12 2017 21:07:36
+# Configuration file, created by xpaw/0.10.0 on Jun 20 2018 11:24:39
 
 project_name = 'quotes'
 project_description = ''
@@ -23,9 +23,9 @@ item_pipelines = [
 # verify_ssl = False
 
 # Enable and configure speed limit (disabled by default)
+# speed_limit_enabled = True
 # speed_limit_rate = 1
-# Default burst size equals to downloader clients
-# speed_limit_burst = None
+# speed_limit_burst = 1
 
 # Override the default request headers:
 # default_headers = {
