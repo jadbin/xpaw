@@ -154,11 +154,16 @@ class InitCommand(Command):
 
         if exists(join(project_dir, 'config.py')):
             self.exitcode = 1
-            print("config.py already exists in {}".format(project_dir))
+            print("Error: config.py already exists in {}".format(project_dir))
+            return
+        module_dir = join(project_dir, project_name)
+        if exists(module_dir):
+            self.exitcode = 1
+            print('Error: module already exists in {}'.format(module_dir))
             return
 
         self._copytree(join(templates_dir, 'project'), project_dir)
-        move(join(project_dir, "module"), join(project_dir, project_name))
+        move(join(project_dir, "module"), module_dir)
         self._render_files(project_dir,
                            lambda f: render_templatefile(f, version=__version__,
                                                          datetime_now=datetime.now().strftime("%b %d %Y %H:%M:%S"),

@@ -1,8 +1,8 @@
 # coding=utf-8
 
 import pytest
-import logging
 from os.path import isfile, isdir, join
+from os import remove
 
 from xpaw.cli import main
 from xpaw.version import __version__
@@ -46,7 +46,10 @@ def test_init(tmpdir, capsys):
     assert excinfo.value.code == 1
     main(argv=['xpaw', 'crawl', proj_dir, '-s', 'downloader_timeout=0.01', '-l', 'WARNING'])
     _, _ = capsys.readouterr()
-    logging.getLogger('xpaw').handlers.clear()
+    remove(join(proj_dir, 'config.py'))
+    with pytest.raises(SystemExit) as excinfo:
+        main(argv=['xpaw', 'init', proj_dir])
+    assert excinfo.value.code == 1
 
 
 def test_init_no_project_dir(capsys):

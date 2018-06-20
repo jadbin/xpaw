@@ -24,7 +24,6 @@ def test_run_crawler(tmpdir, capsys):
     main(argv=['xpaw', 'init', proj_dir])
     run_crawler(proj_dir, downloader_timeout=0.01, log_level='WARNING')
     _, _ = capsys.readouterr()
-    logging.getLogger('xpaw').handlers.clear()
 
 
 class FooSpider(Spider):
@@ -47,7 +46,6 @@ class BadQueue(PriorityQueue):
 
 def test_coro_terminated():
     run_spider(FooSpider, downloader_clients=2, queue_cls=BadQueue, max_retry_times=0)
-    logging.getLogger('xpaw').handlers.clear()
 
 
 class LinkItem(Item):
@@ -188,4 +186,3 @@ def test_run_spider():
     assert "http://httpbin.org/status/409" in link_data
     assert "http://httpbin.org/status/411" in link_data
     assert "http://httpbin.org/status/412" in link_data
-    logging.getLogger('xpaw').handlers.clear()
