@@ -9,6 +9,8 @@ import logging
 from importlib import import_module
 import string
 from urllib.parse import urlsplit
+from os.path import isfile
+import inspect
 
 from yarl import URL
 from multidict import MultiDict
@@ -197,3 +199,25 @@ def be_daemon():
         os.dup2(fd_null, 0)
     os.dup2(fd_null, 1)
     os.dup2(fd_null, 2)
+
+
+def load_config(fname):
+    if fname is None or not isfile(fname):
+        raise ValueError('{} is not a file'.format(fname))
+    code = compile(open(fname, 'rb').read(), fname, 'exec')
+    cfg = {
+        "__builtins__": __builtins__,
+        "__name__": "__config__",
+        "__file__": fname,
+        "__doc__": None,
+        "__package__": None
+    }
+    exec(code, cfg, cfg)
+    return cfg
+
+
+def iter_settings(config):
+    for key, value in config.items():
+        if not key.startswith("_") and str.islower(key) and \
+                not inspect.ismodule(value) and not inspect.isfunction(value):
+            yield key, value

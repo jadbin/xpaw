@@ -35,10 +35,9 @@ def test_init(tmpdir, capsys):
     proj_dir = join(str(tmpdir), proj_name)
     main(argv=['xpaw', 'init', proj_dir])
     assert isdir(join(proj_dir))
-    assert isfile(join(proj_dir, 'setup.cfg'))
+    assert isfile(join(proj_dir, 'config.py'))
     assert isdir(join(proj_dir, proj_name))
     assert isfile(join(proj_dir, proj_name, '__init__.py'))
-    assert isfile(join(proj_dir, proj_name, 'config.py'))
     assert isfile(join(proj_dir, proj_name, 'items.py'))
     assert isfile(join(proj_dir, proj_name, 'pipelines.py'))
     assert isfile(join(proj_dir, proj_name, 'spider.py'))
@@ -67,12 +66,5 @@ def test_error_usage_of_set_argument(capsys):
 def test_crawl_no_project_dir(capsys):
     with pytest.raises(SystemExit) as excinfo:
         main(argv=['xpaw', 'crawl'])
-    assert excinfo.value.code == 2
-    _, _ = capsys.readouterr()
-
-
-def test_crawl_no_setup_cfg(tmpdir, capsys):
-    with pytest.raises(SystemExit) as excinfo:
-        main(argv=['xpaw', 'crawl', str(tmpdir)])
     assert excinfo.value.code == 2
     _, _ = capsys.readouterr()

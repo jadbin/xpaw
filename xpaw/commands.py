@@ -16,6 +16,7 @@ from .version import __version__
 from . import defaultconfig as dc
 from .run import run_cluster
 from .spider import Spider
+from . import utils
 
 log = logging.getLogger(__name__)
 
@@ -56,14 +57,14 @@ def _import_spider(file):
     d, f = split(file)
     m, ext = splitext(f)
     if ext != '.py':
-        raise UsageError('\'{}\' is not a python module'.format(file))
+        raise UsageError('{} is not a python module'.format(file))
     if d not in sys.path:
         sys.path.append(d)
     module = import_module(m)
     for v in vars(module).values():
         if inspect.isclass(v) and issubclass(v, Spider) and v.__module__ == module.__name__:
             return v
-    raise UsageError('Cannot find spider in \'{}\''.format(file))
+    raise UsageError('Cannot find spider in {}'.format(file))
 
 
 class CrawlCommand(Command):
@@ -81,6 +82,8 @@ class CrawlCommand(Command):
 
     def add_arguments(self, parser):
         parser.add_argument("path", metavar="PATH", nargs=1, help="project directory or spider file")
+        parser.add_argument('-c', '--config', dest='config', metavar='FILE',
+                            help='configuration file')
         parser.add_argument('-d', '--daemon', dest='daemon', action='store_true', default=dc.daemon,
                             help='run in daemon mode')
         parser.add_argument("-l", "--log-level", dest="log_level", metavar="LEVEL", default=dc.log_level,
@@ -92,6 +95,9 @@ class CrawlCommand(Command):
 
     def process_arguments(self, args):
         args.path = args.path[0]
+        if args.config:
+            for k, v in utils.iter_settings(utils.load_config(args.config)):
+                self.config[k] = v
         if args.daemon is not None:
             self.config.set('daemon', args.daemon)
         if args.log_level is not None:
@@ -109,11 +115,9 @@ class CrawlCommand(Command):
             self.config['spider'] = spider
             run_cluster(proj_dir=None, config=self.config)
         elif isdir(args.path):
-            if not isfile(join(args.path, "setup.cfg")):
-                raise UsageError("Cannot find 'setup.cfg' in {}".format(abspath(args.path)))
             run_cluster(proj_dir=args.path, config=self.config)
         else:
-            raise UsageError('Cannot find \'{}\''.format(args.path))
+            raise UsageError('Cannot find {}'.format(args.path))
 
 
 _ignore_file_type = ignore_patterns("*.pyc")
@@ -148,9 +152,9 @@ class InitCommand(Command):
         project_name = basename(project_dir)
         templates_dir = abspath(args.templates)
 
-        if exists(join(project_dir, "setup.cfg")):
+        if exists(join(project_dir, 'config.py')):
             self.exitcode = 1
-            print("'setup.cfg' already exists in {}".format(project_dir))
+            print("config.py already exists in {}".format(project_dir))
             return
 
         self._copytree(join(templates_dir, 'project'), project_dir)

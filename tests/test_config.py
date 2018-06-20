@@ -1,7 +1,5 @@
 # coding=utf-8
 
-import pytest
-
 from xpaw.config import BaseConfig, Config
 from xpaw import defaultconfig
 

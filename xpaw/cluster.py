@@ -2,11 +2,8 @@
 
 import asyncio
 import logging
-from os.path import join
+from os.path import isfile, join
 import sys
-import types
-from configparser import ConfigParser
-from importlib import import_module
 import signal
 from asyncio import CancelledError
 
@@ -234,16 +231,12 @@ class LocalCluster:
             sys.path.append(proj_dir)
         task_config = Config()
         if proj_dir is not None:
-            config_parser = ConfigParser()
-            config_parser.read(join(proj_dir, "setup.cfg"))
-            config_path = config_parser.get("config", "default")
-            log.info('Default project configuration: %s', config_path)
-            module = import_module(config_path)
-            for key in dir(module):
-                if not key.startswith("_"):
-                    value = getattr(module, key)
-                    if not isinstance(value, (types.FunctionType, types.ModuleType, type)):
-                        task_config.set(key.lower(), value)
+            config_file = join(proj_dir, 'config.py')
+            if isfile(config_file):
+                for key, value in utils.iter_settings(utils.load_config(config_file)):
+                    task_config.set(key, value)
+            else:
+                log.warning('Cannot find config.py in %s', proj_dir)
         task_config.update(base_config)
 
         if task_config.getbool('daemon'):
