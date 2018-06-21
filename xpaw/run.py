@@ -43,7 +43,6 @@ def run_cluster(proj_dir=None, base_config=None):
     finally:
         _remove_pid_file(pid_file)
         cluster.close()
-    utils.remove_logger('xpaw')
 
 
 def _load_task_config(proj_dir=None, base_config=None):

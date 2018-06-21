@@ -30,6 +30,7 @@ def load_object(path):
 
 
 def configure_logger(name, config):
+    remove_logger(name)
     log_level = config.get('log_level')
     log_format = config.get('log_format')
     log_dateformat = config.get('log_dateformat')
@@ -217,5 +218,5 @@ def load_config(fname):
 
 def iter_settings(config):
     for key, value in config.items():
-        if not key.startswith('_') and not inspect.ismodule(value):
+        if not key.startswith('_') and not inspect.ismodule(value) and not inspect.isfunction(value):
             yield key, value
