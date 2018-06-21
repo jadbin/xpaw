@@ -156,6 +156,13 @@ class Daemon(Setting):
     help = 'run in daemon mode'
 
 
+class PidFile(Setting):
+    name = 'pid_file'
+    cli = ['-p', '--pid-file']
+    metavar = 'FILE'
+    help = 'PID file'
+
+
 class LogFile(Setting):
     name = 'log_file'
     cli = ['--log-file']

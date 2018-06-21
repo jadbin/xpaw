@@ -65,6 +65,10 @@ def main(argv=None):
         if e.print_help:
             parser.print_help()
         sys.exit(2)
+    except Exception as e:
+        if str(e):
+            parser.error(str(e))
+        sys.exit(3)
     else:
         if cmd.exitcode:
             sys.exit(cmd.exitcode)

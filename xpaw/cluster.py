@@ -2,8 +2,6 @@
 
 import asyncio
 import logging
-from os.path import isfile, join
-import sys
 import signal
 from asyncio import CancelledError
 
@@ -12,7 +10,6 @@ from .http import HttpRequest, HttpResponse
 from .errors import IgnoreRequest, IgnoreItem
 from .downloader import DownloaderMiddlewareManager
 from .spider import SpiderMiddlewareManager
-from .config import Config
 from .eventbus import EventBus
 from . import events
 from .extension import ExtensionManager
@@ -24,9 +21,8 @@ log = logging.getLogger(__name__)
 
 
 class LocalCluster:
-    def __init__(self, proj_dir=None, config=None):
-        self.log_handler = None
-        self.config = self._load_task_config(proj_dir, config)
+    def __init__(self, config):
+        self.config = config
         self.loop = asyncio.new_event_loop()
         self.event_bus = EventBus()
         self.stats_center = self._new_object_from_cluster(self.config.get("stats_center_cls"), self)
@@ -87,9 +83,6 @@ class LocalCluster:
             log.info("Cluster is stopped")
 
     def close(self):
-        if self.log_handler:
-            utils.remove_logger('xpaw', self.log_handler)
-            self.log_handler = None
         if self.loop:
             self.loop.close()
 
@@ -224,23 +217,3 @@ class LocalCluster:
         if not await self.dupe_filter.is_duplicated(request):
             await self.event_bus.send(events.request_scheduled, request=request)
             await self.queue.push(request)
-
-    def _load_task_config(self, proj_dir=None, base_config=None):
-        if proj_dir is not None and proj_dir not in sys.path:
-            # add project path
-            sys.path.append(proj_dir)
-        task_config = Config()
-        if proj_dir is not None:
-            config_file = join(proj_dir, 'config.py')
-            if isfile(config_file):
-                for k, v in utils.iter_settings(utils.load_config(config_file)):
-                    task_config.set(k, v)
-            else:
-                log.warning('Cannot find config.py in %s', proj_dir)
-        task_config.update(base_config)
-
-        if task_config.getbool('daemon'):
-            utils.be_daemon()
-        self.log_handler = utils.configure_logger('xpaw', task_config)
-
-        return task_config

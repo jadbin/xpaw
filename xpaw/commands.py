@@ -88,7 +88,8 @@ class CrawlCommand(Command):
         return "Start to crawl web pages"
 
     def _import_settings(self):
-        settings = (config.Daemon, config.LogLevel, config.LogFile,
+        settings = (config.Daemon, config.PidFile,
+                    config.LogLevel, config.LogFile,
                     config.DownloaderClients, config.DownloaderTimeout,
                     config.VerifySsl, config.CookieJarEnabled,
                     config.MaxDepth)
@@ -105,7 +106,11 @@ class CrawlCommand(Command):
     def process_arguments(self, args):
         args.path = args.path[0]
         if args.config is not None:
-            for k, v in utils.iter_settings(utils.load_config(args.config)):
+            try:
+                c = utils.load_config(args.config)
+            except Exception:
+                raise RuntimeError('Cannot read the configuration file {}'.format(args.config))
+            for k, v in utils.iter_settings(c):
                 self.config.set(k, v)
         super().process_arguments(args)
         try:
@@ -117,9 +122,9 @@ class CrawlCommand(Command):
         if isfile(args.path):
             spider = _import_spider(args.path)
             self.config.set('spider', spider)
-            run_cluster(proj_dir=None, config=self.config)
+            run_cluster(proj_dir=None, base_config=self.config)
         elif isdir(args.path):
-            run_cluster(proj_dir=args.path, config=self.config)
+            run_cluster(proj_dir=args.path, base_config=self.config)
         else:
             raise UsageError('Cannot find {}'.format(args.path))
 
