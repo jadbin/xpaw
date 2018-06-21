@@ -47,9 +47,8 @@ def configure_logger(name, config):
     return handler
 
 
-def remove_logger(name, handler):
-    logger = logging.getLogger(name)
-    logger.removeHandler(handler)
+def remove_logger(name):
+    logging.getLogger(name).handlers.clear()
 
 
 def get_encoding_from_header(content_type):
