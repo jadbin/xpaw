@@ -12,9 +12,8 @@ log = logging.getLogger(__name__)
 
 
 class Spider:
-    def __init__(self, config=None, cluster=None):
-        self.config = config
-        self.cluster = cluster
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
     @classmethod
     def from_cluster(cls, cluster):
