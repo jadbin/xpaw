@@ -42,7 +42,7 @@ class BadQueue(PriorityQueue):
 
 
 def test_coro_terminated():
-    run_spider(FooSpider, downloader_clients=2, queue_cls=BadQueue, max_retry_times=0)
+    run_spider(FooSpider, downloader_clients=2, queue=BadQueue, max_retry_times=0)
 
 
 class LinkItem(Item):

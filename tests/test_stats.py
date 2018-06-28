@@ -1,18 +1,18 @@
 # coding=utf-8
 
-from xpaw.statscenter import StatsCenter, EmptyStatusCenter
+from xpaw.stats import StatsCollector, DummyStatsCollector
 
 
-class TestStatsCenter:
+class TestStatsCollector:
     def test_get_none_key(self):
-        stats = StatsCenter()
+        stats = StatsCollector()
         assert stats.get('key') is None
         assert stats.get('key', 'default') is 'default'
         stats.set('key', 'value')
         assert stats.get('key', 'default') == 'value'
 
     def test_set_value(self):
-        stats = StatsCenter()
+        stats = StatsCollector()
         stats.set('key1', 0)
         assert stats.get('key1') == 0
         stats.set_max('key1', 2)
@@ -35,7 +35,7 @@ class TestStatsCenter:
         assert stats.get('key5') == 6
 
     def test_inc_value(self):
-        stats = StatsCenter()
+        stats = StatsCollector()
         stats.set('key1', 1)
         stats.inc('key1')
         assert stats.get('key1') == 2
@@ -51,7 +51,7 @@ class TestStatsCenter:
         assert stats.get('key4') == 5
 
     def test_clear_stats(self):
-        stats = StatsCenter()
+        stats = StatsCollector()
         stats.set('key1', 1)
         stats.set('key2', 2)
         assert stats.stats == {'key1': 1, 'key2': 2}
@@ -59,12 +59,12 @@ class TestStatsCenter:
         assert stats.stats == {}
 
     def test_set_stats(self):
-        stats = StatsCenter()
+        stats = StatsCollector()
         stats.set_stats({'key1': 1, 'key2': 2})
         assert stats.stats == {'key1': 1, 'key2': 2}
 
     def test_remove_key(self):
-        stats = StatsCenter()
+        stats = StatsCollector()
         stats.set('key', 'value')
         assert stats.get('key') == 'value'
         stats.remove('key')
@@ -72,9 +72,9 @@ class TestStatsCenter:
         assert stats.get('key', 'default') == 'default'
 
 
-class TestEmptyStatsCenter:
+class TestDummyStatsCollector:
     def test_set_value(self):
-        stats = EmptyStatusCenter()
+        stats = DummyStatsCollector()
         assert stats.get('key') is None
         stats.set('key', 'value')
         assert stats.get('key') is None
@@ -87,11 +87,11 @@ class TestEmptyStatsCenter:
         assert stats.get('key') is None
 
     def test_inc_value(self):
-        stats = EmptyStatusCenter()
+        stats = DummyStatsCollector()
         stats.inc('key')
         assert stats.get('key') is None
 
     def test_set_stats(self):
-        stats = EmptyStatusCenter()
+        stats = DummyStatsCollector()
         stats.set_stats({'key1': 1, 'key2': 2})
         assert stats.stats == {}

@@ -1,7 +1,7 @@
 # coding=utf-8
 
 
-class StatsCenter:
+class StatsCollector:
     def __init__(self):
         self._stats = {}
 
@@ -38,7 +38,7 @@ class StatsCenter:
         self._stats = stats
 
 
-class EmptyStatusCenter(StatsCenter):
+class DummyStatsCollector(StatsCollector):
     def get(self, key, default=None):
         return default
 

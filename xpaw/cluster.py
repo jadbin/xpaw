@@ -25,14 +25,14 @@ class LocalCluster:
         self.config = config
         self.loop = asyncio.new_event_loop()
         self.event_bus = EventBus()
-        self.stats_center = self._new_object_from_cluster(self.config.get("stats_center_cls"), self)
-        self.queue = self._new_object_from_cluster(self.config.get("queue_cls"), self)
-        self.dupe_filter = self._new_object_from_cluster(self.config.get("dupe_filter_cls"), self)
-        self.downloader = Downloader(timeout=self.config.getfloat("downloader_timeout"),
-                                     verify_ssl=self.config.getbool("verify_ssl"),
-                                     cookie_jar_enabled=self.config.getbool("cookie_jar_enabled"),
+        self.stats_collector = self._new_object_from_cluster(self.config.get('stats_collector'), self)
+        self.queue = self._new_object_from_cluster(self.config.get('queue'), self)
+        self.dupe_filter = self._new_object_from_cluster(self.config.get('dupe_filter'), self)
+        self.downloader = Downloader(timeout=self.config.getfloat('downloader_timeout'),
+                                     verify_ssl=self.config.getbool('verify_ssl'),
+                                     cookie_jar_enabled=self.config.getbool('cookie_jar_enabled'),
                                      loop=self.loop)
-        self.spider = self._new_object_from_cluster(self.config.get("spider"), self)
+        self.spider = self._new_object_from_cluster(self.config.get('spider'), self)
         log.info("Spider: '%s'", type(self.spider).__module__ + '.' + type(self.spider).__name__)
         self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
         log.info('Downloader middlewares: %s',

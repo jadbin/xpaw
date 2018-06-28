@@ -296,41 +296,18 @@ class MaxDepth(Setting):
 
 
 class StatsCenterCls(Setting):
-    name = 'stats_center_cls'
-    default = 'xpaw.statscenter.StatsCenter'
+    name = 'stats_collector'
+    default = 'xpaw.stats.StatsCollector'
 
 
 class QueueCls(Setting):
-    name = 'queue_cls'
+    name = 'queue'
     default = 'xpaw.queue.PriorityQueue'
 
 
-class DupeFilterCls(Setting):
-    name = 'dupe_filter_cls'
+class DupeFilter(Setting):
+    name = 'dupe_filter'
     default = 'xpaw.dupefilter.SetDupeFilter'
-
-
-class DownloaderMiddlewaresBase(Setting):
-    name = 'downloader_middlewares_base'
-    default = {
-        # cluster side
-        'xpaw.downloadermws.SpeedLimitMiddleware': 100,
-        'xpaw.downloadermws.DefaultHeadersMiddleware': 300,
-        'xpaw.downloadermws.ImitatingProxyMiddleware': 350,
-        'xpaw.downloadermws.UserAgentMiddleware': 400,
-        'xpaw.downloadermws.RetryMiddleware': 500,
-        'xpaw.downloadermws.ProxyMiddleware': 700
-        # downloader side
-    }
-
-
-class SpiderMiddlewaresBase(Setting):
-    name = 'spider_middlewares_base'
-    default = {
-        # cluster side
-        'xpaw.spidermws.DepthMiddleware': 900
-        # spider side
-    }
 
 
 class Spider(Setting):
@@ -341,8 +318,31 @@ class DownloaderMiddlewares(Setting):
     name = 'downloader_middlewares'
 
 
+class DownloaderMiddlewaresBase(Setting):
+    name = 'downloader_middlewares_base'
+    default = {
+        # cluster side
+        'xpaw.downloadermws.SpeedLimitMiddleware': 200,
+        'xpaw.downloadermws.DefaultHeadersMiddleware': 400,
+        'xpaw.downloadermws.ImitatingProxyMiddleware': 450,
+        'xpaw.downloadermws.UserAgentMiddleware': 500,
+        'xpaw.downloadermws.RetryMiddleware': 600,
+        'xpaw.downloadermws.ProxyMiddleware': 800
+        # downloader side
+    }
+
+
 class SpiderMiddlewares(Setting):
     name = 'spider_middlewares'
+
+
+class SpiderMiddlewaresBase(Setting):
+    name = 'spider_middlewares_base'
+    default = {
+        # cluster side
+        'xpaw.spidermws.DepthMiddleware': 800
+        # spider side
+    }
 
 
 class ItemPipelines(Setting):
