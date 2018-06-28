@@ -2,10 +2,7 @@
 
 from os.path import join
 import asyncio
-import logging
 from urllib.parse import urljoin
-
-import pytest
 
 from xpaw.cli import main
 from xpaw.run import run_crawler

@@ -80,17 +80,11 @@ class TestXPathSelector:
 
     def test_node_context(self):
         html = "<p>header</p><div><p>text</p></div>"
-        xml = "<xml><p>header</p><div><p>text</p></div></xml>"
         s = Selector(html)
-        xs = Selector(xml, doctype='xml')
-
         assert s.xpath("/p") == []
         assert s.xpath("//p") != []
         assert s.xpath("/html/body/p") != []
-        assert xs.xpath('/p') == []
-        assert xs.xpath('//p') != []
-        assert xs.xpath('/xml/p') != []
-
+        assert s.xpath("//p")[0].text == "header"
         assert s.xpath("//div").xpath("//p")[0].text == "header"
         assert s.xpath("//div").xpath(".//p")[0].text == "text"
         assert s.xpath("//div").xpath("./p")[0].text == "text"
@@ -145,20 +139,23 @@ class TestCssSelector:
         assert s.css('h2').attr('class') == []
 
 
-class TestDoctypeXml:
+class TestXmlText:
     def test_text_selection(self):
-        xml = """<div><p>expression: <var>x</var>+<var>y</var>=<var>z</var></p></div>"""
-        xs = Selector(xml, doctype='xml')
-        assert xs.xpath("//var/text()")[0].text == "x"
-        assert xs.xpath("//var")[0].text == "x"
-        assert xs.xpath("//var/text()").text == ["x", "y", "z"]
-        assert xs.xpath("//var").text == ["x", "y", "z"]
+        xml = "<xml><p>header</p><div><p>text</p></div></xml>"
+        xs = Selector(xml, text_type='xml')
+        assert xs.xpath('/p') == []
+        assert xs.xpath('//p') != []
+        assert xs.xpath('/xml/p') != []
+        assert xs.xpath("//p")[0].text == "header"
+        assert xs.xpath("//div").xpath("//p")[0].text == "header"
+        assert xs.xpath("//div").xpath(".//p")[0].text == "text"
+        assert xs.xpath("//div").xpath("./p")[0].text == "text"
 
     def test_not_xml(self):
         from lxml.etree import XMLSyntaxError
         xml = """expression: <var>x</var>+<var>y</var>=<var>z</var>"""
         with pytest.raises(XMLSyntaxError):
-            xs = Selector(xml, doctype='xml')
+            xs = Selector(xml, text_type='xml')
 
 
 def test_selection_error():
@@ -174,6 +171,6 @@ def test_selection_error():
       </book>
     </bookstore>"""
 
-    s = Selector(xml, doctype='xml')
+    s = Selector(xml, text_type='xml')
     assert s.xpath('/bookstore/book[first()]') == []
     assert s.css('book >> price') == []
