@@ -294,3 +294,24 @@ class UserAgentMiddleware:
                 mobile = '14E{:03d}'.format(random.randint(0, 999))
                 return ('Mozilla/5.0 ({}) AppleWebKit/{} (KHTML, like Gecko) '
                         'CriOS/{} Mobile/{} Safari/{}').format(os, webkit, chrome_version, mobile, webkit)
+
+
+class ResponseSlotsMiddleware:
+    def __init__(self, config):
+        slots = config.getint('response_slots')
+        if slots is None:
+            raise NotEnabled
+        self._slots = slots
+
+    @classmethod
+    def from_cluster(cls, cluster):
+        return cls(cluster.config)
+
+    def handle_request(self, request):
+        if self._slots <= 0:
+            raise IgnoreRequest
+
+    def handle_response(self, response):
+        if self._slots <= 0:
+            raise IgnoreRequest
+        self._slots -= 1

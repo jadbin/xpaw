@@ -322,12 +322,13 @@ class DownloaderMiddlewaresBase(Setting):
     name = 'downloader_middlewares_base'
     default = {
         # cluster side
-        'xpaw.downloadermws.SpeedLimitMiddleware': 200,
-        'xpaw.downloadermws.DefaultHeadersMiddleware': 400,
-        'xpaw.downloadermws.ImitatingProxyMiddleware': 450,
-        'xpaw.downloadermws.UserAgentMiddleware': 500,
-        'xpaw.downloadermws.RetryMiddleware': 600,
-        'xpaw.downloadermws.ProxyMiddleware': 800
+        'xpaw.downloadermws.ResponseSlotsMiddleware': 100,
+        'xpaw.downloadermws.DefaultHeadersMiddleware': 300,
+        'xpaw.downloadermws.ImitatingProxyMiddleware': 350,
+        'xpaw.downloadermws.UserAgentMiddleware': 400,
+        'xpaw.downloadermws.RetryMiddleware': 500,
+        'xpaw.downloadermws.ProxyMiddleware': 700,
+        'xpaw.downloadermws.SpeedLimitMiddleware': 900,
         # downloader side
     }
 
@@ -340,7 +341,7 @@ class SpiderMiddlewaresBase(Setting):
     name = 'spider_middlewares_base'
     default = {
         # cluster side
-        'xpaw.spidermws.DepthMiddleware': 800
+        'xpaw.spidermws.DepthMiddleware': 900
         # spider side
     }
 

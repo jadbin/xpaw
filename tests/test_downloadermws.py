@@ -325,10 +325,28 @@ class TestUserAgentMiddleware:
         assert req.headers.get('User-Agent') != req2.headers.get('User-Agent')
         assert 'Chrome' in req.headers.get('User-Agent')
 
-    def test_random_user_agent_under_selection(self):
+    def test_random_user_agent2(self):
         mw = UserAgentMiddleware.from_cluster(Cluster(user_agent=':mobile', random_user_agent=True))
         for i in range(30):
             req = HttpRequest('http://httpbin.org')
             mw.handle_request(req)
             assert 'User-Agent' in req.headers
             assert 'CriOS' in req.headers.get('User-Agent') and 'Mobile' in req.headers.get('User-Agent')
+
+
+class TestResponseSlotsMiddleware:
+    def test_not_enabled(self):
+        with pytest.raises(NotEnabled):
+            ResponseSlotsMiddleware.from_cluster(Cluster())
+
+    def test_response_slots(self):
+        req = HttpRequest('')
+        resp = HttpResponse('', 200)
+        mw = ResponseSlotsMiddleware.from_cluster(Cluster(response_slots=1))
+        mw.handle_request(req)
+        mw.handle_request(req)
+        mw.handle_response(resp)
+        with pytest.raises(IgnoreRequest):
+            mw.handle_response(resp)
+        with pytest.raises(IgnoreRequest):
+            mw.handle_request(req)
