@@ -15,7 +15,7 @@ def test_copy_http_request():
 
 def test_new_http_request():
     req = HttpRequest('http://httpbin.org/post', 'POST', body=b'body1')
-    new_req = req.new(url='https://httpbin.org/post', body=b'body2')
+    new_req = req.replace(url='https://httpbin.org/post', body=b'body2')
     assert new_req.url == 'https://httpbin.org/post'
     assert new_req.body == b'body2'
     assert new_req.method == 'POST'
@@ -31,7 +31,7 @@ def test_copy_http_response():
 
 def test_new_http_response():
     resp = HttpResponse('http://httpbin.org/get', 200, body=b'body1')
-    new_resp = resp.new(url='https://httpbin.org/get', body=b'body2')
+    new_resp = resp.replace(url='https://httpbin.org/get', body=b'body2')
     assert new_resp.url == 'https://httpbin.org/get'
     assert new_resp.status == 200
     assert new_resp.body == b'body2'
