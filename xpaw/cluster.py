@@ -164,7 +164,7 @@ class LocalCluster:
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
                     log.warning("Failed to send request '%s'", req.url, exc_info=True)
-                await self.spidermw.handle_error(self.spider, req, e)
+                await self.spider.request_error(req, e)
             else:
                 await self._handle_response(req, resp)
             self._req_in_job[coro_id] = None

@@ -42,6 +42,17 @@ class Spider:
     def close(self):
         pass
 
+    async def request_error(self, request, error):
+        try:
+            if request and request.errback:
+                r = getattr(self, request.errback)(request, error)
+                if inspect.iscoroutine(r):
+                    await r
+        except CancelledError:
+            raise
+        except Exception:
+            log.warning("Error occurred in error callback", exc_info=True)
+
 
 def _isiterable(obj):
     return hasattr(obj, "__iter__") or hasattr(obj, "__aiter__")
@@ -78,7 +89,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             except CancelledError:
                 raise
             except Exception as e:
-                await self.handle_error(spider, request, e)
+                await spider.request_error(request, e)
                 raise e
             if request.callback:
                 res = getattr(spider, request.callback)(response)
@@ -100,18 +111,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
             res = await self._handle_output(response, result)
             result = await iterable_to_list(res)
         return result
-
-    @staticmethod
-    async def handle_error(spider, request, error):
-        try:
-            if request and request.errback:
-                r = getattr(spider, request.errback)(request, error)
-                if inspect.iscoroutine(r):
-                    await r
-        except CancelledError:
-            raise
-        except Exception:
-            log.warning("Error occurred in error callback", exc_info=True)
 
     async def start_requests(self, spider):
         r = spider.start_requests()
