@@ -1,9 +1,9 @@
 # coding=utf-8
 
-import math
 import logging
 
 from .http import HttpRequest
+from .errors import NotEnabled
 
 log = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ class DepthMiddleware:
     def __init__(self, config):
         self._max_depth = config.getint("max_depth", 0)
         if self._max_depth <= 0:
-            self._max_depth = math.inf
+            raise NotEnabled
 
     @classmethod
     def from_cluster(cls, cluster):

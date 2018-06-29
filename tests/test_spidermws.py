@@ -1,9 +1,12 @@
 # coding=utf-8
 
+import pytest
+
 from xpaw.config import Config
 from xpaw.spidermws import *
 from xpaw.http import HttpRequest
 from xpaw.item import Item
+from xpaw.errors import NotEnabled
 
 
 class Cluster:
@@ -13,6 +16,12 @@ class Cluster:
 
 
 class TestDepthMiddleware:
+    def test_not_enabled(self):
+        with pytest.raises(NotEnabled):
+            DepthMiddleware.from_cluster(Cluster())
+        with pytest.raises(NotEnabled):
+            DepthMiddleware.from_cluster(Cluster(max_depth=0))
+
     def test_handle_output(self):
         class R:
             def __init__(self, depth=None):
