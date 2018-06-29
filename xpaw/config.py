@@ -327,6 +327,7 @@ class DownloaderMiddlewaresBase(Setting):
         'xpaw.downloadermws.ImitatingProxyMiddleware': 350,
         'xpaw.downloadermws.UserAgentMiddleware': 400,
         'xpaw.downloadermws.RetryMiddleware': 500,
+        'xpaw.downloadermws.CookiesMiddleware': 600,
         'xpaw.downloadermws.ProxyMiddleware': 700,
         'xpaw.downloadermws.SpeedLimitMiddleware': 900,
         # downloader side

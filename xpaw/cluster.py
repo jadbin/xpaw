@@ -30,7 +30,6 @@ class LocalCluster:
         self.dupe_filter = self._new_object_from_cluster(self.config.get('dupe_filter'), self)
         self.downloader = Downloader(timeout=self.config.getfloat('downloader_timeout'),
                                      verify_ssl=self.config.getbool('verify_ssl'),
-                                     cookie_jar_enabled=self.config.getbool('cookie_jar_enabled'),
                                      loop=self.loop)
         self.spider = self._new_object_from_cluster(self.config.get('spider'), self)
         log.info("Spider: '%s'", type(self.spider).__module__ + '.' + type(self.spider).__name__)

@@ -105,6 +105,26 @@ class ImitatingProxyMiddleware:
         request.headers.setdefault('Via', '{} xpaw'.format(__version__))
 
 
+class CookiesMiddleware:
+    def __init__(self, config, loop=None):
+        if not config.getbool('cookie_jar_enabled'):
+            raise NotEnabled
+        self._loop = loop or asyncio.get_event_loop()
+        self._cookie_jars = {}
+
+    @classmethod
+    def from_cluster(cls, cluster):
+        return cls(cluster.config, loop=cluster.loop)
+
+    def handle_request(self, request):
+        cookie_jar_key = request.meta.get('cookie_jar')
+        cookie_jar = self._cookie_jars.get(cookie_jar_key)
+        if cookie_jar is None:
+            cookie_jar = aiohttp.CookieJar(loop=self._loop)
+            self._cookie_jars[cookie_jar_key] = cookie_jar
+        request.cookie_jar = cookie_jar
+
+
 class ProxyMiddleware:
     UPDATE_INTERVAL = 60
     TIMEOUT = 20

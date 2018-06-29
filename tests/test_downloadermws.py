@@ -9,6 +9,7 @@ from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
 from xpaw.errors import IgnoreRequest, NetworkError, NotEnabled
 from xpaw.version import __version__
+from xpaw.downloader import Downloader
 
 
 class Cluster:
@@ -237,6 +238,35 @@ class TestRetryMiddleware:
         assert RetryMiddleware.match_status("~20X", 200) is False
         assert RetryMiddleware.match_status("!20x", 400) is True
         assert RetryMiddleware.match_status("0200", 200) is False
+
+
+class TestCookiesMiddleware:
+    def test_not_enabled(self):
+        with pytest.raises(NotEnabled):
+            CookiesMiddleware.from_cluster(Cluster())
+
+    async def test_cookie_jar(self, loop):
+        mw = CookiesMiddleware.from_cluster(Cluster(cookie_jar_enabled=True, loop=loop))
+        downloader = Downloader(timeout=60, loop=loop)
+        seed = str(random.randint(0, 2147483647))
+        req = HttpRequest("http://httpbin.org/cookies/set?seed={}".format(seed))
+        mw.handle_request(req)
+        await downloader.download(req)
+        req2 = HttpRequest("http://httpbin.org/cookies")
+        mw.handle_request(req2)
+        resp = await downloader.download(req2)
+        assert resp.status == 200
+        cookies = json.loads(resp.text)["cookies"]
+        assert len(cookies) == 1 and cookies.get("seed") == seed
+        req3 = HttpRequest("http://httpbin.org/cookies/delete?seed=")
+        mw.handle_request(req3)
+        await downloader.download(req3)
+        req4 = HttpRequest("http://httpbin.org/cookies")
+        mw.handle_request(req4)
+        resp = await downloader.download(req4)
+        assert resp.status == 200
+        cookies = json.loads(resp.text)["cookies"]
+        assert len(cookies) == 0
 
 
 class TestSpeedLimitMiddleware:

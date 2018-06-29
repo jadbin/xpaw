@@ -29,21 +29,6 @@ async def test_cookies(loop):
     assert len(cookies) == 1 and cookies.get("seed") == seed
 
 
-async def test_cookie_jar(loop):
-    downloader = Downloader(timeout=60, cookie_jar_enabled=True, loop=loop)
-    seed = str(random.randint(0, 2147483647))
-    await downloader.download(HttpRequest("http://httpbin.org/cookies/set?seed={}".format(seed)))
-    resp = await downloader.download(HttpRequest("http://httpbin.org/cookies"))
-    assert resp.status == 200
-    cookies = json.loads(resp.text)["cookies"]
-    assert len(cookies) == 1 and cookies.get("seed") == seed
-    await downloader.download(HttpRequest("http://httpbin.org/cookies/delete?seed="))
-    resp = await downloader.download(HttpRequest("http://httpbin.org/cookies"))
-    assert resp.status == 200
-    cookies = json.loads(resp.text)["cookies"]
-    assert len(cookies) == 0
-
-
 async def test_basic_auth(loop):
     downloader = Downloader(timeout=60, loop=loop)
 

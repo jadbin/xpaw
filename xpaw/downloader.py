@@ -17,14 +17,10 @@ log = logging.getLogger(__name__)
 
 
 class Downloader:
-    def __init__(self, timeout=None, verify_ssl=True, cookie_jar_enabled=False, loop=None):
+    def __init__(self, timeout=None, verify_ssl=True, loop=None):
         self._timeout = timeout
         self._verify_ssl = verify_ssl
         self._loop = loop or asyncio.get_event_loop()
-        if cookie_jar_enabled:
-            self._cookie_jar = aiohttp.CookieJar(loop=self._loop)
-        else:
-            self._cookie_jar = None
 
     async def download(self, request):
         log.debug("HTTP request: %s %s", request.method, request.url)
@@ -33,7 +29,7 @@ class Downloader:
             timeout = self._timeout
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=self._verify_ssl, loop=self._loop),
                                          cookies=request.cookies,
-                                         cookie_jar=self._cookie_jar,
+                                         cookie_jar=request.cookie_jar,
                                          loop=self._loop) as session:
             with async_timeout.timeout(timeout, loop=self._loop):
                 if isinstance(request.body, dict):

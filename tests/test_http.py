@@ -13,7 +13,7 @@ def test_copy_http_request():
     assert req.meta['depth'] == 1 and copy_req.meta['depth'] == 0
 
 
-def test_new_http_request():
+def test_replace_http_request():
     req = HttpRequest('http://httpbin.org/post', 'POST', body=b'body1')
     new_req = req.replace(url='https://httpbin.org/post', body=b'body2')
     assert new_req.url == 'https://httpbin.org/post'
@@ -29,7 +29,7 @@ def test_copy_http_response():
     assert copy_resp.body == b'body'
 
 
-def test_new_http_response():
+def test_replace_http_response():
     resp = HttpResponse('http://httpbin.org/get', 200, body=b'body1')
     new_resp = resp.replace(url='https://httpbin.org/get', body=b'body2')
     assert new_resp.url == 'https://httpbin.org/get'
