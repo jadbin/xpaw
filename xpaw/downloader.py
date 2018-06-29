@@ -25,7 +25,7 @@ class Downloader:
     async def download(self, request):
         log.debug("HTTP request: %s %s", request.method, request.url)
         timeout = request.meta.get("timeout")
-        if not timeout:
+        if timeout is None:
             timeout = self._timeout
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=self._verify_ssl, loop=self._loop),
                                          cookies=request.cookies,
