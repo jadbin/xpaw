@@ -12,7 +12,8 @@ log = logging.getLogger(__name__)
 
 
 class Spider:
-    def __init__(self, **kwargs):
+    def __init__(self, config=None, **kwargs):
+        self.config = config
         self.__dict__.update(kwargs)
 
     @classmethod
