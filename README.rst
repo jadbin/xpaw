@@ -41,7 +41,7 @@ Spider Example
 
 
     if __name__ == '__main__':
-        run_spider(TencentNewsSpider, log_level="DEBUG")
+        run_spider(TencentNewsSpider)
 
 在爬虫类中我们定义了一些方法：
 

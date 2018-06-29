@@ -17,4 +17,4 @@ class TencentNewsSpider(Spider):
 
 
 if __name__ == '__main__':
-    run_spider(TencentNewsSpider, log_level="DEBUG")
+    run_spider(TencentNewsSpider)

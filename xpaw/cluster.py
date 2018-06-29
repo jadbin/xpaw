@@ -32,19 +32,19 @@ class LocalCluster:
                                      verify_ssl=self.config.getbool('verify_ssl'),
                                      loop=self.loop)
         self.spider = self._new_object_from_cluster(self.config.get('spider'), self)
-        log.info("Spider: '%s'", type(self.spider).__module__ + '.' + type(self.spider).__name__)
+        log.info('Spider: %s', type(self.spider).__name__)
         self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
         log.info('Downloader middlewares: %s',
-                 [type(i).__module__ + '.' + type(i).__name__ for i in self.downloadermw.components])
+                 ', '.join([type(i).__name__ for i in self.downloadermw.components]))
         self.spidermw = SpiderMiddlewareManager.from_cluster(self)
         log.info('Spider middlewares: %s',
-                 [type(i).__module__ + '.' + type(i).__name__ for i in self.spidermw.components])
+                 ', '.join([type(i).__name__ for i in self.spidermw.components]))
         self.item_pipeline = ItemPipelineManager.from_cluster(self)
         log.info('Item pipelines: %s',
-                 [type(i).__module__ + '.' + type(i).__name__ for i in self.item_pipeline.components])
+                 ', '.join([type(i).__name__ for i in self.item_pipeline.components]))
         self.extension = ExtensionManager.from_cluster(self)
         log.info('Extensions: %s',
-                 [type(i).__module__ + '.' + type(i).__name__ for i in self.extension.components])
+                 ', '.join([type(i).__name__ for i in self.extension.components]))
         self._job_futures = None
         self._job_futures_done = None
         self._req_in_job = None
