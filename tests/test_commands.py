@@ -59,9 +59,9 @@ def test_init_no_project_dir(capsys):
     _, _ = capsys.readouterr()
 
 
-def test_error_usage_of_set_argument(capsys):
+def test_crawl_no_spider_file(capsys):
     with pytest.raises(SystemExit) as excinfo:
-        main(argv=['xpaw', 'version', '-s', 'wrong'])
+        main(argv=['xpaw', 'crawl', 'dont_exist.py'])
     assert excinfo.value.code == 2
     _, _ = capsys.readouterr()
 
