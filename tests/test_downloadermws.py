@@ -274,21 +274,3 @@ class TestUserAgentMiddleware:
             mw.handle_request(req)
             assert 'User-Agent' in req.headers
             assert 'CriOS' in req.headers.get('User-Agent') and 'Mobile' in req.headers.get('User-Agent')
-
-
-class TestResponseSlotsMiddleware:
-    def test_not_enabled(self):
-        with pytest.raises(NotEnabled):
-            ResponseSlotsMiddleware.from_cluster(Cluster())
-
-    def test_response_slots(self):
-        req = HttpRequest('')
-        resp = HttpResponse('', 200)
-        mw = ResponseSlotsMiddleware.from_cluster(Cluster(response_slots=1))
-        mw.handle_request(req)
-        mw.handle_request(req)
-        mw.handle_response(resp)
-        with pytest.raises(IgnoreRequest):
-            mw.handle_response(resp)
-        with pytest.raises(IgnoreRequest):
-            mw.handle_request(req)

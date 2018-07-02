@@ -295,14 +295,6 @@ class MaxDepth(Setting):
     help = 'maximum depth of spider'
 
 
-class ResponseSlots(Setting):
-    name = 'response_slots'
-    cli = ['--response-slots']
-    metavar = 'INT'
-    type = int
-    help = 'maximum number of responses to handle'
-
-
 class StatsCenterCls(Setting):
     name = 'stats_collector'
     default = 'xpaw.stats.StatsCollector'
@@ -330,7 +322,6 @@ class DownloaderMiddlewaresBase(Setting):
     name = 'downloader_middlewares_base'
     default = {
         # cluster side
-        'xpaw.downloadermws.ResponseSlotsMiddleware': 100,
         'xpaw.downloadermws.DefaultHeadersMiddleware': 300,
         'xpaw.downloadermws.ImitatingProxyMiddleware': 350,
         'xpaw.downloadermws.UserAgentMiddleware': 400,

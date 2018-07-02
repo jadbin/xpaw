@@ -92,7 +92,7 @@ class CrawlCommand(Command):
                     config.LogLevel, config.LogFile,
                     config.DownloaderClients, config.DownloaderTimeout,
                     config.VerifySsl, config.CookieJarEnabled,
-                    config.MaxDepth, config.ResponseSlots)
+                    config.MaxDepth)
         return [config.KNOWN_SETTINGS[i.name] for i in settings]
 
     def add_arguments(self, parser):
