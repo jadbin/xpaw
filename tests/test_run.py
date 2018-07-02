@@ -217,8 +217,8 @@ def check_pid(pid):
 
 def test_wait_spider(tmpdir, monkeypatch):
     monkeypatch.setattr(os, '_exit', sys.exit)
-    pid_file = join(tmpdir, 'pid')
-    log_file = join(tmpdir, 'log')
+    pid_file = join(str(tmpdir), 'pid')
+    log_file = join(str(tmpdir), 'log')
     with pytest.raises(SystemExit) as excinfo:
         run_spider(WaitSpider, pid_file=pid_file, log_file=log_file, daemon=True)
     assert excinfo.value.code == 0
