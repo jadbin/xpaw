@@ -38,25 +38,30 @@ async def test_basic_auth(loop):
         assert data['authenticated'] is True and data['user'] == login
 
     async def no_auth():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password"))
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login@/pass:@"))
         assert resp.status == 401
 
     async def str_auth():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
-                                                     auth='login:password'))
-        validate_response(resp, 'login')
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login@/pass:@",
+                                                     auth='login@:pass:@'))
+        validate_response(resp, 'login@')
 
     async def tuple_auth():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
-                                                     auth=('login', 'password')))
-        validate_response(resp, 'login')
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login@/pass:@",
+                                                     auth=('login@', 'pass:@')))
+        validate_response(resp, 'login@')
 
     async def basic_auth():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
-                                                     auth=BasicAuth('login', 'password')))
-        validate_response(resp, 'login')
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login@/pass:@",
+                                                     auth=BasicAuth('login@', 'pass:@')))
+        validate_response(resp, 'login@')
 
-    await asyncio.gather(no_auth(), str_auth(), tuple_auth(), basic_auth(), loop=loop)
+    async def url_basic_auth():
+        resp = await downloader.download(
+            HttpRequest("http://login%40:pass%3a%40@httpbin.org/basic-auth/login@/pass:@"))
+        validate_response(resp, 'login@')
+
+    await asyncio.gather(no_auth(), str_auth(), tuple_auth(), basic_auth(), url_basic_auth(), loop=loop)
 
 
 async def test_params(loop):
@@ -136,29 +141,35 @@ async def test_proxy_auth(test_server, loop):
         assert data['authenticated'] is True and data['user'] == login
 
     async def no_auth():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
-                                                     proxy='{}:{}'.format(server.host, server.port)))
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login@/pass:@",
+                                                     proxy='http://{}:{}'.format(server.host, server.port)))
         assert resp.status == 401
 
     async def str_auth():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
-                                                     proxy_auth='login:password',
-                                                     proxy='{}:{}'.format(server.host, server.port)), )
-        validate_response(resp, 'login')
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login@/pass:@",
+                                                     proxy_auth='login@:pass:@',
+                                                     proxy='http://{}:{}'.format(server.host, server.port)), )
+        validate_response(resp, 'login@')
 
     async def tuple_auth():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
-                                                     proxy_auth=('login', 'password'),
-                                                     proxy='{}:{}'.format(server.host, server.port)))
-        validate_response(resp, 'login')
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login@/pass:@",
+                                                     proxy_auth=('login@', 'pass:@'),
+                                                     proxy='http://{}:{}'.format(server.host, server.port)))
+        validate_response(resp, 'login@')
 
     async def basic_auth():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/password",
-                                                     proxy_auth=BasicAuth('login', 'password'),
-                                                     proxy='{}:{}'.format(server.host, server.port)))
-        validate_response(resp, 'login')
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login@/pass:@",
+                                                     proxy_auth=BasicAuth('login@', 'pass:@'),
+                                                     proxy='http://{}:{}'.format(server.host, server.port)))
+        validate_response(resp, 'login@')
 
-    await asyncio.gather(no_auth(), str_auth(), tuple_auth(), basic_auth(), loop=loop)
+    async def url_basic_auth():
+        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login@/pass:@",
+                                                     proxy='http://login%40:pass%3a%40@{}:{}'.format(server.host,
+                                                                                                        server.port)))
+        validate_response(resp, 'login@')
+
+    await asyncio.gather(no_auth(), str_auth(), tuple_auth(), basic_auth(), url_basic_auth(), loop=loop)
 
 
 async def test_headers(loop):

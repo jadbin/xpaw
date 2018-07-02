@@ -2,7 +2,6 @@
 
 import re
 import pytest
-from aiohttp import web
 
 from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
@@ -45,34 +44,6 @@ class TestDefaultHeadersMiddleware:
             DefaultHeadersMiddleware.from_cluster(Cluster(loop=loop, default_headers=None))
 
 
-def make_proxy_list():
-    return ["127.0.0.1:3128", "127.0.0.2:3128"]
-
-
-def make_another_proxy_list():
-    return ["127.0.0.1:8080", "127.0.0.2:8080"]
-
-
-def make_detail_proxy_list():
-    return [{'address': '127.0.0.1:3128'},
-            {'address': '127.0.0.2:3128', 'scheme': 'http'},
-            {'address': '127.0.0.3:3128', 'scheme': 'https', 'auth': 'root:123456'},
-            {'address': '127.0.0.4:3128', 'scheme': 'http,https'}]
-
-
-async def make_proxy_provider(test_server):
-    def get_proxies(request):
-        return web.Response(body=json.dumps(server.proxy_list).encode("utf-8"),
-                            charset="utf-8",
-                            content_type="application/json")
-
-    app = web.Application()
-    app.router.add_route("GET", "/", get_proxies)
-    server = await test_server(app)
-    server.proxy_list = make_proxy_list()
-    return server
-
-
 class Random:
     def __init__(self):
         self.iter = 0
@@ -84,96 +55,37 @@ class Random:
 
 
 class TestProxyMiddleware:
-    async def test_handle_request(self, monkeypatch, loop):
+    def test_proxy_str(self, loop):
+        proxy = '153.10.32.18:3128'
+        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy, loop=loop))
+        req = HttpRequest(URL("http://httpbin.org"))
+        mw.handle_request(req)
+        assert req.proxy == '153.10.32.18:3128'
+
+    def test_proxy_list(self, monkeypatch, loop):
         monkeypatch.setattr(random, 'choice', Random().choice)
-        proxy_list = make_proxy_list()
+        proxy_list = ["105.12.103.232:3128", "16.82.3.20:3128"]
         mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list, loop=loop))
-        target_list = proxy_list * 2
         req = HttpRequest("http://httpbin.org")
-        for i in range(len(target_list)):
-            await mw.handle_request(req)
-            assert req.proxy == target_list[i]
+        for i in range(len(proxy_list)):
+            mw.handle_request(req)
+            assert req.proxy == proxy_list[i]
 
         req2 = HttpRequest('ftp://httpbin.org')
-        await mw.handle_request(req2)
+        mw.handle_request(req2)
         assert req2.proxy is None
 
-    async def test_handle_request2(self, monkeypatch, loop):
+    def test_proxy_dict(self, monkeypatch, loop):
         monkeypatch.setattr(random, 'choice', Random().choice)
-        proxy_list = make_detail_proxy_list()
-        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list, loop=loop))
-        reqs = [HttpRequest('http://httpbin.org'),
-                HttpRequest('https://httpbin.org'),
-                HttpRequest('https://httpbin.org'),
-                HttpRequest('https://httpbin.org'),
-                HttpRequest('http://httpbin.org'),
-                HttpRequest('http://httpbin.org')]
-        target_list = ['127.0.0.1:3128', '127.0.0.3:3128', '127.0.0.4:3128',
-                       '127.0.0.1:3128', '127.0.0.2:3128', '127.0.0.4:3128']
-        for i in range(len(reqs)):
-            await mw.handle_request(reqs[i])
-            assert reqs[i].proxy == target_list[i]
-
-    async def test_handle_request_with_provider(self, monkeypatch, test_server, loop):
-        monkeypatch.setattr(random, 'choice', Random().choice)
-        server = await make_proxy_provider(test_server)
-        mw = ProxyMiddleware.from_cluster(
-            Cluster(proxy_provider="http://{}:{}".format(server.host, server.port),
-                    loop=loop))
-        mw.open()
-        req = HttpRequest("http://httpbin.org")
-        target_list = make_proxy_list() * 2
-        for i in range(len(target_list)):
-            await mw.handle_request(req)
-            assert req.proxy == target_list[i]
-
-        req2 = HttpRequest('ftp://httpbin.org')
-        await mw.handle_request(req2)
-        assert req2.proxy is None
-        mw.close()
-
-    async def test_handle_request_with_provider2(self, monkeypatch, test_server, loop):
-        monkeypatch.setattr(random, 'choice', Random().choice)
-        server = await make_proxy_provider(test_server)
-        server.proxy_list = make_detail_proxy_list()
-        mw = ProxyMiddleware.from_cluster(
-            Cluster(proxy_provider="http://{}:{}".format(server.host, server.port),
-                    loop=loop))
-        mw.open()
-        reqs = [HttpRequest('http://httpbin.org'),
-                HttpRequest('https://httpbin.org'),
-                HttpRequest('https://httpbin.org'),
-                HttpRequest('https://httpbin.org'),
-                HttpRequest('http://httpbin.org'),
-                HttpRequest('http://httpbin.org')]
-        target_list = ['127.0.0.1:3128', '127.0.0.3:3128', '127.0.0.4:3128',
-                       '127.0.0.1:3128', '127.0.0.2:3128', '127.0.0.4:3128']
-        for i in range(len(reqs)):
-            await mw.handle_request(reqs[i])
-            assert reqs[i].proxy == target_list[i]
-        mw.close()
-
-    async def test_update_proxy_list(self, monkeypatch, test_server, loop):
-        monkeypatch.setattr(random, 'choice', Random().choice)
-        server = await make_proxy_provider(test_server)
-        mw = ProxyMiddleware.from_cluster(
-            Cluster(proxy_provider="http://{}:{}".format(server.host, server.port),
-                    loop=loop))
-        monkeypatch.setattr(ProxyMiddleware, 'UPDATE_INTERVAL', 0.05)
-        mw.open()
-        await asyncio.sleep(0.1, loop=loop)
-        req = HttpRequest("http://httpbin.org")
-        target_list = make_proxy_list() * 2
-        for i in range(len(target_list)):
-            await mw.handle_request(req)
-            assert req.proxy == target_list[i]
-        server.proxy_list = make_another_proxy_list()
-        await asyncio.sleep(0.1, loop=loop)
-        target_list = make_another_proxy_list() * 2
-        for i in range(len(target_list)):
-            await mw.handle_request(req)
-            assert req.proxy == target_list[i]
-        mw.close()
+        proxy_dict = {'http': ['132.39.13.100:3128', '18.39.9.10:3128'], 'https': '177.13.233.2:3128'}
+        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_dict, loop=loop))
+        req_list = []
+        for i in ['http://httpbin.org', 'https://httpbin.org', 'http://httpbin.org', 'http://httpbin.org']:
+            req_list.append(HttpRequest(i))
+        res = ['132.39.13.100:3128', '177.13.233.2:3128', '132.39.13.100:3128', '18.39.9.10:3128']
+        for i in range(len(req_list)):
+            mw.handle_request(req_list[i])
+            assert req_list[i].proxy == res[i]
 
     async def test_not_enabled(self, loop):
         with pytest.raises(NotEnabled):

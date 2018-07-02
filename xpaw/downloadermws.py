@@ -126,97 +126,46 @@ class CookiesMiddleware:
 
 
 class ProxyMiddleware:
-    UPDATE_INTERVAL = 60
-    TIMEOUT = 20
-
-    def __init__(self, config, loop=None):
+    def __init__(self, config, ):
         self._proxies = {'http': [], 'https': []}
-        proxy = config.getlist('proxy', [])
-        proxy_provider = config.get('proxy_provider')
-        if not proxy and not proxy_provider:
+        proxy = config.get('proxy')
+        if not proxy:
             raise NotEnabled
-        for p in proxy:
-            self._append_proxy(p)
-        self._proxy_provider = parse_url(proxy_provider)
-        self._loop = loop or asyncio.get_event_loop()
-        self._update_lock = asyncio.Lock(loop=self._loop)
-        self._update_future = None
+        self._set_proxy(proxy)
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config, loop=cluster.loop)
+        return cls(cluster.config)
 
-    async def handle_request(self, request):
+    def handle_request(self, request):
         if isinstance(request.url, str):
             url = URL(request.url)
         else:
             url = request.url
-        proxy = await self.get_proxy(url.scheme)
+        proxy = self.get_proxy(url.scheme)
         if proxy:
-            addr, auth = proxy
-            request.proxy = addr
-            request.proxy_auth = auth
+            request.proxy = proxy
 
-    async def get_proxy(self, scheme):
+    def get_proxy(self, scheme):
         if scheme not in self._proxies:
             return
-        if self._proxy_provider:
-            async with self._update_lock:
-                if len(self._proxies[scheme]) <= 0:
-                    await self._update_proxy_list()
-        n = len(self._proxies[scheme])
-        if n > 0:
+        if len(self._proxies[scheme]) > 0:
             return random.choice(self._proxies[scheme])
 
-    def _append_proxy(self, p):
-        addr, auth, scheme = None, None, None
-        if isinstance(p, str):
-            addr = p
-        elif isinstance(p, dict):
-            addr = p.get('address')
-            auth = p.get('auth')
-            scheme = p.get('scheme')
-        if addr:
-            if scheme:
-                schemes = scheme.split(',')
-                for s in schemes:
-                    if s in self._proxies:
-                        self._proxies[s].append((addr, auth))
-            else:
-                self._proxies['http'].append((addr, auth))
-                self._proxies['https'].append((addr, auth))
+    def _set_proxy(self, proxy):
+        if isinstance(proxy, (str, list, tuple)):
+            self._append_proxy(proxy, 'http')
+            self._append_proxy(proxy, 'https')
+        elif isinstance(proxy, dict):
+            self._append_proxy(proxy.get('http'), 'http')
+            self._append_proxy(proxy.get('https'), 'https')
 
-    async def _update_proxy_list(self):
-        try:
-            async with aiohttp.ClientSession(loop=self._loop) as session:
-                with async_timeout.timeout(self.TIMEOUT, loop=self._loop):
-                    async with session.get(self._proxy_provider) as resp:
-                        body = await resp.read()
-                        proxy_list = json.loads(body.decode(encoding="utf-8"))
-                        if proxy_list:
-                            for k in self._proxies:
-                                self._proxies[k].clear()
-                            for p in proxy_list:
-                                self._append_proxy(p)
-        except CancelledError:
-            raise
-        except Exception:
-            log.warning("Failed to update proxy list", exc_info=True)
-
-    async def _update_proxy_list_task(self):
-        while True:
-            async with self._update_lock:
-                await self._update_proxy_list()
-            await asyncio.sleep(self.UPDATE_INTERVAL, loop=self._loop)
-
-    def open(self):
-        if self._proxy_provider:
-            self._update_future = asyncio.ensure_future(self._update_proxy_list_task(), loop=self._loop)
-
-    def close(self):
-        if self._update_future:
-            self._update_future.cancel()
-            self._update_future = None
+    def _append_proxy(self, proxy, scheme):
+        if isinstance(proxy, str):
+            self._proxies[scheme].append(proxy)
+        elif isinstance(proxy, (list, tuple)):
+            for p in proxy:
+                self._proxies[scheme].append(p)
 
 
 class SpeedLimitMiddleware:
