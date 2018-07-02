@@ -3,16 +3,13 @@
 import logging
 
 from .http import HttpRequest
-from .errors import NotEnabled
 
 log = logging.getLogger(__name__)
 
 
 class DepthMiddleware:
     def __init__(self, config):
-        self._max_depth = config.getint("max_depth", 0)
-        if self._max_depth <= 0:
-            raise NotEnabled
+        self._max_depth = config.getint("max_depth")
 
     @classmethod
     def from_cluster(cls, cluster):
@@ -23,9 +20,15 @@ class DepthMiddleware:
         for r in result:
             if isinstance(r, HttpRequest):
                 r.meta["depth"] = depth
-                if depth <= self._max_depth:
+                if self._max_depth is None or depth <= self._max_depth:
                     yield r
                 else:
-                    log.debug("The request(url=%s) will be aborted as the depth of it is out of limit", r.url)
+                    log.debug("The request(url=%s) will be aborted as the depth > %s", r.url, self._max_depth)
             else:
                 yield r
+
+    def handle_start_requests(self, result):
+        for r in result:
+            if isinstance(r, HttpRequest):
+                r.meta['depth'] = 0
+            yield r

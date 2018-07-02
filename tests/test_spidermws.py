@@ -16,12 +16,6 @@ class Cluster:
 
 
 class TestDepthMiddleware:
-    def test_not_enabled(self):
-        with pytest.raises(NotEnabled):
-            DepthMiddleware.from_cluster(Cluster())
-        with pytest.raises(NotEnabled):
-            DepthMiddleware.from_cluster(Cluster(max_depth=0))
-
     def test_handle_output(self):
         class R:
             def __init__(self, depth=None):
@@ -38,3 +32,9 @@ class TestDepthMiddleware:
         assert res == [req, item] and req.meta['depth'] == 1
         res = [i for i in mw.handle_output(R(1), [req, item])]
         assert res == [item] and req.meta['depth'] == 2
+
+    def test_handle_start_requests(self):
+        mw = DepthMiddleware.from_cluster(Cluster())
+        req = HttpRequest("http://httpbin.org", "GET")
+        mw.handle_start_requests([req])
+        assert req.meta.get('depth') == 0
