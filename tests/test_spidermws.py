@@ -36,5 +36,6 @@ class TestDepthMiddleware:
     def test_handle_start_requests(self):
         mw = DepthMiddleware.from_cluster(Cluster())
         req = HttpRequest("http://httpbin.org", "GET")
-        mw.handle_start_requests([req])
-        assert req.meta.get('depth') == 0
+        res = [i for i in mw.handle_start_requests([req])]
+        for r in res:
+            assert r.meta.get('depth') == 0
