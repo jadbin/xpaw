@@ -115,7 +115,7 @@ class LocalCluster:
                     if i not in self._job_futures_done:
                         self._job_futures_done.add(i)
                         reason = "cancelled" if f.cancelled() else str(f.exception())
-                        log.error("Coro[%s] is shut down: %s", i, reason)
+                        log.error("Worker[%s] is shutdown: %s", i, reason)
                         self._req_in_job[i] = None
             if self._all_done():
                 break
@@ -129,6 +129,9 @@ class LocalCluster:
                     no_active = False
                     break
             return no_active
+        elif len(self._job_futures_done) == len(self._job_futures):
+            log.error('No alive worker')
+            return True
         return False
 
     async def _push_start_requests(self):
@@ -154,7 +157,7 @@ class LocalCluster:
     async def _pull_requests(self, coro_id):
         while True:
             req = await self.queue.pop()
-            log.debug("The request (url=%s) has been pulled by coro[%s]", req.url, coro_id)
+            log.debug("The request (url=%s) has been pulled by worker[%s]", req.url, coro_id)
             self._req_in_job[coro_id] = req
             try:
                 resp = await self.downloadermw.download(self.downloader, req)

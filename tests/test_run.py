@@ -1,8 +1,14 @@
 # coding=utf-8
 
-from os.path import join
+from os.path import join, exists
 import asyncio
 from urllib.parse import urljoin
+import os
+import signal
+import sys
+import time
+
+import pytest
 
 from xpaw.cli import main
 from xpaw.run import run_crawler
@@ -25,24 +31,30 @@ def test_run_crawler(tmpdir, capsys):
 
 class FooSpider(Spider):
     def start_requests(self):
-        yield HttpRequest('http://localhost:80')
         yield HttpRequest('http://httpbin.org/get')
 
     async def parse(self, response):
-        await asyncio.sleep(1, loop=self.cluster.loop)
-        return ()
+        pass
 
 
 class BadQueue(PriorityQueue):
     async def pop(self):
-        req = await super().pop()
-        if req.url == 'http://localhost:80':
-            raise RuntimeError('not an error actually')
-        return req
+        await super().pop()
+        await asyncio.sleep(0.2)
+        raise RuntimeError('not an error actually')
+
+
+class BadQueue2(PriorityQueue):
+    async def pop(self):
+        raise RuntimeError('not an error actually')
 
 
 def test_coro_terminated():
-    run_spider(FooSpider, downloader_clients=2, queue=BadQueue, max_retry_times=0)
+    run_spider(FooSpider, downloader_clients=2, queue=BadQueue, max_retry_times=0, downloader_timeout=0.1)
+
+
+def test_coro_terminated2():
+    run_spider(FooSpider, downloader_clients=2, queue=BadQueue2, max_retry_times=0, downloader_timeout=0.1)
 
 
 class LinkItem(Item):
@@ -162,7 +174,7 @@ class LinkSpider(Spider):
         self.data.add(request.url)
 
 
-def test_run_spider():
+def test_link_spider():
     link_data = set()
     link_count = 5
     link_total = 15
@@ -183,3 +195,44 @@ def test_run_spider():
     assert "http://httpbin.org/status/409" in link_data
     assert "http://httpbin.org/status/411" in link_data
     assert "http://httpbin.org/status/412" in link_data
+
+
+class WaitSpider(Spider):
+    def start_requests(self):
+        yield HttpRequest('http://httpbin.org/get')
+
+    async def parse(self, response):
+        while True:
+            await asyncio.sleep(5)
+
+
+def check_pid(pid):
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
+
+
+def test_wait_spider(tmpdir, monkeypatch):
+    monkeypatch.setattr(os, '_exit', sys.exit)
+    pid_file = join(tmpdir, 'pid')
+    log_file = join(tmpdir, 'log')
+    with pytest.raises(SystemExit) as excinfo:
+        run_spider(WaitSpider, pid_file=pid_file, log_file=log_file, daemon=True)
+    assert excinfo.value.code == 0
+    t = 10
+    while t > 0 and not exists(pid_file):
+        t -= 1
+        time.sleep(1)
+    assert t > 0
+    with open(pid_file, 'rb') as f:
+        pid = int(f.read().decode())
+    assert check_pid(pid) is True
+    os.kill(pid, signal.SIGTERM)
+    t = 10
+    while t > 0 and exists(pid_file):
+        t -= 1
+        time.sleep(1)
+    assert t > 0
