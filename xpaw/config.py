@@ -158,7 +158,7 @@ class Daemon(Setting):
 
 class PidFile(Setting):
     name = 'pid_file'
-    cli = ['-p', '--pid-file']
+    cli = ['--pid-file']
     metavar = 'FILE'
     help = 'PID file'
 
@@ -293,6 +293,14 @@ class MaxDepth(Setting):
     metavar = 'INT'
     type = int
     help = 'maximum depth of spider'
+
+
+class ResponseSlots(Setting):
+    name = 'response_slots'
+    cli = ['--response-slots']
+    metavar = 'INT'
+    type = int
+    help = 'maximum number of responses to handle'
 
 
 class StatsCenterCls(Setting):

@@ -11,7 +11,7 @@ import inspect
 
 from .errors import UsageError
 from . import config
-from .utils import string_camelcase, render_templatefile
+from .utils import string_camelcase, render_template_file
 from .version import __version__
 from .run import run_cluster
 from .spider import Spider
@@ -92,7 +92,7 @@ class CrawlCommand(Command):
                     config.LogLevel, config.LogFile,
                     config.DownloaderClients, config.DownloaderTimeout,
                     config.VerifySsl, config.CookieJarEnabled,
-                    config.MaxDepth)
+                    config.MaxDepth, config.ResponseSlots)
         return [config.KNOWN_SETTINGS[i.name] for i in settings]
 
     def add_arguments(self, parser):
@@ -174,10 +174,10 @@ class InitCommand(Command):
         self._copytree(join(templates_dir, 'project'), project_dir)
         move(join(project_dir, "module"), module_dir)
         self._render_files(project_dir,
-                           lambda f: render_templatefile(f, version=__version__,
-                                                         datetime_now=datetime.now().strftime("%b %d %Y %H:%M:%S"),
-                                                         project_name=project_name,
-                                                         ProjectName=string_camelcase(project_name)))
+                           lambda f: render_template_file(f, version=__version__,
+                                                          datetime_now=datetime.now().strftime("%b %d %Y %H:%M:%S"),
+                                                          project_name=project_name,
+                                                          ProjectName=string_camelcase(project_name)))
 
         print("New project '{}', created in:".format(project_name))
         print("    {}".format(abspath(project_dir)))

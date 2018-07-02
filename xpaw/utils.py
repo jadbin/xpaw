@@ -107,13 +107,11 @@ def to_bytes(data, encoding=None):
     raise TypeError("Need bytes or str, got {}".format(type(data).__name__))
 
 
-def render_templatefile(path, **kwargs):
+def render_template_file(path, **kwargs):
     if path.endswith(".tmpl"):
         with open(path, "rb") as f:
             raw = f.read().decode("utf-8")
-
         content = string.Template(raw).substitute(**kwargs)
-
         render_path = path[:-len(".tmpl")]
         with open(render_path, "wb") as f:
             f.write(content.encode("utf-8"))
