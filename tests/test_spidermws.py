@@ -1,12 +1,9 @@
 # coding=utf-8
 
-import pytest
-
 from xpaw.config import Config
 from xpaw.spidermws import *
 from xpaw.http import HttpRequest
 from xpaw.item import Item
-from xpaw.errors import NotEnabled
 
 
 class Cluster:

@@ -5,10 +5,9 @@ import asyncio
 from urllib.parse import urljoin
 import os
 import signal
-import sys
 import time
-
-import pytest
+from threading import Thread
+import sys
 
 from xpaw.cli import main
 from xpaw.run import run_crawler
@@ -29,6 +28,18 @@ def test_run_crawler(tmpdir, capsys):
     _, _ = capsys.readouterr()
 
 
+class DummySpider(Spider):
+    async def start_requests(self):
+        await asyncio.sleep(0.2, loop=self.cluster.loop)
+
+    def parse(self, response):
+        pass
+
+
+def test_run_dummy_spider():
+    run_spider(DummySpider, downloader_timeout=0.1)
+
+
 class FooSpider(Spider):
     def start_requests(self):
         yield HttpRequest('http://httpbin.org/get')
@@ -38,9 +49,12 @@ class FooSpider(Spider):
 
 
 class BadQueue(PriorityQueue):
+    def __init__(self, loop=None):
+        super().__init__(loop=loop)
+        self.loop = loop
+
     async def pop(self):
         await super().pop()
-        await asyncio.sleep(0.2)
         raise RuntimeError('not an error actually')
 
 
@@ -203,7 +217,7 @@ class WaitSpider(Spider):
 
     async def parse(self, response):
         while True:
-            await asyncio.sleep(5)
+            await asyncio.sleep(5, loop=self.cluster.loop)
 
 
 def check_pid(pid):
@@ -215,13 +229,30 @@ def check_pid(pid):
         return True
 
 
-def test_wait_spider(tmpdir, monkeypatch):
-    monkeypatch.setattr(os, '_exit', sys.exit)
+class ExceptionThread(Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bucket = []
+
+    def run(self):
+        try:
+            super().run()
+        except Exception as e:
+            self.bucket.append(e)
+            raise
+
+
+def test_wait_spider(tmpdir):
     pid_file = join(str(tmpdir), 'pid')
     log_file = join(str(tmpdir), 'log')
-    with pytest.raises(SystemExit) as excinfo:
-        run_spider(WaitSpider, pid_file=pid_file, log_file=log_file, daemon=True)
-    assert excinfo.value.code == 0
+    t = ExceptionThread(target=_check_thread, args=(pid_file,))
+    t.start()
+    run_spider(WaitSpider, pid_file=pid_file, log_file=log_file)
+    t.join()
+    assert len(t.bucket) == 0, 'Exception in thread'
+
+
+def _check_thread(pid_file):
     t = 10
     while t > 0 and not exists(pid_file):
         t -= 1
