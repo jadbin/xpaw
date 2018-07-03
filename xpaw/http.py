@@ -32,6 +32,9 @@ class HttpRequest:
             errback = errback.__name__
         self.errback = errback
 
+    def __repr__(self):
+        return '<{}, {}>'.format(self.method, self.url)
+
     @property
     def meta(self):
         return self._meta
@@ -58,6 +61,9 @@ class HttpResponse:
         self.headers = headers or {}
         self.cookies = cookies or {}
         self.request = request
+
+    def __repr__(self):
+        return '<{}, {}>'.format(self.status, self.url)
 
     @property
     def encoding(self):

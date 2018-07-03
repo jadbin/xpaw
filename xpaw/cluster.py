@@ -32,19 +32,15 @@ class LocalCluster:
                                      verify_ssl=self.config.getbool('verify_ssl'),
                                      loop=self.loop)
         self.spider = self._new_object_from_cluster(self.config.get('spider'), self)
-        log.info('Spider: %s', type(self.spider).__name__)
+        log.info('Spider: %s', str(self.spider))
         self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
-        log.info('Downloader middlewares: %s',
-                 ', '.join([type(i).__name__ for i in self.downloadermw.components]))
+        log.info('Downloader middlewares: %s', self._log_objects(self.downloadermw.components))
         self.spidermw = SpiderMiddlewareManager.from_cluster(self)
-        log.info('Spider middlewares: %s',
-                 ', '.join([type(i).__name__ for i in self.spidermw.components]))
+        log.info('Spider middlewares: %s', self._log_objects(self.spidermw.components))
         self.item_pipeline = ItemPipelineManager.from_cluster(self)
-        log.info('Item pipelines: %s',
-                 ', '.join([type(i).__name__ for i in self.item_pipeline.components]))
+        log.info('Item pipelines: %s', self._log_objects(self.item_pipeline.components))
         self.extension = ExtensionManager.from_cluster(self)
-        log.info('Extensions: %s',
-                 ', '.join([type(i).__name__ for i in self.extension.components]))
+        log.info('Extensions: %s', self._log_objects(self.extension.components))
         self._job_futures = None
         self._job_futures_done = None
         self._req_in_job = None
@@ -161,7 +157,7 @@ class LocalCluster:
     async def _pull_requests(self, coro_id):
         while True:
             req = await self.queue.pop()
-            log.debug("The request (url=%s) has been pulled by worker[%s]", req.url, coro_id)
+            log.debug("The request %s has been pulled by worker[%s]", req, coro_id)
             self._req_in_job[coro_id] = req
             try:
                 resp = await self.downloadermw.download(self.downloader, req)
@@ -169,7 +165,7 @@ class LocalCluster:
                 raise
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
-                    log.warning("Failed to send request '%s'", req.url, exc_info=True)
+                    log.warning("Failed to make the request %s", req, exc_info=True)
                 await self.spider.request_error(req, e)
             else:
                 await self._handle_response(req, resp)
@@ -192,7 +188,7 @@ class LocalCluster:
             except CancelledError:
                 raise
             except Exception:
-                log.warning("Failed to parse the response of '%s'", req.url, exc_info=True)
+                log.warning("Failed to parse the response %s", req, exc_info=True)
 
     async def _handle_result(self, result):
         if isinstance(result, HttpRequest):
@@ -223,3 +219,9 @@ class LocalCluster:
         if not await self.dupe_filter.is_duplicated(request):
             await self.event_bus.send(events.request_scheduled, request=request)
             await self.queue.push(request)
+
+    @staticmethod
+    def _log_objects(objects):
+        if objects:
+            return ''.join(['\n\t' + str(i) for i in objects])
+        return ''

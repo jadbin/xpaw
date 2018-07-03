@@ -23,7 +23,7 @@ class Downloader:
         self._loop = loop or asyncio.get_event_loop()
 
     async def download(self, request):
-        log.debug("HTTP request: %s %s", request.method, request.url)
+        log.debug("HTTP request: %s", request)
         timeout = request.meta.get("timeout")
         if timeout is None:
             timeout = self._timeout
@@ -52,7 +52,7 @@ class Downloader:
                                 headers=resp.headers,
                                 body=body,
                                 cookies=cookies)
-        log.debug("HTTP response: %s %s", response.url, response.status)
+        log.debug("HTTP response: %s", response)
         return response
 
 

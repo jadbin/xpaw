@@ -26,6 +26,11 @@ class RetryMiddleware:
         self._max_retry_times = config.getint('max_retry_times')
         self._http_status = config.getlist('retry_http_status')
 
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return '{}(max_retry_times={}, retry_http_status={})' \
+            .format(cls_name, repr(self._max_retry_times), repr(self._http_status))
+
     @classmethod
     def from_cluster(cls, cluster):
         return cls(cluster.config)
@@ -64,14 +69,14 @@ class RetryMiddleware:
     def retry(self, request, reason):
         retry_times = request.meta.get("retry_times", 0) + 1
         if retry_times <= self._max_retry_times:
-            log.debug("We will retry the request (url=%s) because of %s", request.url, reason)
+            log.debug("We will retry the request %s because of %s", request, reason)
             retry_req = request.copy()
             retry_req.meta["retry_times"] = retry_times
             retry_req.dont_filter = True
             return retry_req
         else:
-            log.info("The request (url=%s) has been retried %s times,"
-                     " and it will be aborted", request.url, self._max_retry_times)
+            log.info("The request %s has been retried %s times,"
+                     " and it will be aborted", request, self._max_retry_times)
             raise IgnoreRequest
 
 
@@ -80,6 +85,10 @@ class DefaultHeadersMiddleware:
         self._headers = config.get("default_headers")
         if self._headers is None:
             raise NotEnabled
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return '{}(default_headers={})'.format(cls_name, repr(self._headers))
 
     @classmethod
     def from_cluster(cls, cluster):
@@ -94,6 +103,10 @@ class ImitatingProxyMiddleware:
     def __init__(self, config):
         if not config.getbool('imitating_proxy_enabled'):
             raise NotEnabled
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return '{}()'.format(cls_name)
 
     @classmethod
     def from_cluster(cls, cluster):
@@ -112,6 +125,10 @@ class CookiesMiddleware:
         self._loop = loop or asyncio.get_event_loop()
         self._cookie_jars = {}
 
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return '{}()'.format(cls_name)
+
     @classmethod
     def from_cluster(cls, cluster):
         return cls(cluster.config, loop=cluster.loop)
@@ -126,12 +143,16 @@ class CookiesMiddleware:
 
 
 class ProxyMiddleware:
-    def __init__(self, config, ):
+    def __init__(self, config):
         self._proxies = {'http': [], 'https': []}
         proxy = config.get('proxy')
         if not proxy:
             raise NotEnabled
         self._set_proxy(proxy)
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return '{}(proxy={})'.format(cls_name, repr(self._proxies))
 
     @classmethod
     def from_cluster(cls, cluster):
@@ -184,6 +205,10 @@ class SpeedLimitMiddleware:
         self._semaphore = asyncio.Semaphore(self._burst, loop=loop)
         self._update_future = None
 
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return '{}(speed_limit_rate={}, speed_limit_burst={})'.format(cls_name, repr(self._rate), repr(self._burst))
+
     @classmethod
     def from_cluster(cls, cluster):
         return cls(cluster.config, loop=cluster.loop)
@@ -221,6 +246,10 @@ class UserAgentMiddleware:
         self._user_agent = None
         if ua:
             self._configure_user_agent(ua)
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return '{}(user_agent={}, random_user_agent={})'.format(cls_name, repr(self._user_agent), repr(self._random))
 
     @classmethod
     def from_cluster(cls, cluster):
