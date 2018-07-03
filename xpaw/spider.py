@@ -6,7 +6,7 @@ from asyncio import CancelledError
 
 from .middleware import MiddlewareManager
 from . import events
-from .utils import AsyncGenWrapper, iterable_to_list
+from .utils import iterable_to_list
 
 log = logging.getLogger(__name__)
 
@@ -113,16 +113,16 @@ class SpiderMiddlewareManager(MiddlewareManager):
         return result
 
     async def start_requests(self, spider):
-        r = spider.start_requests()
-        assert r is None or _isiterable(r), \
-            "Start requests must be None or an iterable object, got {}".format(type(r).__name__)
-        if r:
-            r = await self._handle_start_requests(r)
-        if r is None:
-            r = ()
-        if not hasattr(r, "__aiter__"):
-            r = AsyncGenWrapper(r)
-        return r
+        res = spider.start_requests()
+        if inspect.iscoroutine(res):
+            res = await res
+        assert res is None or _isiterable(res), \
+            "Start requests must be None or an iterable object, got {}".format(type(res).__name__)
+        result = await iterable_to_list(res)
+        if result:
+            res = await self._handle_start_requests(result)
+            result = await iterable_to_list(res)
+        return result
 
     async def _handle_input(self, response):
         for method in self._input_handlers:

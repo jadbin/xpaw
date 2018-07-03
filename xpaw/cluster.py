@@ -147,7 +147,7 @@ class LocalCluster:
                 tick = 0
             while True:
                 res = await self.spidermw.start_requests(self.spider)
-                async for r in res:
+                for r in res:
                     if isinstance(r, HttpRequest):
                         await self._push_without_duplication(r)
                 if tick <= 0:
