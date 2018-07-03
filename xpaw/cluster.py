@@ -66,18 +66,14 @@ class LocalCluster:
             self._job_futures.append(f)
         self._job_futures_done = set()
         self._req_in_job = [None] * downloader_clients
-
-        self.loop.add_signal_handler(signal.SIGINT,
-                                     lambda loop=self.loop: asyncio.ensure_future(self.shutdown(), loop=loop))
-        self.loop.add_signal_handler(signal.SIGTERM,
-                                     lambda loop=self.loop: asyncio.ensure_future(self.shutdown(), loop=loop))
-        asyncio.set_event_loop(self.loop)
+        self.loop.add_signal_handler(signal.SIGINT, self.shutdown)
+        self.loop.add_signal_handler(signal.SIGTERM, self.shutdown)
         self._is_running = True
         log.info("Cluster is running")
         try:
             self.loop.run_forever()
         except Exception:
-            log.error("Fatal error occurred while running cluster", exc_info=True)
+            log.error("Fatal error occurred while cluster is running", exc_info=True)
         finally:
             log.info("Cluster is stopped")
 
@@ -85,10 +81,13 @@ class LocalCluster:
         if self.loop:
             self.loop.close()
 
-    async def shutdown(self):
+    def shutdown(self):
         if not self._is_running:
             return
         self._is_running = False
+        asyncio.ensure_future(self._shutdown(), loop=self.loop)
+
+    async def _shutdown(self):
         log.info("Shutdown now")
         cancelled_futures = []
         if self._job_futures:
@@ -125,7 +124,7 @@ class LocalCluster:
                         self._req_in_job[i] = None
             if self._all_done():
                 break
-        asyncio.ensure_future(self.shutdown(), loop=self.loop)
+        self.shutdown()
 
     def _all_done(self):
         if self._start_future.done() and len(self.queue) <= 0:
@@ -177,7 +176,7 @@ class LocalCluster:
             self._req_in_job[coro_id] = None
             # check if it's all done
             if self._all_done():
-                asyncio.ensure_future(self.shutdown(), loop=self.loop)
+                self.shutdown()
 
     async def _handle_response(self, req, resp):
         if isinstance(resp, HttpRequest):

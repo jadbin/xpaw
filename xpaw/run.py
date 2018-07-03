@@ -35,7 +35,7 @@ def run_cluster(proj_dir=None, base_config=None):
     try:
         cluster = LocalCluster(config)
     except Exception:
-        log.error('Fatal error occurred when creating cluster', exc_info=True)
+        log.error('Fatal error occurred when create cluster', exc_info=True)
         _remove_pid_file(pid_file)
         raise
     try:
