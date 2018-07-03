@@ -41,7 +41,7 @@ item_pipelines = [
 user_agent = ':desktop'
 
 # Enable imitating proxy, i.e. adding 'X-Forwarded-For' and 'Via' headers (disabled by default)
-imitating_proxy_enabled = True
+# imitating_proxy_enabled = True
 
 # Configure proxy
 # proxy = None
