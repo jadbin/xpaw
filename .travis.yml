@@ -13,10 +13,9 @@ matrix:
 cache:
   directories:
     - $HOME/.cache/pip
-    - .tox
 install:
   - pip install tox
 script:
-  - tox
+  - tox --recreate
 after_success:
   - coveralls
