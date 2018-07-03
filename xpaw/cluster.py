@@ -90,19 +90,25 @@ class LocalCluster:
             return
         self._is_running = False
         log.info("Shutdown now")
+        cancelled_futures = []
         if self._job_futures:
             for f in self._job_futures:
                 f.cancel()
+                cancelled_futures.append(f)
             self._job_futures = None
             self._job_futures_done = None
         if self._start_future:
             self._start_future.cancel()
+            cancelled_futures.append(self._start_future)
             self._start_future = None
         if self._supervisor_future:
             self._supervisor_future.cancel()
+            cancelled_futures.append(self._supervisor_future)
             self._supervisor_future = None
+        # TODO req in jobs
         await self.event_bus.send(events.cluster_shutdown)
-        await asyncio.sleep(0.001, loop=self.loop)
+        # wait cancelled futures
+        await asyncio.wait(cancelled_futures, loop=self.loop)
         self.loop.stop()
 
     async def _supervisor(self):
@@ -144,8 +150,7 @@ class LocalCluster:
                 res = await self.spidermw.start_requests(self.spider)
                 async for r in res:
                     if isinstance(r, HttpRequest):
-                        await self._push_without_duplicated(r)
-                    await asyncio.sleep(0.01, loop=self.loop)
+                        await self._push_without_duplication(r)
                 if tick <= 0:
                     break
                 await asyncio.sleep(tick, loop=self.loop)
@@ -176,9 +181,9 @@ class LocalCluster:
 
     async def _handle_response(self, req, resp):
         if isinstance(resp, HttpRequest):
-            await self._push_without_duplicated(resp)
+            await self._push_without_duplication(resp)
         elif isinstance(resp, HttpResponse):
-            # bind HttpRequest
+            # bind request
             resp.request = req
             await self.event_bus.send(events.response_received, response=resp)
             try:
@@ -192,7 +197,7 @@ class LocalCluster:
 
     async def _handle_result(self, result):
         if isinstance(result, HttpRequest):
-            await self._push_without_duplicated(result)
+            await self._push_without_duplication(result)
         elif isinstance(result, (BaseItem, dict)):
             try:
                 await self.item_pipeline.handle_item(result)
@@ -215,7 +220,7 @@ class LocalCluster:
             obj = obj_cls()
         return obj
 
-    async def _push_without_duplicated(self, request):
+    async def _push_without_duplication(self, request):
         if not await self.dupe_filter.is_duplicated(request):
             await self.event_bus.send(events.request_scheduled, request=request)
             await self.queue.push(request)
