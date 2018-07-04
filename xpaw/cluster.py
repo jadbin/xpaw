@@ -63,8 +63,8 @@ class LocalCluster:
             self._job_futures.append(f)
         self._job_futures_done = set()
         self._req_in_job = [None] * downloader_clients
-        self.loop.add_signal_handler(signal.SIGINT, self.shutdown)
-        self.loop.add_signal_handler(signal.SIGTERM, self.shutdown)
+        self.loop.add_signal_handler(signal.SIGINT, lambda sig=signal.SIGINT: self.shutdown(sig=sig))
+        self.loop.add_signal_handler(signal.SIGTERM, lambda sig=signal.SIGTERM: self.shutdown(sig=sig))
         self._is_running = True
         log.info("Cluster is running")
         try:
@@ -78,7 +78,9 @@ class LocalCluster:
         if self.loop:
             self.loop.close()
 
-    def shutdown(self):
+    def shutdown(self, sig=None):
+        if sig is not None:
+            log.info('Received shutdown signal: %s', sig)
         if not self._is_running:
             return
         self._is_running = False
