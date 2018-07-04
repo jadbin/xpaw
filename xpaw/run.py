@@ -24,7 +24,7 @@ def run_spider(spider, **kwargs):
 
 
 def run_cluster(proj_dir=None, base_config=None):
-    config = _load_task_config(proj_dir=proj_dir, base_config=base_config)
+    config = _load_job_config(proj_dir=proj_dir, base_config=base_config)
     utils.configure_logger('xpaw', config)
     if config.getbool('daemon'):
         utils.be_daemon()
@@ -45,11 +45,11 @@ def run_cluster(proj_dir=None, base_config=None):
         cluster.close()
 
 
-def _load_task_config(proj_dir=None, base_config=None):
+def _load_job_config(proj_dir=None, base_config=None):
     if proj_dir is not None and proj_dir not in sys.path:
         # add project path
         sys.path.append(proj_dir)
-    task_config = Config()
+    job_config = Config()
     if proj_dir is not None:
         config_file = join(proj_dir, 'config.py')
         if isfile(config_file):
@@ -58,9 +58,9 @@ def _load_task_config(proj_dir=None, base_config=None):
             except Exception:
                 raise RuntimeError('Cannot read the configuration file {}'.format(config_file))
             for k, v in utils.iter_settings(c):
-                task_config.set(k, v)
-    task_config.update(base_config)
-    return task_config
+                job_config.set(k, v)
+    job_config.update(base_config)
+    return job_config
 
 
 def _remove_pid_file(pid_file):

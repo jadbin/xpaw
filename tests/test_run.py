@@ -49,8 +49,8 @@ class FooSpider(Spider):
 
 
 class BadQueue(PriorityQueue):
-    def __init__(self, loop=None):
-        super().__init__(loop=loop)
+    def __init__(self, loop=None, **kwargs):
+        super().__init__(loop=loop, **kwargs)
         self.loop = loop
 
     async def pop(self):

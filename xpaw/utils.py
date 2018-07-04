@@ -9,8 +9,9 @@ import logging
 from importlib import import_module
 import string
 from urllib.parse import urlsplit
-from os.path import isfile
+from os.path import isfile, exists, join
 import inspect
+import pickle
 
 from yarl import URL
 from multidict import MultiDict
@@ -218,3 +219,27 @@ def iter_settings(config):
     for key, value in config.items():
         if not key.startswith('_') and not inspect.ismodule(value) and not inspect.isfunction(value):
             yield key, value
+
+
+def get_job_dir(config):
+    job_dir = config.get('job_dir')
+    if job_dir:
+        if not exists(job_dir):
+            os.makedirs(job_dir, 755)
+        return job_dir
+
+
+def dump_to_job_dir(name, job_dir, obj):
+    if job_dir:
+        pkl_path = join(job_dir, name + '.pkl')
+        if exists(pkl_path):
+            with open(pkl_path, 'wb') as f:
+                return pickle.dump(obj, f)
+
+
+def load_from_job_dir(name, job_dir):
+    if job_dir:
+        pkl_path = join(job_dir, name + '.pkl')
+        if exists(pkl_path):
+            with open(pkl_path, 'rb') as f:
+                return pickle.load(f)

@@ -6,11 +6,15 @@ import pytest
 import async_timeout
 
 from xpaw.queue import FifoQueue, LifoQueue, PriorityQueue
+from xpaw.config import Config
+from xpaw.eventbus import EventBus
 
 
 class Cluster:
-    def __init__(self, loop=None):
+    def __init__(self, loop=None, **kwargs):
         self.loop = loop
+        self.config = Config(kwargs)
+        self.event_bus = EventBus()
 
 
 async def test_fifo_queue(loop):

@@ -295,6 +295,13 @@ class MaxDepth(Setting):
     help = 'maximum depth of spider'
 
 
+class JobDir(Setting):
+    name = 'job_dir'
+    cli = ['--job-dir']
+    metavar = 'DIR'
+    help = 'the directory to store the state of a single job'
+
+
 class StatsCenterCls(Setting):
     name = 'stats_collector'
     default = 'xpaw.stats.StatsCollector'

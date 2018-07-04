@@ -100,7 +100,12 @@ class LocalCluster:
             self._supervisor_future.cancel()
             cancelled_futures.append(self._supervisor_future)
             self._supervisor_future = None
-        # TODO req in jobs
+        # put back the unfinished requests
+        if self._req_in_job:
+            for r in self._req_in_job:
+                if r:
+                    await self.queue.push(r)
+            self._req_in_job = None
         await self.event_bus.send(events.cluster_shutdown)
         # wait cancelled futures
         await asyncio.wait(cancelled_futures, loop=self.loop)
