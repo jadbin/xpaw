@@ -8,8 +8,8 @@ log = logging.getLogger(__name__)
 
 
 class DepthMiddleware:
-    def __init__(self, config):
-        self._max_depth = config.getint("max_depth")
+    def __init__(self, max_depth):
+        self._max_depth = max_depth
 
     def __repr__(self):
         cls_name = self.__class__.__name__
@@ -17,7 +17,9 @@ class DepthMiddleware:
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config)
+        config = cluster.config
+        max_depth = config.getint("max_depth")
+        return cls(max_depth=max_depth)
 
     def handle_output(self, response, result):
         depth = response.meta.get("depth", 0) + 1

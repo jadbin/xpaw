@@ -1,17 +1,13 @@
 # coding=utf-8
 
-import json
 import random
 import logging
 import asyncio
-from asyncio import CancelledError
 
 import aiohttp
-import async_timeout
 from yarl import URL
 
 from .errors import IgnoreRequest, NetworkError, NotEnabled
-from .utils import parse_url
 from .version import __version__
 
 log = logging.getLogger(__name__)
@@ -20,11 +16,9 @@ log = logging.getLogger(__name__)
 class RetryMiddleware:
     RETRY_ERRORS = (NetworkError,)
 
-    def __init__(self, config):
-        if not config.getbool('retry_enabled'):
-            raise NotEnabled
-        self._max_retry_times = config.getint('max_retry_times')
-        self._http_status = config.getlist('retry_http_status')
+    def __init__(self, max_retry_times, retry_http_status=None):
+        self._max_retry_times = max_retry_times
+        self._http_status = retry_http_status or []
 
     def __repr__(self):
         cls_name = self.__class__.__name__
@@ -33,7 +27,11 @@ class RetryMiddleware:
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config)
+        config = cluster.config
+        if not config.getbool('retry_enabled'):
+            raise NotEnabled
+        return cls(max_retry_times=config.getint('max_retry_times'),
+                   retry_http_status=config.getlist('retry_http_status'))
 
     def handle_response(self, request, response):
         for p in self._http_status:
@@ -81,10 +79,8 @@ class RetryMiddleware:
 
 
 class DefaultHeadersMiddleware:
-    def __init__(self, config):
-        self._headers = config.get("default_headers")
-        if self._headers is None:
-            raise NotEnabled
+    def __init__(self, default_headers=None):
+        self._headers = default_headers or {}
 
     def __repr__(self):
         cls_name = self.__class__.__name__
@@ -92,7 +88,10 @@ class DefaultHeadersMiddleware:
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config)
+        default_headers = cluster.config.get("default_headers")
+        if default_headers is None:
+            raise NotEnabled
+        return cls(default_headers=default_headers)
 
     def handle_request(self, request):
         for h in self._headers:
@@ -100,17 +99,15 @@ class DefaultHeadersMiddleware:
 
 
 class ImitatingProxyMiddleware:
-    def __init__(self, config):
-        if not config.getbool('imitating_proxy_enabled'):
-            raise NotEnabled
-
     def __repr__(self):
         cls_name = self.__class__.__name__
         return '{}()'.format(cls_name)
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config)
+        if not cluster.config.getbool('imitating_proxy_enabled'):
+            raise NotEnabled
+        return cls()
 
     def handle_request(self, request):
         ip = "61.%s.%s.%s" % (random.randint(128, 191), random.randint(0, 255), random.randint(1, 254))
@@ -119,9 +116,7 @@ class ImitatingProxyMiddleware:
 
 
 class CookiesMiddleware:
-    def __init__(self, config, loop=None):
-        if not config.getbool('cookie_jar_enabled'):
-            raise NotEnabled
+    def __init__(self, loop=None):
         self._loop = loop or asyncio.get_event_loop()
         self._cookie_jars = {}
 
@@ -131,7 +126,9 @@ class CookiesMiddleware:
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config, loop=cluster.loop)
+        if not cluster.config.getbool('cookie_jar_enabled'):
+            raise NotEnabled
+        return cls(loop=cluster.loop)
 
     def handle_request(self, request):
         cookie_jar_key = request.meta.get('cookie_jar')
@@ -143,11 +140,8 @@ class CookiesMiddleware:
 
 
 class ProxyMiddleware:
-    def __init__(self, config):
+    def __init__(self, proxy):
         self._proxies = {'http': [], 'https': []}
-        proxy = config.get('proxy')
-        if not proxy:
-            raise NotEnabled
         self._set_proxy(proxy)
 
     def __repr__(self):
@@ -156,7 +150,10 @@ class ProxyMiddleware:
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config)
+        proxy = cluster.config.get('proxy')
+        if not proxy:
+            raise NotEnabled
+        return cls(proxy=proxy)
 
     def handle_request(self, request):
         if isinstance(request.url, str):
@@ -190,13 +187,11 @@ class ProxyMiddleware:
 
 
 class SpeedLimitMiddleware:
-    def __init__(self, config, loop=None):
-        if not config.getbool('speed_limit_enabled'):
-            raise NotEnabled
-        self._rate = config.getint('speed_limit_rate')
+    def __init__(self, speed_limit_rate, speed_limit_burst, loop=None):
+        self._rate = speed_limit_rate
+        self._burst = speed_limit_burst
         if self._rate <= 0:
             raise ValueError("rate must be greater than 0")
-        self._burst = config.getint('speed_limit_burst')
         if self._burst <= 0:
             raise ValueError('burst must be greater than 0')
         self._interval = 1.0 / self._rate
@@ -211,7 +206,12 @@ class SpeedLimitMiddleware:
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config, loop=cluster.loop)
+        config = cluster.config
+        if not config.getbool('speed_limit_enabled'):
+            raise NotEnabled
+        speed_limit_rate = config.getfloat('speed_limit_rate')
+        speed_limit_burst = config.getint('speed_limit_burst')
+        return cls(speed_limit_rate=speed_limit_rate, speed_limit_burst=speed_limit_burst, loop=cluster.loop)
 
     async def handle_request(self, request):
         await self._semaphore.acquire()
@@ -236,16 +236,13 @@ class UserAgentMiddleware:
     DEVICE_TYPE = {'desktop', 'mobile'}
     BROWSER_TYPE = {'chrome'}
 
-    def __init__(self, config):
-        ua = config.get('user_agent')
-        self._random = config.getbool('random_user_agent')
-        if not ua and not self._random:
-            raise NotEnabled
+    def __init__(self, user_agent, random_user_agent=False):
+        self._random = random_user_agent
         self._device_type = 'desktop'
         self._browser = 'chrome'
         self._user_agent = None
-        if ua:
-            self._configure_user_agent(ua)
+        if user_agent:
+            self._configure_user_agent(user_agent)
 
     def __repr__(self):
         cls_name = self.__class__.__name__
@@ -253,7 +250,12 @@ class UserAgentMiddleware:
 
     @classmethod
     def from_cluster(cls, cluster):
-        return cls(cluster.config)
+        config = cluster.config
+        user_agent = config.get('user_agent')
+        random_user_agent = config.getbool('random_user_agent')
+        if not user_agent and not random_user_agent:
+            raise NotEnabled
+        return cls(user_agent=user_agent, random_user_agent=random_user_agent)
 
     def handle_request(self, request):
         if self._random:

@@ -253,10 +253,6 @@ class Proxy(Setting):
     name = 'proxy'
 
 
-class ProxyProvider(Setting):
-    name = 'proxy_provider'
-
-
 class RetryEnabled(Setting):
     name = 'retry_enabled'
     default = True

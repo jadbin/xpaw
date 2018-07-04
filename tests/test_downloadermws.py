@@ -1,6 +1,8 @@
 # coding=utf-8
 
 import re
+import json
+
 import pytest
 
 from xpaw.config import Config
