@@ -4,6 +4,7 @@ import asyncio
 import logging
 import signal
 from asyncio import CancelledError
+import time
 
 from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
@@ -147,13 +148,16 @@ class LocalCluster:
             else:
                 tick = 0
             while True:
+                t = time.time()
                 res = await self.spidermw.start_requests(self.spider)
                 for r in res:
                     if isinstance(r, HttpRequest):
                         await self._push_without_duplication(r)
                 if tick <= 0:
                     break
-                await asyncio.sleep(tick, loop=self.loop)
+                t = time.time() - t
+                if t < tick:
+                    await asyncio.sleep(tick - t, loop=self.loop)
         except CancelledError:
             raise
         except Exception:
