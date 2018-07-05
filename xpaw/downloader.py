@@ -27,9 +27,13 @@ class Downloader:
         timeout = request.meta.get("timeout")
         if timeout is None:
             timeout = self._timeout
+        cookie_jar = request.meta.get('cookie_jar')
+        auth = parse_auth(request.meta.get('auth'))
+        proxy = parse_url(request.meta.get('proxy'))
+        proxy_auth = parse_auth(request.meta.get('proxy_auth'))
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=self._verify_ssl, loop=self._loop),
                                          cookies=request.cookies,
-                                         cookie_jar=request.cookie_jar,
+                                         cookie_jar=cookie_jar,
                                          loop=self._loop) as session:
             with async_timeout.timeout(timeout, loop=self._loop):
                 if isinstance(request.body, dict):
@@ -39,12 +43,12 @@ class Downloader:
                 async with session.request(request.method,
                                            parse_url(request.url),
                                            params=parse_params(request.params),
-                                           auth=parse_auth(request.auth),
+                                           auth=auth,
                                            headers=request.headers,
                                            data=data,
                                            json=json,
-                                           proxy=parse_url(request.proxy),
-                                           proxy_auth=parse_auth(request.proxy_auth)) as resp:
+                                           proxy=proxy,
+                                           proxy_auth=proxy_auth) as resp:
                     body = await resp.read()
                     cookies = resp.cookies
         response = HttpResponse(resp.url,

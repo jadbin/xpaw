@@ -6,8 +6,7 @@ from .utils import get_encoding_from_header, get_encoding_from_content
 
 
 class HttpRequest:
-    def __init__(self, url, method="GET", body=None, params=None,
-                 auth=None, headers=None, cookies=None, cookie_jar=None, proxy=None, proxy_auth=None,
+    def __init__(self, url, method="GET", body=None, params=None, headers=None, cookies=None,
                  meta=None, priority=None, dont_filter=False, callback=None, errback=None):
         """
         Construct an HTTP request.
@@ -16,12 +15,8 @@ class HttpRequest:
         self.method = method
         self.body = body
         self.params = params
-        self.auth = auth
         self.headers = headers or {}
         self.cookies = cookies or {}
-        self.cookie_jar = cookie_jar
-        self.proxy = proxy
-        self.proxy_auth = proxy_auth
         self._meta = dict(meta) if meta else {}
         self.priority = priority
         self.dont_filter = dont_filter
@@ -32,7 +27,7 @@ class HttpRequest:
             errback = errback.__name__
         self.errback = errback
 
-    def __repr__(self):
+    def __str__(self):
         return '<{}, {}>'.format(self.method, self.url)
 
     @property
@@ -43,7 +38,7 @@ class HttpRequest:
         return self.replace()
 
     def replace(self, **kwargs):
-        for i in ["url", "method", "body", "params", "auth", "headers", "cookies", "cookie_jar", "proxy", "proxy_auth",
+        for i in ["url", "method", "body", "params", "headers", "cookies",
                   "meta", "priority", "dont_filter", "callback", "errback"]:
             kwargs.setdefault(i, getattr(self, i))
         return type(self)(**kwargs)
@@ -62,7 +57,7 @@ class HttpResponse:
         self.cookies = cookies or {}
         self.request = request
 
-    def __repr__(self):
+    def __str__(self):
         return '<{}, {}>'.format(self.status, self.url)
 
     @property

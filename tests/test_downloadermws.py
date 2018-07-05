@@ -62,7 +62,7 @@ class TestProxyMiddleware:
         mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy, loop=loop))
         req = HttpRequest(URL("http://httpbin.org"))
         mw.handle_request(req)
-        assert req.proxy == '153.10.32.18:3128'
+        assert req.meta['proxy'] == '153.10.32.18:3128'
 
     def test_proxy_list(self, monkeypatch, loop):
         monkeypatch.setattr(random, 'choice', Random().choice)
@@ -71,11 +71,11 @@ class TestProxyMiddleware:
         req = HttpRequest("http://httpbin.org")
         for i in range(len(proxy_list)):
             mw.handle_request(req)
-            assert req.proxy == proxy_list[i]
+            assert req.meta['proxy'] == proxy_list[i]
 
         req2 = HttpRequest('ftp://httpbin.org')
         mw.handle_request(req2)
-        assert req2.proxy is None
+        assert 'proxy' not in req2.meta
 
     def test_proxy_dict(self, monkeypatch, loop):
         monkeypatch.setattr(random, 'choice', Random().choice)
@@ -87,7 +87,7 @@ class TestProxyMiddleware:
         res = ['132.39.13.100:3128', '177.13.233.2:3128', '132.39.13.100:3128', '18.39.9.10:3128']
         for i in range(len(req_list)):
             mw.handle_request(req_list[i])
-            assert req_list[i].proxy == res[i]
+            assert req_list[i].meta['proxy'] == res[i]
 
     async def test_not_enabled(self, loop):
         with pytest.raises(NotEnabled):

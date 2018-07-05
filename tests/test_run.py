@@ -7,7 +7,6 @@ import os
 import signal
 import time
 from threading import Thread
-import sys
 
 from xpaw.cli import main
 from xpaw.run import run_crawler
@@ -36,7 +35,7 @@ class DummySpider(Spider):
         pass
 
 
-def test_run_dummy_spider():
+def test_run_spider():
     run_spider(DummySpider, downloader_timeout=0.1)
 
 
@@ -188,7 +187,7 @@ class LinkSpider(Spider):
         self.data.add(request.url)
 
 
-def test_link_spider():
+def test_spider_handlers():
     link_data = set()
     link_count = 5
     link_total = 15
@@ -242,7 +241,7 @@ class ExceptionThread(Thread):
             raise
 
 
-def test_wait_spider(tmpdir):
+def test_kill_spider(tmpdir):
     pid_file = join(str(tmpdir), 'pid')
     log_file = join(str(tmpdir), 'log')
     t = ExceptionThread(target=_check_thread, args=(pid_file,))
