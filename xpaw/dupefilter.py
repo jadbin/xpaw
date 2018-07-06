@@ -9,19 +9,19 @@ log = logging.getLogger(__name__)
 
 
 class SetDupeFilter:
-    def __init__(self, job_dir=None):
-        self._job_dir = job_dir
+    def __init__(self, dump_dir=None):
+        self._dump_dir = dump_dir
         self._hash = set()
 
     @classmethod
     def from_cluster(cls, cluster):
         config = cluster.config
-        dupe_filter = cls(job_dir=utils.get_job_dir(config))
+        dupe_filter = cls(dump_dir=utils.get_dump_dir(config))
         cluster.event_bus.subscribe(dupe_filter.open, events.cluster_start)
         cluster.event_bus.subscribe(dupe_filter.close, events.cluster_shutdown)
         return dupe_filter
 
-    async def is_duplicated(self, request):
+    def is_duplicated(self, request):
         if request.dont_filter:
             return False
         h = utils.request_fingerprint(request)
@@ -35,9 +35,9 @@ class SetDupeFilter:
         self._hash.clear()
 
     def open(self):
-        h = utils.load_from_job_dir('dupe_filter', self._job_dir)
+        h = utils.load_from_dump_dir('dupe_filter', self._dump_dir)
         if h:
             self._hash = h
 
     def close(self):
-        utils.dump_to_job_dir('dupe_filter', self._job_dir, self._hash)
+        utils.dump_to_dir('dupe_filter', self._dump_dir, self._hash)

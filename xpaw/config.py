@@ -291,11 +291,11 @@ class MaxDepth(Setting):
     help = 'maximum depth of spider'
 
 
-class JobDir(Setting):
-    name = 'job_dir'
-    cli = ['--job-dir']
+class DumpDir(Setting):
+    name = 'dump_dir'
+    cli = ['--dump-dir']
     metavar = 'DIR'
-    help = 'the directory to store the state of a single job'
+    help = 'the directory to dump the state of a single job'
 
 
 class StatsCenterCls(Setting):

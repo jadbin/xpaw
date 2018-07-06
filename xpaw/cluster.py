@@ -5,6 +5,7 @@ import logging
 import signal
 from asyncio import CancelledError
 import time
+import inspect
 
 from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
@@ -227,7 +228,10 @@ class LocalCluster:
         return obj
 
     async def _push_without_duplication(self, request):
-        if not await self.dupe_filter.is_duplicated(request):
+        res = self.dupe_filter.is_duplicated(request)
+        if inspect.iscoroutine(res):
+            res = await res
+        if not res:
             await self.event_bus.send(events.request_scheduled, request=request)
             await self.queue.push(request)
 

@@ -32,6 +32,19 @@ async def test_fifo_queue(loop):
             await q.pop()
 
 
+async def test_fifo_queue_dump(loop, tmpdir):
+    q = FifoQueue.from_cluster(Cluster(loop=loop, dump_dir=str(tmpdir)))
+    obj_list = [1, 2, 3]
+    for o in obj_list:
+        await q.push(o)
+    q.close()
+    q2 = FifoQueue.from_cluster(Cluster(loop=loop, dump_dir=str(tmpdir)))
+    q2.open()
+    with async_timeout.timeout(0.1, loop=loop):
+        for i in range(len(obj_list)):
+            assert await q2.pop() == obj_list[i]
+
+
 async def test_lifo_queue(loop):
     q = LifoQueue.from_cluster(Cluster(loop=loop))
     with pytest.raises(asyncio.TimeoutError):
@@ -45,6 +58,19 @@ async def test_lifo_queue(loop):
     with pytest.raises(asyncio.TimeoutError):
         with async_timeout.timeout(0.1, loop=loop):
             await q.pop()
+
+
+async def test_lifo_queue_dump(loop, tmpdir):
+    q = LifoQueue.from_cluster(Cluster(loop=loop, dump_dir=str(tmpdir)))
+    obj_list = [1, 2, 3]
+    for o in obj_list:
+        await q.push(o)
+    q.close()
+    q2 = LifoQueue.from_cluster(Cluster(loop=loop, dump_dir=str(tmpdir)))
+    q2.open()
+    with async_timeout.timeout(0.1, loop=loop):
+        for i in range(len(obj_list)):
+            assert await q2.pop() == obj_list[len(obj_list) - i - 1]
 
 
 class PriorityQueueItem:
@@ -78,3 +104,17 @@ async def test_priority_queue(loop):
     with pytest.raises(asyncio.TimeoutError):
         with async_timeout.timeout(0.1, loop=loop):
             await q.pop()
+
+
+async def test_priority_queue_dump(loop, tmpdir):
+    q = PriorityQueue.from_cluster(Cluster(loop=loop, dump_dir=str(tmpdir)))
+    await q.push(PriorityQueueItem(2))
+    await q.push(PriorityQueueItem(3))
+    await q.push(PriorityQueueItem(1))
+    q.close()
+    q2 = PriorityQueue.from_cluster(Cluster(loop=loop, dump_dir=str(tmpdir)))
+    q2.open()
+    with async_timeout.timeout(0.1, loop=loop):
+        assert (await q2.pop()).priority == 3
+        assert (await q2.pop()).priority == 2
+        assert (await q2.pop()).priority == 1

@@ -11,12 +11,14 @@ from xpaw.downloadermws import *
 from xpaw.errors import IgnoreRequest, NetworkError, NotEnabled
 from xpaw.version import __version__
 from xpaw.downloader import Downloader
+from xpaw.eventbus import EventBus
 
 
 class Cluster:
     def __init__(self, loop=None, **kwargs):
         self.loop = loop
         self.config = Config(kwargs)
+        self.event_bus = EventBus()
 
 
 class TestImitatingProxyMiddleware:
@@ -181,6 +183,23 @@ class TestCookiesMiddleware:
         assert resp.status == 200
         cookies = json.loads(resp.text)["cookies"]
         assert len(cookies) == 0
+
+    async def test_dump(self, loop, tmpdir):
+        mw = CookiesMiddleware.from_cluster(Cluster(cookie_jar_enabled=True, loop=loop, dump_dir=str(tmpdir)))
+        downloader = Downloader(timeout=60, loop=loop)
+        seed = str(random.randint(0, 2147483647))
+        req = HttpRequest("http://httpbin.org/cookies/set?seed={}".format(seed))
+        mw.handle_request(req)
+        await downloader.download(req)
+        mw.close()
+        mw2 = CookiesMiddleware.from_cluster(Cluster(cookie_jar_enabled=True, loop=loop, dump_dir=str(tmpdir)))
+        mw2.open()
+        req2 = HttpRequest("http://httpbin.org/cookies")
+        mw2.handle_request(req2)
+        resp = await downloader.download(req2)
+        assert resp.status == 200
+        cookies = json.loads(resp.text)["cookies"]
+        assert len(cookies) == 1 and cookies.get("seed") == seed
 
 
 class TestSpeedLimitMiddleware:

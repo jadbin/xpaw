@@ -221,25 +221,24 @@ def iter_settings(config):
             yield key, value
 
 
-def get_job_dir(config):
-    job_dir = config.get('job_dir')
-    if job_dir:
-        if not exists(job_dir):
-            os.makedirs(job_dir, 755)
-        return job_dir
+def get_dump_dir(config):
+    dump_dir = config.get('dump_dir')
+    if dump_dir:
+        if not exists(dump_dir):
+            os.makedirs(dump_dir, 755)
+        return dump_dir
 
 
-def dump_to_job_dir(name, job_dir, obj):
-    if job_dir:
-        pkl_path = join(job_dir, name + '.pkl')
-        if exists(pkl_path):
-            with open(pkl_path, 'wb') as f:
-                return pickle.dump(obj, f)
+def dump_to_dir(name, dump_dir, obj):
+    if dump_dir:
+        pkl_path = join(dump_dir, name + '.pkl')
+        with open(pkl_path, 'wb') as f:
+            return pickle.dump(obj, f)
 
 
-def load_from_job_dir(name, job_dir):
-    if job_dir:
-        pkl_path = join(job_dir, name + '.pkl')
+def load_from_dump_dir(name, dump_dir):
+    if dump_dir:
+        pkl_path = join(dump_dir, name + '.pkl')
         if exists(pkl_path):
             with open(pkl_path, 'rb') as f:
                 return pickle.load(f)

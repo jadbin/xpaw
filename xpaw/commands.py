@@ -90,7 +90,7 @@ class CrawlCommand(Command):
     def _import_settings(self):
         settings = (config.Daemon, config.PidFile,
                     config.LogLevel, config.LogFile,
-                    config.JobDir,
+                    config.DumpDir,
                     config.DownloaderClients, config.DownloaderTimeout,
                     config.VerifySsl, config.CookieJarEnabled,
                     config.MaxDepth)

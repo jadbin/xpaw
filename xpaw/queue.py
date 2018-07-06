@@ -2,6 +2,7 @@
 
 import time
 import logging
+import asyncio
 from asyncio import Semaphore
 from collections import deque
 from heapq import heappush, heappop
@@ -13,17 +14,18 @@ log = logging.getLogger(__name__)
 
 
 class FifoQueue:
-    def __init__(self, job_dir=None, loop=None):
+    def __init__(self, dump_dir=None, loop=None):
         self._queue = deque()
-        self._job_dir = job_dir
-        self._semaphore = Semaphore(0, loop=loop)
+        self._dump_dir = dump_dir
+        self._loop = loop or asyncio.get_event_loop()
+        self._semaphore = Semaphore(0, loop=self._loop)
 
     def __len__(self):
         return len(self._queue)
 
     @classmethod
     def from_cluster(cls, cluster):
-        queue = cls(job_dir=utils.get_job_dir(cluster.config), loop=cluster.loop)
+        queue = cls(dump_dir=utils.get_dump_dir(cluster.config), loop=cluster.loop)
         cluster.event_bus.subscribe(queue.open, events.cluster_start)
         cluster.event_bus.subscribe(queue.close, events.cluster_shutdown)
         return queue
@@ -37,12 +39,13 @@ class FifoQueue:
         return self._queue.popleft()
 
     def open(self):
-        q = utils.load_from_job_dir('queue', self._job_dir)
+        q = utils.load_from_dump_dir('queue', self._dump_dir)
         if q:
             self._queue = q
+            self._semaphore = Semaphore(len(self._queue), loop=self._loop)
 
     def close(self):
-        utils.dump_to_job_dir('queue', self._job_dir, self._queue)
+        utils.dump_to_dir('queue', self._dump_dir, self._queue)
 
 
 class LifoQueue(FifoQueue):
@@ -52,17 +55,18 @@ class LifoQueue(FifoQueue):
 
 
 class PriorityQueue:
-    def __init__(self, job_dir=None, loop=None):
+    def __init__(self, dump_dir=None, loop=None):
         self._queue = []
-        self._job_dir = job_dir
-        self._semaphore = Semaphore(0, loop=loop)
+        self._dump_dir = dump_dir
+        self._loop = loop or asyncio.get_event_loop()
+        self._semaphore = Semaphore(0, loop=self._loop)
 
     def __len__(self):
         return len(self._queue)
 
     @classmethod
     def from_cluster(cls, cluster):
-        queue = cls(job_dir=utils.get_job_dir(cluster.config), loop=cluster.loop)
+        queue = cls(dump_dir=utils.get_dump_dir(cluster.config), loop=cluster.loop)
         cluster.event_bus.subscribe(queue.open, events.cluster_start)
         cluster.event_bus.subscribe(queue.close, events.cluster_shutdown)
         return queue
@@ -77,12 +81,13 @@ class PriorityQueue:
         return item.request
 
     def open(self):
-        q = utils.load_from_job_dir('queue', self._job_dir)
+        q = utils.load_from_dump_dir('queue', self._dump_dir)
         if q:
             self._queue = q
+            self._semaphore = Semaphore(len(self._queue), loop=self._loop)
 
     def close(self):
-        utils.dump_to_job_dir('queue', self._job_dir, self._queue)
+        utils.dump_to_dir('queue', self._dump_dir, self._queue)
 
 
 class _PriorityQueueItem:

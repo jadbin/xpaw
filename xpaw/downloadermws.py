@@ -9,6 +9,7 @@ from yarl import URL
 
 from .errors import IgnoreRequest, NetworkError, NotEnabled
 from .version import __version__
+from . import events, utils
 
 log = logging.getLogger(__name__)
 
@@ -117,7 +118,8 @@ class ImitatingProxyMiddleware:
 
 
 class CookiesMiddleware:
-    def __init__(self, loop=None):
+    def __init__(self, dump_dir=None, loop=None):
+        self._dump_dir = dump_dir
         self._loop = loop or asyncio.get_event_loop()
         self._cookie_jars = {}
 
@@ -127,9 +129,13 @@ class CookiesMiddleware:
 
     @classmethod
     def from_cluster(cls, cluster):
-        if not cluster.config.getbool('cookie_jar_enabled'):
+        config = cluster.config
+        if not config.getbool('cookie_jar_enabled'):
             raise NotEnabled
-        return cls(loop=cluster.loop)
+        mw = cls(dump_dir=utils.get_dump_dir(config), loop=cluster.loop)
+        cluster.event_bus.subscribe(mw.open, events.cluster_start)
+        cluster.event_bus.subscribe(mw.close, events.cluster_shutdown)
+        return mw
 
     def handle_request(self, request):
         cookie_jar_key = request.meta.get('cookie_jar')
@@ -139,6 +145,21 @@ class CookiesMiddleware:
                 cookie_jar = aiohttp.CookieJar(loop=self._loop)
                 self._cookie_jars[cookie_jar_key] = cookie_jar
             request.meta['cookie_jar'] = cookie_jar
+
+    def open(self):
+        jars = utils.load_from_dump_dir('cookie_jar', self._dump_dir)
+        if jars:
+            for key in jars:
+                cookie_jar = aiohttp.CookieJar(loop=self._loop)
+                cookie_jar._cookies = jars[key]
+                self._cookie_jars[key] = cookie_jar
+
+    def close(self):
+        if self._dump_dir:
+            jars = {}
+            for key in self._cookie_jars:
+                jars[key] = self._cookie_jars[key]._cookies
+            utils.dump_to_dir('cookie_jar', self._dump_dir, jars)
 
 
 class ProxyMiddleware:
