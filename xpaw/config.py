@@ -200,8 +200,8 @@ class DownloaderClients(Setting):
 class DownloaderTimeout(Setting):
     name = 'downloader_timeout'
     cli = ['--downloader-timeout']
-    metavar = 'INT'
-    type = int
+    metavar = 'FLOAT'
+    type = float
     default = 20
     help = 'timeout of downloader in seconds'
 
