@@ -110,7 +110,8 @@ class ImitatingProxyMiddleware:
         return cls()
 
     def handle_request(self, request):
-        ip = "61.%s.%s.%s" % (random.randint(128, 191), random.randint(0, 255), random.randint(1, 254))
+        ip = '{}.{}.{}.{}'.format(random.randint(1, 126), random.randint(1, 254),
+                                  random.randint(1, 254), random.randint(1, 254))
         request.headers.setdefault('X-Forwarded-For', ip)
         request.headers.setdefault('Via', '{} xpaw'.format(__version__))
 
