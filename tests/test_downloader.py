@@ -2,14 +2,11 @@
 
 import json
 import random
-import base64
 
-import aiohttp
 from aiohttp import web
 from aiohttp.helpers import BasicAuth
 from multidict import MultiDict
 from aiohttp import FormData
-import async_timeout
 
 from xpaw.http import HttpRequest
 from xpaw.downloader import Downloader, DownloaderMiddlewareManager
@@ -109,46 +106,37 @@ async def test_params(loop):
     await query_and_dict_params()
 
 
-async def make_proxy_server(test_server, loop):
+async def make_proxy_server(aiohttp_server, login=None, password=None):
     async def process(request):
         auth_str = request.headers.get('Proxy-Authorization')
         if auth_str is None:
-            auth = None
+            if login is not None:
+                return web.Response(status=401)
         else:
             auth = BasicAuth.decode(auth_str)
-        async with aiohttp.ClientSession(loop=loop) as session:
-            with async_timeout.timeout(60, loop=loop):
-                async with session.request("GET", request.raw_path, auth=auth) as resp:
-                    body = await resp.read()
-                    return web.Response(status=resp.status,
-                                        body=body,
-                                        headers=resp.headers)
+            if login != auth.login or password != auth.password:
+                return web.Response(status=401)
+        return web.Response(body=request.raw_path, status=200)
 
     app = web.Application()
     app.router.add_route("GET", "/{tail:.*}", process)
-    server = await test_server(app)
+    server = await aiohttp_server(app)
     return server
 
 
-async def test_proxy(test_server, loop):
-    server = await make_proxy_server(test_server, loop=loop)
+async def test_proxy(aiohttp_server, loop):
+    server = await make_proxy_server(aiohttp_server)
     downloader = Downloader(timeout=60, loop=loop)
     seed = str(random.randint(0, 2147483647))
     req = HttpRequest('http://httpbin.org/get?seed={}'.format(seed))
     req.meta['proxy'] = '{}:{}'.format(server.host, server.port)
     resp = await downloader.download(req)
-    args = json.loads(resp.body.decode('utf-8'))['args']
-    assert 'seed' in args and args['seed'] == seed
+    assert resp.text == req.url
 
 
-async def test_proxy_auth(test_server, loop):
+async def test_proxy_auth(aiohttp_server, loop):
     downloader = Downloader(timeout=60, loop=loop)
-    server = await make_proxy_server(test_server, loop=loop)
-
-    def validate_response(resp, login):
-        assert resp.status == 200
-        data = json.loads(resp.body.decode('utf-8'))
-        assert data['authenticated'] is True and data['user'] == login
+    server = await make_proxy_server(aiohttp_server, login='login', password='pass')
 
     async def no_auth():
         req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
@@ -161,27 +149,27 @@ async def test_proxy_auth(test_server, loop):
         req.meta['proxy'] = 'http://{}:{}'.format(server.host, server.port)
         req.meta['proxy_auth'] = 'login:pass'
         resp = await downloader.download(req)
-        validate_response(resp, 'login')
+        assert resp.status == 200
 
     async def tuple_auth():
         req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
         req.meta['proxy'] = 'http://{}:{}'.format(server.host, server.port)
         req.meta['proxy_auth'] = ('login', 'pass')
         resp = await downloader.download(req)
-        validate_response(resp, 'login')
+        assert resp.status == 200
 
     async def basic_auth():
         req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
         req.meta['proxy'] = 'http://{}:{}'.format(server.host, server.port)
         req.meta['proxy_auth'] = BasicAuth('login', 'pass')
         resp = await downloader.download(req)
-        validate_response(resp, 'login')
+        assert resp.status == 200
 
     async def url_basic_auth():
         req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
         req.meta['proxy'] = 'http://login:pass@{}:{}'.format(server.host, server.port)
         resp = await downloader.download(req)
-        validate_response(resp, 'login')
+        assert resp.status == 200
 
     await no_auth()
     await str_auth()
@@ -224,21 +212,22 @@ async def test_post_data(loop):
         assert body['form'] == form_data
 
     async def post_str():
-        str_data = 'my str data: 测试数据'
+        str_data = 'str data: 字符串数据'
         resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=str_data))
         assert resp.status == 200
         body = json.loads(resp.body.decode('utf-8'))
         assert body['data'] == str_data
 
     async def post_bytes():
-        bytes_data = 'my str data: 测试数据'.encode('gbk')
-        resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=bytes_data))
+        bytes_data = 'bytes data: 字节数据'
+        resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST',
+                                                     body=bytes_data.encode('utf-8')))
         assert resp.status == 200
         body = json.loads(resp.body.decode('utf-8'))
         headers = body['headers']
         data = body['data']
         assert 'Content-Type' in headers and headers['Content-Type'] == 'application/octet-stream'
-        assert base64.b64decode(data.split(',', 1)[1]) == bytes_data
+        assert data == bytes_data
 
     await post_json()
     await post_form()
