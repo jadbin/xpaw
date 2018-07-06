@@ -64,7 +64,11 @@ async def test_basic_auth(loop):
             HttpRequest("http://login%40:pass%3a%40@httpbin.org/basic-auth/login@/pass:@"))
         validate_response(resp, 'login@')
 
-    await asyncio.gather(no_auth(), str_auth(), tuple_auth(), basic_auth(), url_basic_auth(), loop=loop)
+    await no_auth()
+    await str_auth()
+    await tuple_auth()
+    await basic_auth()
+    await url_basic_auth()
 
 
 async def test_params(loop):
@@ -100,7 +104,10 @@ async def test_params(loop):
         resp = await downloader.download(req)
         validate_response(resp, {'k': 'v', 'none': '', 'list': ['2', '1']})
 
-    await asyncio.gather(query_params(), dict_params(), multi_dict_params(), query_and_dict_params(), loop=loop)
+    await query_params()
+    await dict_params()
+    await multi_dict_params()
+    await query_and_dict_params()
 
 
 async def make_proxy_server(test_server, loop):
@@ -177,7 +184,11 @@ async def test_proxy_auth(test_server, loop):
         resp = await downloader.download(req)
         validate_response(resp, 'login@')
 
-    await asyncio.gather(no_auth(), str_auth(), tuple_auth(), basic_auth(), url_basic_auth(), loop=loop)
+    await no_auth()
+    await str_auth()
+    await tuple_auth()
+    await basic_auth()
+    await url_basic_auth()
 
 
 async def test_headers(loop):
@@ -230,7 +241,10 @@ async def test_post_data(loop):
         assert 'Content-Type' in headers and headers['Content-Type'] == 'application/octet-stream'
         assert base64.b64decode(data.split(',', 1)[1]) == bytes_data
 
-    await asyncio.gather(post_json(), post_form(), post_str(), post_bytes(), loop=loop)
+    await post_json()
+    await post_form()
+    await post_str()
+    await post_bytes()
 
 
 class MyDownloadermw:

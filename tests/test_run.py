@@ -135,15 +135,13 @@ class LinkSpider(Spider):
     def start_requests(self):
         yield HttpRequest("http://localhost:80", errback=self.error_back)
         yield HttpRequest("http://localhost:81", errback=self.async_error_back)
-        yield HttpRequest("http://httpbin.org/status/401", callback=self.generator_parse)
-        yield HttpRequest("http://httpbin.org/status/402", callback=self.func_prase)
-        yield HttpRequest("http://httpbin.org/status/403", callback=self.async_parse)
-        yield HttpRequest("http://httpbin.org/status/404", callback=self.return_list_parse)
-        yield HttpRequest("http://httpbin.org/status/405", callback=self.return_none)
-        yield HttpRequest("http://httpbin.org/status/406")
+        yield HttpRequest("http://httpbin.org/status/451", callback=self.generator_parse)
+        yield HttpRequest("http://httpbin.org/status/452", callback=self.func_prase)
+        yield HttpRequest("http://httpbin.org/status/453", callback=self.async_parse)
+        yield HttpRequest("http://httpbin.org/status/454", callback=self.return_list_parse)
+        yield HttpRequest("http://httpbin.org/status/455", callback=self.return_none)
+        yield HttpRequest("http://httpbin.org/status/456", errback=self.handle_input_error)
         yield HttpRequest("http://httpbin.org/status/408")
-        yield HttpRequest("http://httpbin.org/status/410")
-        yield HttpRequest("http://httpbin.org/status/412", errback=self.handle_input_error)
         yield HttpRequest("http://httpbin.org/links/{}".format(self.link_count))
 
     def parse(self, response):
@@ -189,25 +187,23 @@ class LinkSpider(Spider):
 
 def test_spider_handlers():
     link_data = set()
-    link_count = 5
-    link_total = 15
-    run_spider(LinkSpider, downloader_timeout=60, log_level='DEBUG', item_pipelines=[LinkPipeline],
-               link_data=link_data, link_count=link_count, max_retry_times=1,
-               downloader_clients=10, spider_middlewares=[LinkSpiderMiddleware],
+    link_count = 3
+    link_total = 11
+    run_spider(LinkSpider, downloader_timeout=60, log_level='INFO', item_pipelines=[LinkPipeline],
+               link_data=link_data, link_count=link_count,
+               downloader_clients=2, spider_middlewares=[LinkSpiderMiddleware],
                downloader_middlewares=[LinkDownloaderMiddleware])
     assert len(link_data) == link_total
     for i in range(link_count):
         assert "http://httpbin.org/links/{}/{}".format(link_count, i) in link_data
     assert "http://localhost:80" in link_data
     assert "http://localhost:81" in link_data
-    assert "http://httpbin.org/status/401" in link_data
-    assert "http://httpbin.org/status/402" in link_data
-    assert "http://httpbin.org/status/403" in link_data
-    assert "http://httpbin.org/status/404" in link_data
-    assert "http://httpbin.org/status/405" in link_data
-    assert "http://httpbin.org/status/409" in link_data
-    assert "http://httpbin.org/status/411" in link_data
-    assert "http://httpbin.org/status/412" in link_data
+    assert "http://httpbin.org/status/451" in link_data
+    assert "http://httpbin.org/status/452" in link_data
+    assert "http://httpbin.org/status/453" in link_data
+    assert "http://httpbin.org/status/454" in link_data
+    assert "http://httpbin.org/status/455" in link_data
+    assert "http://httpbin.org/status/456" in link_data
 
 
 class WaitSpider(Spider):
