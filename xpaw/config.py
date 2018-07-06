@@ -123,7 +123,7 @@ class Setting:
     action = None
     type = None
     nargs = None
-    help = None
+    short_desc = None
 
     def __init__(self):
         self.value = self.default
@@ -132,12 +132,9 @@ class Setting:
         if self.cli is None:
             return
         args = tuple(self.cli)
-        kwargs = {'dest': self.name,
-                  'help': self.help}
+        kwargs = {'dest': self.name, 'help': '{} (default: {})'.format(self.short_desc, self.default)}
         if self.metavar is not None:
             kwargs['metavar'] = self.metavar
-        if self.default is not None:
-            kwargs['default'] = self.default
         if self.action is not None:
             kwargs['action'] = self.action
         if self.type is not None:
@@ -153,21 +150,21 @@ class Daemon(Setting):
     cli = ['-d', '--daemon']
     action = 'store_true'
     default = False
-    help = 'run in daemon mode'
+    short_desc = 'run in daemon mode'
 
 
 class PidFile(Setting):
     name = 'pid_file'
     cli = ['--pid-file']
     metavar = 'FILE'
-    help = 'PID file'
+    short_desc = 'PID file'
 
 
 class LogFile(Setting):
     name = 'log_file'
     cli = ['--log-file']
     metavar = 'FILE'
-    help = 'log file'
+    short_desc = 'log file'
 
 
 class LogLevel(Setting):
@@ -175,7 +172,7 @@ class LogLevel(Setting):
     cli = ['-l', '--log-level']
     metavar = 'LEVEL'
     default = 'INFO'
-    help = 'log level'
+    short_desc = 'log level'
 
 
 class LogFormat(Setting):
@@ -194,7 +191,7 @@ class DownloaderClients(Setting):
     metavar = 'INT'
     type = int
     default = 100
-    help = 'the number of downloader clients'
+    short_desc = 'the number of downloader clients'
 
 
 class DownloaderTimeout(Setting):
@@ -203,7 +200,7 @@ class DownloaderTimeout(Setting):
     metavar = 'FLOAT'
     type = float
     default = 20
-    help = 'timeout of downloader in seconds'
+    short_desc = 'timeout of downloader in seconds'
 
 
 class VerifySsl(Setting):
@@ -211,7 +208,7 @@ class VerifySsl(Setting):
     cli = ['--verify-ssl']
     action = 'store_true'
     default = False
-    help = 'verify ssl certifications'
+    short_desc = 'verify ssl certifications'
 
 
 class CookieJarEnabled(Setting):
@@ -219,7 +216,7 @@ class CookieJarEnabled(Setting):
     cli = ['--cookie-jar-enabled']
     action = 'store_true'
     default = False
-    help = 'enable cookie jar'
+    short_desc = 'enable cookie jar'
 
 
 class DefaultHeaders(Setting):
@@ -288,14 +285,14 @@ class MaxDepth(Setting):
     cli = ['--max-depth']
     metavar = 'INT'
     type = int
-    help = 'maximum depth of spider'
+    short_desc = 'maximum depth of spider'
 
 
 class DumpDir(Setting):
     name = 'dump_dir'
     cli = ['--dump-dir']
     metavar = 'DIR'
-    help = 'the directory to dump the state of a single job'
+    short_desc = 'the directory to dump the state of a single job'
 
 
 class StatsCenterCls(Setting):

@@ -51,7 +51,7 @@ def main(argv=None):
         sys.exit(2)
     del argv[1]
     cmd = cmds[cmdname]
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser()
     parser.usage = "xpaw {} {}".format(cmdname, cmd.syntax)
     parser.description = cmd.long_desc
     cmd.add_arguments(parser)

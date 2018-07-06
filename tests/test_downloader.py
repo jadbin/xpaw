@@ -2,7 +2,6 @@
 
 import json
 import random
-import asyncio
 import base64
 
 import aiohttp
