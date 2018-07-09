@@ -24,10 +24,19 @@ class Command:
     def __init__(self):
         self.config = config.BaseConfig()
         self.exitcode = 0
-        self.settings = self._import_settings()
+        self.settings = self._make_settings()
 
     def _import_settings(self):
-        return []
+        pass
+
+    def _make_settings(self):
+        settings = []
+        classes = self._import_settings()
+        if classes is not None:
+            for cls in classes:
+                if issubclass(cls, config.Setting):
+                    settings.append(cls())
+        return settings
 
     @property
     def name(self):
@@ -88,13 +97,12 @@ class CrawlCommand(Command):
         return "Start to crawl web pages"
 
     def _import_settings(self):
-        settings = (config.Daemon, config.PidFile,
-                    config.LogLevel, config.LogFile,
-                    config.DumpDir,
-                    config.DownloaderClients, config.DownloaderTimeout,
-                    config.VerifySsl, config.CookieJarEnabled,
-                    config.MaxDepth)
-        return [config.KNOWN_SETTINGS[i.name] for i in settings]
+        return (config.Daemon, config.PidFile,
+                config.LogLevel, config.LogFile,
+                config.DumpDir,
+                config.DownloaderClients, config.DownloaderTimeout,
+                config.VerifySsl, config.CookieJarEnabled,
+                config.MaxDepth)
 
     def add_arguments(self, parser):
         parser.add_argument("path", metavar="PATH", nargs=1, help="project directory or spider file")

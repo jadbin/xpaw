@@ -18,12 +18,12 @@ def read_version():
 
 
 class PyTest(TestCommand):
-    user_options = []
+    def run_tests(self):
+        import pytest
 
-    def run(self):
-        import subprocess
-        errno = subprocess.call([sys.executable, '-m', 'pytest', 'tests'])
-        raise SystemExit(errno)
+        errno = pytest.main(['tests'])
+        sys.exit(errno)
+
 
 install_requires = [
     'aiohttp>=3.1.3,<4.0',
