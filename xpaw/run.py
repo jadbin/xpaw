@@ -42,7 +42,6 @@ def run_cluster(proj_dir=None, base_config=None):
         cluster.start()
     finally:
         _remove_pid_file(pid_file)
-        cluster.close()
 
 
 def _load_job_config(proj_dir=None, base_config=None):

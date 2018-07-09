@@ -25,7 +25,11 @@ log = logging.getLogger(__name__)
 class LocalCluster:
     def __init__(self, config):
         self.config = config
-        self.loop = asyncio.new_event_loop()
+        try:
+            self.loop = asyncio.get_event_loop()
+        except RuntimeError:
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
         self.event_bus = EventBus()
         self.stats_collector = self._new_object_from_cluster(self.config.get('stats_collector'), self)
         self.queue = self._new_object_from_cluster(self.config.get('queue'), self)
@@ -53,7 +57,7 @@ class LocalCluster:
     def start(self):
         if self._is_running:
             return
-        asyncio.ensure_future(self.event_bus.send(events.cluster_start), loop=self.loop)
+        self.loop.run_until_complete(self.event_bus.send(events.cluster_start))
         self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
         self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.loop)
         downloader_clients = self.config.getint("downloader_clients")
@@ -74,10 +78,6 @@ class LocalCluster:
             log.error("Fatal error occurred while cluster is running", exc_info=True)
         finally:
             log.info("Cluster is stopped")
-
-    def close(self):
-        if self.loop:
-            self.loop.close()
 
     def shutdown(self, sig=None):
         if sig is not None:
