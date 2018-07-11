@@ -49,26 +49,25 @@ class MiddlewareManager:
             self._close_handlers.insert(0, middleware.close)
 
     @staticmethod
-    def _priority_list_from_config(name, config, *, shift=.0):
+    def _priority_list_from_config(name, config):
         c = config.get(name)
         assert c is None or isinstance(c, (list, dict)), \
             "'{}' must be None, a list or a dict, got {}".format(name, type(c).__name__)
         if c is None:
             return {}
-        if isinstance(c, list):
-            d = {}
-            e = shift
+        d = {}
+        if isinstance(c, dict):
             for i in c:
-                if i not in d:
-                    d[i] = e
-                    e += shift
-            return d
-        return c
+                d[i] = (float(c[i]),)
+        elif isinstance(c, list):
+            for i in range(len(c)):
+                d[c[i]] = (0, i)
+        return d
 
     @classmethod
     def _make_component_list(cls, name, config):
-        c_base = cls._priority_list_from_config(name + '_base', config, shift=1e-5)
-        c = cls._priority_list_from_config(name, config, shift=1e-10)
+        c_base = cls._priority_list_from_config(name + '_base', config)
+        c = cls._priority_list_from_config(name, config)
         c_base.update(c)
         res = []
         for k, v in c_base.items():

@@ -211,10 +211,10 @@ class LocalCluster:
             except CancelledError:
                 raise
             except Exception as e:
-                if not isinstance(e, IgnoreItem):
-                    log.warning("Failed to handle item: %s", result, exc_info=True)
-                else:
+                if isinstance(e, IgnoreItem):
                     await self.event_bus.send(events.item_ignored, item=result)
+                else:
+                    log.warning("Failed to handle item: %s", result, exc_info=True)
             else:
                 await self.event_bus.send(events.item_scraped, item=result)
 
