@@ -8,7 +8,7 @@ from xpaw.config import Config
 from xpaw import events
 
 
-class MySpidermw:
+class FooSpidermw:
     def __init__(self, d):
         self.d = d
 
@@ -39,13 +39,13 @@ class MySpidermw:
         self.d['handle_error'] = (response, error)
 
 
-class MyEmptySpidermw:
+class DummySpidermw:
     """
     no method
     """
 
 
-class MyAsyncSpiderMw(MySpidermw):
+class FooAsyncSpiderMw(FooSpidermw):
     @classmethod
     def from_cluster(cls, cluster):
         return cls(cluster.config['data'])
@@ -79,9 +79,9 @@ class Cluster:
 
 async def test_spider_middleware_manager_handlers():
     data = {}
-    cluster = Cluster(spider_middlewares=[lambda d=data: MySpidermw(d),
-                                          MyEmptySpidermw,
-                                          MyAsyncSpiderMw],
+    cluster = Cluster(spider_middlewares=[lambda d=data: FooSpidermw(d),
+                                          DummySpidermw,
+                                          FooAsyncSpiderMw],
                       spider_middlewares_base=None,
                       data=data)
     spidermw = SpiderMiddlewareManager.from_cluster(cluster)
@@ -105,7 +105,7 @@ async def test_spider_middleware_manager_handlers():
     assert data['async_handle_error'][0] is response_obj and data['async_handle_error'][1] is error_obj
 
     data2 = {}
-    cluster2 = Cluster(spider_middlewares={lambda d=data2: MySpidermw(d): 0},
+    cluster2 = Cluster(spider_middlewares={lambda d=data2: FooSpidermw(d): 0},
                        spider_middlewares_base=None,
                        data=data2)
     spidermw2 = SpiderMiddlewareManager.from_cluster(cluster2)

@@ -6,7 +6,7 @@ from xpaw.eventbus import EventBus
 from xpaw import events
 
 
-class MyItemPipeline:
+class FooItemPipeline:
     def __init__(self, d):
         self.d = d
 
@@ -20,13 +20,13 @@ class MyItemPipeline:
         self.d['close'] = ''
 
 
-class MyEmptyItemPipeline:
+class DummyItemPipeline:
     """
     no method
     """
 
 
-class MyAsyncItemPipeline(MyItemPipeline):
+class FooAsyncItemPipeline(FooItemPipeline):
     @classmethod
     def from_cluster(cls, cluster):
         return cls(cluster.config['data'])
@@ -43,9 +43,9 @@ class Cluster:
 
 async def test_item_pipeline_manager():
     data = {}
-    cluster = Cluster(item_pipelines=[lambda d=data: MyItemPipeline(d),
-                                      MyEmptyItemPipeline,
-                                      MyAsyncItemPipeline],
+    cluster = Cluster(item_pipelines=[lambda d=data: FooItemPipeline(d),
+                                      DummyItemPipeline,
+                                      FooAsyncItemPipeline],
                       item_pipelines_base=None,
                       data=data)
     pipeline = ItemPipelineManager.from_cluster(cluster)
@@ -57,7 +57,7 @@ async def test_item_pipeline_manager():
     assert data['handle_item'] is obj and data['async_handle_item'] is obj
 
     data2 = {}
-    cluster2 = Cluster(item_pipelines={lambda d=data2: MyItemPipeline(d): 0},
+    cluster2 = Cluster(item_pipelines={lambda d=data2: FooItemPipeline(d): 0},
                        item_pipelines_base=None,
                        data=data2)
     pipeline2 = ItemPipelineManager.from_cluster(cluster2)

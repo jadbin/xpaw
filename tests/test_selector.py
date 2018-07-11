@@ -102,34 +102,34 @@ class TestCssSelector:
     def test_node_selection(self):
         s = Selector("""<html>
                 <body>
-                    <h1 class='header'><a href="http://httpbin.org/">httpbin</a></h1>
+                    <h1 class='header'><a href="http://example.com/">example</a></h1>
                     <ul>
-                        <li><a class='primary link' href="http://httpbin.org/">Index Page</a></li>
-                        <li><a class='link' href="http://httpbin.org/ip">Returns Origin IP</a></li>
+                        <li><a class='primary link' href="http://example.com/index">index</a></li>
+                        <li><a class='link' href="http://example.com/content">content</a></li>
                     </ul>
                 </body>
                 </html>""")
-        assert s.css('a')[0].text == 'httpbin'
-        assert s.css('a[class=link]')[0].text == 'Returns Origin IP'
-        assert s.css('a[class~=link]')[0].text == 'Index Page'
+        assert s.css('a')[0].text == 'example'
+        assert s.css('a[class=link]')[0].text == 'content'
+        assert s.css('a[class~=link]')[0].text == 'index'
         assert s.css('ul>a') == []
         assert len(s.css('li>a')) == 2
-        assert s.css('ul a')[0].text == 'Index Page'
-        assert s.css('ul').css('a')[0].text == 'Index Page'
-        assert s.css('li>a:not([class~=primary])')[0].text == 'Returns Origin IP'
+        assert s.css('ul a')[0].text == 'index'
+        assert s.css('ul').css('a')[0].text == 'index'
+        assert s.css('li>a:not([class~=primary])')[0].text == 'content'
 
     def test_attribute_selection(self):
         s = Selector("""<html>
                         <body>
-                            <h1 class='header'><a href="http://httpbin.org/">httpbin</a></h1>
+                            <h1 class='header'><a href="http://example.com/">example</a></h1>
                             <ul>
-                                <li><a class='primary link' href="http://httpbin.org/">Index Page</a></li>
-                                <li><a class='link' href="http://httpbin.org/ip">Returns Origin IP</a></li>
+                                <li><a class='primary link' href="http://example.com/">index</a></li>
+                                <li><a class='link' href="http://example.com/content">content</a></li>
                             </ul>
                         </body>
                         </html>""")
         assert s.css('h1').xpath('@class')[0].text == 'header'
-        assert s.css('li>a[class=link]').xpath('@href')[0].text == 'http://httpbin.org/ip'
+        assert s.css('li>a[class=link]').xpath('@href')[0].text == 'http://example.com/content'
         assert s.css('h1').attr('class')[0] == 'header'
         assert s.css('h1')[0].attr('class') == 'header'
         assert s.css('li>a').attr('class')[0] == 'primary link'

@@ -5,15 +5,15 @@ import pytest
 from xpaw.item import Item, Field
 
 
-class MyItem(Item):
+class FooItem(Item):
     f1 = Field()
     f2 = Field()
 
 
 def test_item():
     with pytest.raises(KeyError):
-        MyItem(f3='v3')
-    item = MyItem(f1='v1')
+        FooItem(f3='v3')
+    item = FooItem(f1='v1')
     assert len(item) == 1 and 'f1' in item
     assert item['f1'] == 'v1'
     item['f2'] = 'v2'

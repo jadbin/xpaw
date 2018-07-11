@@ -24,7 +24,7 @@ class Cluster:
 class TestImitatingProxyMiddleware:
     def test_handle_request(self):
         mw = ImitatingProxyMiddleware.from_cluster(Cluster(imitating_proxy_enabled=True))
-        req = HttpRequest("http://httpbin.org")
+        req = HttpRequest("http://example.com")
         mw.handle_request(req)
         assert re.search(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", req.headers["X-Forwarded-For"])
         assert req.headers['Via'] == '{} xpaw'.format(__version__)
@@ -39,7 +39,7 @@ class TestDefaultHeadersMiddleware:
         default_headers = {"User-Agent": "xpaw", "Connection": "keep-alive"}
         req_headers = {"User-Agent": "xpaw-test", "Connection": "keep-alive"}
         mw = DefaultHeadersMiddleware.from_cluster(Cluster(default_headers=default_headers))
-        req = HttpRequest("http://httpbin.org", headers={"User-Agent": "xpaw-test"})
+        req = HttpRequest("http://example.com", headers={"User-Agent": "xpaw-test"})
         mw.handle_request(req)
         assert req_headers == req.headers
 
@@ -62,7 +62,7 @@ class TestProxyMiddleware:
     def test_proxy_str(self, loop):
         proxy = '153.10.32.18:3128'
         mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy, loop=loop))
-        req = HttpRequest(URL("http://httpbin.org"))
+        req = HttpRequest(URL("http://example.com"))
         mw.handle_request(req)
         assert req.meta['proxy'] == '153.10.32.18:3128'
 
@@ -70,12 +70,12 @@ class TestProxyMiddleware:
         monkeypatch.setattr(random, 'choice', Random().choice)
         proxy_list = ["105.12.103.232:3128", "16.82.3.20:3128"]
         mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list, loop=loop))
-        req = HttpRequest("http://httpbin.org")
+        req = HttpRequest("http://example.com")
         for i in range(len(proxy_list)):
             mw.handle_request(req)
             assert req.meta['proxy'] == proxy_list[i]
 
-        req2 = HttpRequest('ftp://httpbin.org')
+        req2 = HttpRequest('ftp://example.com')
         mw.handle_request(req2)
         assert 'proxy' not in req2.meta
 
@@ -84,7 +84,7 @@ class TestProxyMiddleware:
         proxy_dict = {'http': ['132.39.13.100:3128', '18.39.9.10:3128'], 'https': '177.13.233.2:3128'}
         mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_dict, loop=loop))
         req_list = []
-        for i in ['http://httpbin.org', 'https://httpbin.org', 'http://httpbin.org', 'http://httpbin.org']:
+        for i in ['http://example.com', 'https://example.com', 'http://example.com', 'http://example.com']:
             req_list.append(HttpRequest(i))
         res = ['132.39.13.100:3128', '177.13.233.2:3128', '132.39.13.100:3128', '18.39.9.10:3128']
         for i in range(len(req_list)):
@@ -99,29 +99,29 @@ class TestProxyMiddleware:
 class TestRetryMiddleware:
     def test_handle_reponse(self):
         mw = RetryMiddleware.from_cluster(Cluster(retry_http_status=(500,)))
-        req = HttpRequest("http://httpbin.org")
-        resp = HttpResponse(URL("http://httpbin.org"), 502)
+        req = HttpRequest("http://example.com")
+        resp = HttpResponse(URL("http://example.com"), 502)
         assert mw.handle_response(req, resp) is None
-        req2 = HttpRequest("http://httpbin.org")
-        resp2 = HttpResponse(URL("http://httpbin.org"), 500)
+        req2 = HttpRequest("http://example.com")
+        resp2 = HttpResponse(URL("http://example.com"), 500)
         retry_req2 = mw.handle_response(req2, resp2)
         assert retry_req2.meta['retry_times'] == 1
         assert str(retry_req2.url) == str(req2.url)
-        req3 = HttpRequest("http://httpbin.org")
-        resp3 = HttpResponse(URL("http://httpbin.org"), 500)
+        req3 = HttpRequest("http://example.com")
+        resp3 = HttpResponse(URL("http://example.com"), 500)
         req3.meta['retry_times'] = 2
         retry_req3 = mw.handle_response(req3, resp3)
         assert retry_req3.meta['retry_times'] == 3
         assert str(retry_req3.url) == str(req3.url)
-        req4 = HttpRequest("http://httpbin.org")
+        req4 = HttpRequest("http://example.com")
         req4.meta['retry_times'] = 3
-        resp4 = HttpResponse(URL("http://httpbin.org"), 500)
+        resp4 = HttpResponse(URL("http://example.com"), 500)
         with pytest.raises(IgnoreRequest):
             mw.handle_response(req4, resp4)
 
     def test_handle_error(self):
         mw = RetryMiddleware.from_cluster(Cluster())
-        req = HttpRequest("http://httpbin.org")
+        req = HttpRequest("http://example.com")
         err = ValueError()
         assert mw.handle_error(req, err) is None
         err2 = NetworkError()
@@ -132,7 +132,7 @@ class TestRetryMiddleware:
         max_retry_times = 2
         mw = RetryMiddleware.from_cluster(Cluster(max_retry_times=max_retry_times,
                                                   retry_http_status=(500,)))
-        req = HttpRequest("http://httpbin.org")
+        req = HttpRequest("http://example.com")
         for i in range(max_retry_times):
             retry_req = mw.retry(req, "")
             assert isinstance(retry_req, HttpRequest) and str(retry_req.url) == str(req.url)
@@ -259,29 +259,29 @@ class TestUserAgentMiddleware:
     def test_static_user_agent(self):
         user_agent = 'test user agent'
         mw = UserAgentMiddleware.from_cluster(Cluster(user_agent=user_agent))
-        req = HttpRequest('http://httpbin.org')
+        req = HttpRequest('http://example.com')
         mw.handle_request(req)
         assert req.headers.get('User-Agent') == user_agent
 
     def test_gen_user_agent(self):
         mw = UserAgentMiddleware.from_cluster(Cluster(user_agent=':desktop,chrome'))
-        req = HttpRequest('http://httpbin.org')
+        req = HttpRequest('http://example.com')
         mw.handle_request(req)
         assert 'Chrome' in req.headers.get('User-Agent')
 
         mw2 = UserAgentMiddleware.from_cluster(Cluster(user_agent=':mobile,chrome'))
-        req2 = HttpRequest('http://httpbin.org')
+        req2 = HttpRequest('http://example.com')
         mw2.handle_request(req2)
         assert 'CriOS' in req2.headers.get('User-Agent') and 'Mobile' in req2.headers.get('User-Agent')
 
-    def test_unknown_user_agent_desciprtion(self):
+    def test_unknown_user_agent_description(self):
         with pytest.raises(ValueError):
             UserAgentMiddleware.from_cluster(Cluster(user_agent=':unknown'))
 
     def test_random_user_agent(self):
         mw = UserAgentMiddleware.from_cluster(Cluster(random_user_agent=True))
-        req = HttpRequest('http://httpbin.org')
-        req2 = HttpRequest('http://httpbin.org')
+        req = HttpRequest('http://example.com')
+        req2 = HttpRequest('http://example.com')
         mw.handle_request(req)
         mw.handle_request(req2)
         assert 'User-Agent' in req.headers
@@ -291,7 +291,7 @@ class TestUserAgentMiddleware:
     def test_random_user_agent2(self):
         mw = UserAgentMiddleware.from_cluster(Cluster(user_agent=':mobile', random_user_agent=True))
         for i in range(30):
-            req = HttpRequest('http://httpbin.org')
+            req = HttpRequest('http://example.com')
             mw.handle_request(req)
             assert 'User-Agent' in req.headers
             assert 'CriOS' in req.headers.get('User-Agent') and 'Mobile' in req.headers.get('User-Agent')

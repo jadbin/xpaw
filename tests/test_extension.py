@@ -7,7 +7,7 @@ from xpaw.eventbus import EventBus
 from xpaw import events
 
 
-class MyExtension:
+class FooExtension:
     def __init__(self, d):
         self.d = d
 
@@ -18,7 +18,7 @@ class MyExtension:
         self.d['close'] = ''
 
 
-class MyEmptyExtension:
+class DummyExtension:
     """
     no method
     """
@@ -32,8 +32,8 @@ class Cluster:
 
 async def test_extension_manager():
     data = {}
-    cluster = Cluster(extensions=[lambda d=data: MyExtension(d),
-                                  MyEmptyExtension],
+    cluster = Cluster(extensions=[lambda d=data: FooExtension(d),
+                                  DummyExtension],
                       extensions_base=None,
                       data=data)
     extension = ExtensionManager.from_cluster(cluster)
@@ -42,7 +42,7 @@ async def test_extension_manager():
     assert 'open' in data and 'close' in data
 
     data2 = {}
-    cluster2 = Cluster(extensions={lambda d=data2: MyExtension(d): 0},
+    cluster2 = Cluster(extensions={lambda d=data2: FooExtension(d): 0},
                        extensions_base=None,
                        data=data2)
     extension2 = ExtensionManager.from_cluster(cluster2)

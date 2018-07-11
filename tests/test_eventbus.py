@@ -8,7 +8,7 @@ event1 = object()
 event2 = object()
 
 
-class MyClass:
+class FooClass:
     def __init__(self):
         self.count1 = 0
         self.count2 = 0
@@ -48,13 +48,13 @@ def test_raise_value_error():
     with pytest.raises(ValueError):
         eventbus.subscribe(func, event1)
     with pytest.raises(ValueError):
-        eventbus.subscribe(MyClass().staticmethod, event1)
-    eventbus.subscribe(MyClass().method, event1)
+        eventbus.subscribe(FooClass().staticmethod, event1)
+    eventbus.subscribe(FooClass().method, event1)
 
 
 async def test_subscribe():
     eventbus = EventBus()
-    obj = MyClass()
+    obj = FooClass()
     eventbus.subscribe(obj.method1, event1)
     eventbus.subscribe(obj.method2, event2)
     await eventbus.send(event1)
@@ -65,7 +65,7 @@ async def test_subscribe():
 
 async def test_subscribe_multi_times():
     eventbus = EventBus()
-    obj = MyClass()
+    obj = FooClass()
     eventbus.subscribe(obj.method1, event1)
     eventbus.subscribe(obj.method1, event1)
     await eventbus.send(event1)
@@ -74,7 +74,7 @@ async def test_subscribe_multi_times():
 
 async def test_unsubscribe():
     eventbus = EventBus()
-    obj = MyClass()
+    obj = FooClass()
     eventbus.subscribe(obj.method1, event1)
     await eventbus.send(event1)
     assert obj.count1 == 1
@@ -85,7 +85,7 @@ async def test_unsubscribe():
 
 async def test_unsubscribe_multi_times():
     eventbus = EventBus()
-    obj = MyClass()
+    obj = FooClass()
     eventbus.subscribe(obj.method1, event1)
     eventbus.unsubscribe(obj.method1, event1)
     eventbus.unsubscribe(obj.method1, event1)
@@ -93,7 +93,7 @@ async def test_unsubscribe_multi_times():
 
 async def test_send_with_parameters():
     eventbus = EventBus()
-    obj = MyClass()
+    obj = FooClass()
     eventbus.subscribe(obj.method_set_value, event1)
     await eventbus.send(event1, value=-1)
     assert obj.value == -1
@@ -101,7 +101,7 @@ async def test_send_with_parameters():
 
 async def test_send_unknown_event():
     eventbus = EventBus()
-    obj = MyClass()
+    obj = FooClass()
     await eventbus.send(event1)
     eventbus.subscribe(obj.method1, event1)
     await eventbus.send(event2)
@@ -110,7 +110,7 @@ async def test_send_unknown_event():
 
 async def test_unknown_unsubscribe():
     eventbus = EventBus()
-    obj = MyClass()
+    obj = FooClass()
     eventbus.subscribe(obj.method1, event1)
     eventbus.unsubscribe(obj.method1, event2)
     eventbus.unsubscribe(obj.method2, event1)
@@ -121,15 +121,15 @@ async def test_unknown_unsubscribe():
 
 async def test_raise_error_in_callback():
     eventbus = EventBus()
-    obj = MyClass()
+    obj = FooClass()
     eventbus.subscribe(obj.method_raise_error, event1)
     await eventbus.send(event1)
 
 
 async def test_del_weak_ref():
     eventbus = EventBus()
-    obj1 = MyClass()
-    obj2 = MyClass()
+    obj1 = FooClass()
+    obj2 = FooClass()
     eventbus.subscribe(obj1.method1, event1)
     eventbus.subscribe(obj2.method1, event1)
     await eventbus.send(event1)

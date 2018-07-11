@@ -25,40 +25,55 @@ async def test_cookies(loop):
     assert len(cookies) == 1 and cookies.get("seed") == seed
 
 
-async def test_basic_auth(loop):
-    downloader = Downloader(timeout=60, loop=loop)
+async def make_auth_server(aiohttp_server, login=None, password=None):
+    async def process(request):
+        auth_str = request.headers.get('Authorization')
+        if auth_str is None:
+            if login is not None:
+                return web.Response(status=401)
+        else:
+            auth = BasicAuth.decode(auth_str)
+            if login != auth.login or password != auth.password:
+                return web.Response(status=401)
+        return web.Response(status=200)
 
-    def validate_response(resp, login):
-        assert resp.status == 200
-        data = json.loads(resp.body.decode('utf-8'))
-        assert data['authenticated'] is True and data['user'] == login
+    app = web.Application()
+    app.router.add_route("GET", "/{tail:.*}", process)
+    server = await aiohttp_server(app)
+    return server
+
+
+async def test_basic_auth(aiohttp_server, loop):
+    downloader = Downloader(loop=loop)
+    server = await make_auth_server(aiohttp_server, login='login', password='pass')
 
     async def no_auth():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/basic-auth/login/pass"))
+        req = HttpRequest("http://{}:{}/basic-auth/login/pass".format(server.host, server.port))
+        resp = await downloader.download(req)
         assert resp.status == 401
 
     async def str_auth():
-        req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
+        req = HttpRequest("http://{}:{}/basic-auth/login/pass".format(server.host, server.port))
         req.meta['auth'] = 'login:pass'
         resp = await downloader.download(req)
-        validate_response(resp, 'login')
+        assert resp.status == 200
 
     async def tuple_auth():
-        req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
+        req = HttpRequest("http://{}:{}/basic-auth/login/pass".format(server.host, server.port))
         req.meta['auth'] = ('login', 'pass')
         resp = await downloader.download(req)
-        validate_response(resp, 'login')
+        assert resp.status == 200
 
     async def basic_auth():
-        req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
+        req = HttpRequest("http://{}:{}/basic-auth/login/pass".format(server.host, server.port))
         req.meta['auth'] = BasicAuth('login', 'pass')
         resp = await downloader.download(req)
-        validate_response(resp, 'login')
+        assert resp.status == 200
 
     async def url_basic_auth():
         resp = await downloader.download(
-            HttpRequest("http://login:pass@httpbin.org/basic-auth/login/pass"))
-        validate_response(resp, 'login')
+            HttpRequest("http://login:pass@{}:{}/basic-auth/login/pass".format(server.host, server.port)))
+        assert resp.status == 200
 
     await no_auth()
     await str_auth()
@@ -67,46 +82,54 @@ async def test_basic_auth(loop):
     await url_basic_auth()
 
 
-async def test_params(loop):
-    downloader = Downloader(timeout=60, loop=loop)
+async def make_params_server(aiohttp_server):
+    async def process(request):
+        d = {}
+        for i in set(request.rel_url.query.keys()):
+            v = request.rel_url.query.getall(i)
+            if len(v) == 1:
+                d[i] = v[0]
+            else:
+                d[i] = v
+        return web.json_response(d, status=200)
 
-    def validate_response(resp, d):
-        assert resp.status == 200
-        data = json.loads(resp.body.decode('utf-8'))
-        assert data['args'] == d
+    app = web.Application()
+    app.router.add_route("GET", "/{tail:.*}", process)
+    server = await aiohttp_server(app)
+    return server
+
+
+async def test_params(aiohttp_server, loop):
+    server = await make_params_server(aiohttp_server)
+    downloader = Downloader(loop=loop)
+    args = {'key': 'value', 'none': '', 'list': ['item1', 'item2']}
 
     async def query_params():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/get?list=2&k=v&none=&list=1"))
-        validate_response(resp, {'k': 'v', 'none': '', 'list': ['2', '1']})
+        url = "http://{}:{}/?key=value&none=&list=item1&list=item2".format(server.host, server.port)
+        resp = await downloader.download(HttpRequest(url))
+        assert args == json.loads(resp.text)
 
     async def dict_params():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/get",
-                                                     params={'k': 'v', 'none': '', 'list': [2, 1]}))
-        validate_response(resp, {'k': 'v', 'none': '', 'list': ['2', '1']})
+        resp = await downloader.download(HttpRequest("http://{}:{}/".format(server.host, server.port),
+                                                     params={'key': 'value', 'none': '', 'list': ['item1', 'item2']}))
+        assert args == json.loads(resp.text)
 
     async def multi_dict_params():
         params = MultiDict()
-        params.add('list', 2)
-        params.add('k', 'v')
+        params.add('key', 'value')
         params.add('none', '')
-        params.add('list', 1)
-        resp = await downloader.download(HttpRequest("http://httpbin.org/get",
+        params.add('list', 'item1')
+        params.add('list', 'item2')
+        resp = await downloader.download(HttpRequest("http://{}:{}/".format(server.host, server.port),
                                                      params=params))
-        validate_response(resp, {'k': 'v', 'none': '', 'list': ['2', '1']})
-
-    async def query_and_dict_params():
-        req = HttpRequest("http://httpbin.org/get?list=2&k=v")
-        req.params = {'none': '', 'list': [1]}
-        resp = await downloader.download(req)
-        validate_response(resp, {'k': 'v', 'none': '', 'list': ['2', '1']})
+        assert args == json.loads(resp.text)
 
     await query_params()
     await dict_params()
     await multi_dict_params()
-    await query_and_dict_params()
 
 
-async def make_proxy_server(aiohttp_server, login=None, password=None):
+async def make_proxy_auth_server(aiohttp_server, login=None, password=None):
     async def process(request):
         auth_str = request.headers.get('Proxy-Authorization')
         if auth_str is None:
@@ -125,48 +148,48 @@ async def make_proxy_server(aiohttp_server, login=None, password=None):
 
 
 async def test_proxy(aiohttp_server, loop):
-    server = await make_proxy_server(aiohttp_server)
-    downloader = Downloader(timeout=60, loop=loop)
+    server = await make_proxy_auth_server(aiohttp_server)
+    downloader = Downloader(loop=loop)
     seed = str(random.randint(0, 2147483647))
-    req = HttpRequest('http://httpbin.org/get?seed={}'.format(seed))
+    req = HttpRequest('http://example.com/?seed={}'.format(seed))
     req.meta['proxy'] = '{}:{}'.format(server.host, server.port)
     resp = await downloader.download(req)
     assert resp.text == req.url
 
 
 async def test_proxy_auth(aiohttp_server, loop):
-    downloader = Downloader(timeout=60, loop=loop)
-    server = await make_proxy_server(aiohttp_server, login='login', password='pass')
+    downloader = Downloader(loop=loop)
+    server = await make_proxy_auth_server(aiohttp_server, login='login', password='pass')
 
     async def no_auth():
-        req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
+        req = HttpRequest("http://example.com/basic-auth/login/pass")
         req.meta['proxy'] = 'http://{}:{}'.format(server.host, server.port)
         resp = await downloader.download(req)
         assert resp.status == 401
 
     async def str_auth():
-        req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
+        req = HttpRequest("http://example.com/basic-auth/login/pass")
         req.meta['proxy'] = 'http://{}:{}'.format(server.host, server.port)
         req.meta['proxy_auth'] = 'login:pass'
         resp = await downloader.download(req)
         assert resp.status == 200
 
     async def tuple_auth():
-        req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
+        req = HttpRequest("http://example.com/basic-auth/login/pass")
         req.meta['proxy'] = 'http://{}:{}'.format(server.host, server.port)
         req.meta['proxy_auth'] = ('login', 'pass')
         resp = await downloader.download(req)
         assert resp.status == 200
 
     async def basic_auth():
-        req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
+        req = HttpRequest("http://example.com/basic-auth/login/pass")
         req.meta['proxy'] = 'http://{}:{}'.format(server.host, server.port)
         req.meta['proxy_auth'] = BasicAuth('login', 'pass')
         resp = await downloader.download(req)
         assert resp.status == 200
 
     async def url_basic_auth():
-        req = HttpRequest("http://httpbin.org/basic-auth/login/pass")
+        req = HttpRequest("http://example.com/basic-auth/login/pass")
         req.meta['proxy'] = 'http://login:pass@{}:{}'.format(server.host, server.port)
         resp = await downloader.download(req)
         assert resp.status == 200
@@ -178,56 +201,91 @@ async def test_proxy_auth(aiohttp_server, loop):
     await url_basic_auth()
 
 
-async def test_headers(loop):
-    downloader = Downloader(timeout=60, loop=loop)
-    headers = {'user-agent': 'xpaw', 'X-MY-HEADER': 'xpaw-HEADER'}
-    resp = await downloader.download(HttpRequest("http://httpbin.org/get",
+async def make_headers_server(aiohttp_server):
+    async def process(request):
+        return web.json_response({'headers': dict(request.headers)})
+
+    app = web.Application()
+    app.router.add_route("GET", "/{tail:.*}", process)
+    server = await aiohttp_server(app)
+    return server
+
+
+async def test_headers(aiohttp_server, loop):
+    server = await make_headers_server(aiohttp_server)
+    downloader = Downloader(loop=loop)
+    headers = {'User-Agent': 'xpaw', 'X-My-Header': 'my-header'}
+    resp = await downloader.download(HttpRequest("http://{}:{}".format(server.host, server.port),
                                                  headers=headers))
     assert resp.status == 200
     data = json.loads(resp.body.decode('utf-8'))['headers']
     assert 'User-Agent' in data and data['User-Agent'] == 'xpaw'
-    assert 'X-MY-HEADER' not in data
-    assert 'X-My-Header' in data and data['X-My-Header'] == 'xpaw-HEADER'
+    assert 'X-My-Header' in data and data['X-My-Header'] == 'my-header'
 
 
-async def test_post_data(loop):
-    downloader = Downloader(timeout=60, loop=loop)
+async def make_post_server(aiohttp_server):
+    async def process(request):
+        data = await request.read()
+        return web.Response(body=data, status=200)
+
+    async def process_json(request):
+        data = await request.json()
+        return web.json_response(data, status=200)
+
+    async def process_form(request):
+        data = await request.post()
+        d = {}
+        for i in set(data.keys()):
+            v = data.getall(i)
+            if len(v) == 1:
+                d[i] = v[0]
+            else:
+                d[i] = v
+        return web.json_response(d, status=200)
+
+    app = web.Application()
+    app.router.add_route("POST", "/", process)
+    app.router.add_route("POST", "/json", process_json)
+    app.router.add_route("POST", "/form", process_form)
+    server = await aiohttp_server(app)
+    return server
+
+
+async def test_body(aiohttp_server, loop):
+    server = await make_post_server(aiohttp_server)
+    downloader = Downloader(loop=loop)
 
     async def post_json():
-        json_data = {'key': 'value', 'list': [1, 2], 'obj': {'name': 'my obj'}}
-        resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=json_data))
+        json_data = {'key': 'value', 'none': None, 'list': ['item1', 'item2'], 'object': {'name': 'object'}}
+        resp = await downloader.download(HttpRequest('http://{}:{}/json'.format(server.host, server.port),
+                                                     'POST', body=json_data))
         assert resp.status == 200
-        body = json.loads(resp.body.decode('utf-8'))
-        headers = body['headers']
-        assert 'Content-Type' in headers and headers['Content-Type'] == 'application/json'
-        assert body['json'] == json_data
+        data = json.loads(resp.body.decode())
+        assert data == json_data
 
     async def post_form():
-        form_data = {'key': 'value', 'list': ['1', '2']}
-        resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=FormData(form_data)))
+        form_data = {'key': 'value', 'none': '', 'list': ['item1', 'item2']}
+        resp = await downloader.download(HttpRequest('http://{}:{}/form'.format(server.host, server.port),
+                                                     'POST', body=FormData(form_data)))
         assert resp.status == 200
-        body = json.loads(resp.body.decode('utf-8'))
-        headers = body['headers']
-        assert 'Content-Type' in headers and headers['Content-Type'] == 'application/x-www-form-urlencoded'
-        assert body['form'] == form_data
+        data = json.loads(resp.body.decode())
+        assert data == form_data
 
     async def post_str():
         str_data = 'str data: 字符串数据'
-        resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST', body=str_data))
+        resp = await downloader.download(HttpRequest('http://{}:{}/'.format(server.host, server.port),
+                                                     'POST', body=str_data))
         assert resp.status == 200
-        body = json.loads(resp.body.decode('utf-8'))
-        assert body['data'] == str_data
+        body = resp.body.decode()
+        assert body == str_data
 
     async def post_bytes():
         bytes_data = 'bytes data: 字节数据'
-        resp = await downloader.download(HttpRequest('http://httpbin.org/post', 'POST',
-                                                     body=bytes_data.encode('utf-8')))
+        resp = await downloader.download(HttpRequest('http://{}:{}/'.format(server.host, server.port),
+                                                     'POST', body=bytes_data.encode()))
         assert resp.status == 200
-        body = json.loads(resp.body.decode('utf-8'))
-        headers = body['headers']
-        data = body['data']
-        assert 'Content-Type' in headers and headers['Content-Type'] == 'application/octet-stream'
-        assert data == bytes_data
+        body = resp.body.decode()
+        assert body == bytes_data
 
     await post_json()
     await post_form()
@@ -235,7 +293,7 @@ async def test_post_data(loop):
     await post_bytes()
 
 
-class MyDownloadermw:
+class FooDownloadermw:
     def __init__(self, d):
         self.d = d
 
@@ -255,13 +313,13 @@ class MyDownloadermw:
         self.d['handle_error'] = (request, error)
 
 
-class MyEmptyDownloadermw:
+class DummyDownloadermw:
     """
     no method
     """
 
 
-class MyAsyncDownloaderMw(MyDownloadermw):
+class FooAsyncDownloaderMw(FooDownloadermw):
     @classmethod
     def from_cluster(cls, cluster):
         return cls(cluster.config['data'])
@@ -284,9 +342,9 @@ class Cluster:
 
 async def test_downloader_middleware_manager_handlers():
     data = {}
-    cluster = Cluster(downloader_middlewares=[lambda d=data: MyDownloadermw(d),
-                                              MyEmptyDownloadermw,
-                                              MyAsyncDownloaderMw],
+    cluster = Cluster(downloader_middlewares=[lambda d=data: FooDownloadermw(d),
+                                              DummyDownloadermw,
+                                              FooAsyncDownloaderMw],
                       downloader_middlewares_base=None,
                       data=data)
     downloadermw = DownloaderMiddlewareManager.from_cluster(cluster)
@@ -307,7 +365,7 @@ async def test_downloader_middleware_manager_handlers():
     assert data['async_handle_error'][0] is request_obj and data['async_handle_error'][1] is error_obj
 
     data2 = {}
-    cluster2 = Cluster(downloader_middlewares={lambda d=data2: MyDownloadermw(d): 0},
+    cluster2 = Cluster(downloader_middlewares={lambda d=data2: FooDownloadermw(d): 0},
                        downloader_middlewares_base=None,
                        data=data2)
     downloadermw2 = DownloaderMiddlewareManager.from_cluster(cluster2)
