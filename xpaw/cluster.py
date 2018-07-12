@@ -74,8 +74,9 @@ class LocalCluster:
         log.info("Cluster is running")
         try:
             self.loop.run_forever()
-        except Exception:
-            log.error("Fatal error occurred while cluster is running", exc_info=True)
+        except Exception as e:
+            log.error("Fatal error occurred while cluster is running: %s", e)
+            raise
         finally:
             log.info("Cluster is stopped")
 
@@ -163,8 +164,8 @@ class LocalCluster:
                     await asyncio.sleep(tick - t, loop=self.loop)
         except CancelledError:
             raise
-        except Exception:
-            log.warning("Failed to generate start requests", exc_info=True)
+        except Exception as e:
+            log.warning("Failed to generate start requests: %s", e)
 
     async def _pull_requests(self, coro_id):
         while True:
@@ -177,7 +178,7 @@ class LocalCluster:
                 raise
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
-                    log.warning("Failed to make the request %s", req, exc_info=True)
+                    log.warning("Failed to make the request %s: %s", req, e)
                 await self.spider.request_error(req, e)
             else:
                 await self._handle_response(req, resp)
@@ -199,8 +200,8 @@ class LocalCluster:
                     await self._handle_result(r)
             except CancelledError:
                 raise
-            except Exception:
-                log.warning("Failed to parse the response %s", req, exc_info=True)
+            except Exception as e:
+                log.warning("Failed to parse the response %s: %s", req, e)
 
     async def _handle_result(self, result):
         if isinstance(result, HttpRequest):
@@ -214,7 +215,7 @@ class LocalCluster:
                 if isinstance(e, IgnoreItem):
                     await self.event_bus.send(events.item_ignored, item=result)
                 else:
-                    log.warning("Failed to handle item: %s", result, exc_info=True)
+                    log.warning("Failed to handle item: %s", e)
             else:
                 await self.event_bus.send(events.item_scraped, item=result)
 

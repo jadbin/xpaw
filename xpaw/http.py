@@ -87,7 +87,6 @@ class HttpResponse:
     def meta(self):
         if self.request:
             return self.request.meta
-        return None
 
     def copy(self):
         return self.replace()

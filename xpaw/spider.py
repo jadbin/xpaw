@@ -50,8 +50,8 @@ class Spider:
                     await r
         except CancelledError:
             raise
-        except Exception:
-            log.warning("Error occurred in error callback", exc_info=True)
+        except Exception as e:
+            log.warning("Error occurred in error callback: %s", e)
 
 
 def _isiterable(obj):

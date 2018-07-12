@@ -34,8 +34,8 @@ def run_cluster(proj_dir=None, base_config=None):
             f.write(str(os.getpid()))
     try:
         cluster = LocalCluster(config)
-    except Exception:
-        log.error('Fatal error occurred when create cluster', exc_info=True)
+    except Exception as e:
+        log.error('Fatal error occurred when create cluster: %s', e)
         _remove_pid_file(pid_file)
         raise
     try:
@@ -66,5 +66,5 @@ def _remove_pid_file(pid_file):
     if pid_file is not None:
         try:
             os.remove(pid_file)
-        except Exception:
-            pass
+        except Exception as e:
+            log.warning('Cannot remove PID file %s: %s', pid_file, e)
