@@ -15,7 +15,7 @@ def test_item():
         FooItem(f3='v3')
     item = FooItem(f1='v1')
     assert len(item) == 1 and 'f1' in item
-    assert item['f1'] == 'v1'
+    assert item['f1'] == 'v1' and item['f2'] is None
     item['f2'] = 'v2'
     assert item.keys() == {'f1', 'f2'}
     s = {}
