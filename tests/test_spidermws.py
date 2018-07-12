@@ -21,7 +21,7 @@ class TestDepthMiddleware:
                     self.meta["depth"] = depth
 
         mw = DepthMiddleware.from_cluster(Cluster(max_depth=1))
-        req = HttpRequest("http://python.org", "GET")
+        req = HttpRequest("http://python.org/", "GET")
         item = Item()
         res = [i for i in mw.handle_output(R(), [req, item])]
         assert res == [req, item] and req.meta['depth'] == 1
@@ -32,7 +32,7 @@ class TestDepthMiddleware:
 
     def test_handle_start_requests(self):
         mw = DepthMiddleware.from_cluster(Cluster())
-        req = HttpRequest("http://python.org", "GET")
+        req = HttpRequest("http://python.org/", "GET")
         res = [i for i in mw.handle_start_requests([req])]
         for r in res:
             assert r.meta.get('depth') == 0
