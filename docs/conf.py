@@ -47,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'xpaw'
-copyright = '2016-2017, jadbin'
+copyright = '2016-2018, jadbin'
 author = 'jadbin'
 
 # The version info for the project you're documenting, acts as replacement for

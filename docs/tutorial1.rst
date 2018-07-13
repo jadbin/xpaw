@@ -220,8 +220,9 @@ Storing Data
 Running Spider
 --------------
 
-我们通过xpaw内置的 ``run_spider`` 函数来运行spider，函数的第一个参数为spider类，运行时相关参数通过关键字参数进行配置。
+我们通过xpaw内置的 ``run_spider`` 函数来运行spider，函数的第一个参数为spider类，相关配置可以通过关键词参数的形式进行设置。
 例如这里我们通过 ``log_level="DEBUG"`` 设定日志的级别为 ``DEBUG`` 。
+具体的配置项可参考 :ref:`settings` 。
 
 .. code-block:: python
 

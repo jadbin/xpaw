@@ -5,7 +5,7 @@ Settings
 
 爬虫相关配置项可以通过如下几种方式设定:
 
-- **命令行** - 直接在命令行中设定的配置项。
+- **命令行** - 直接在命令行中设定的配置项。 ``run_spider`` 、 ``run_crawler`` 中传递的关键字参数同样视为命令行参数。
 - **命令行配置文件** - 在命令行中通过参数 ``-c, --config`` 设定的配置文件中的配置项。
 - **工程配置文件** - 在工程的配置文件 ``config.py`` 中设定的配置项。
 - **默认配置** - 默认的配置项。
@@ -23,9 +23,19 @@ daemon
 ^^^^^^
 
 - ``-d, --daemon``
-- 默认值： ``False``
+- Default: ``False``
 
 是否在后台运行。
+
+.. _pid_file:
+
+pid_file
+^^^^^^^^
+
+- ``--pid-file``
+- Default: ``None``
+
+保存爬虫进程PID的文件。
 
 Logging
 -------
@@ -154,15 +164,6 @@ proxy
 
 设置HTTP请求的代理，可以为单个代理，也可以为多个代理的list。
 
-.. _proxy_provider:
-
-proxy_provider
-^^^^^^^^^^^^^^
-
-- Default: ``None``
-
-设置提供HTTP代理列表的地址，访问该地址可以得到json格式的HTTP代理列表。
-
 Retry
 -----
 
@@ -173,16 +174,116 @@ retry_enabled
 
 - Default: ``True``
 
-设定是否重试失败的HTTP请求。
+是否重试失败的HTTP请求。
+
+.. _max_retry_times:
+
+max_retry_times
+^^^^^^^^^^^^^^^
+
+- Default: ``3``
+
+最大重试次数。
+
+.. _retry_http_status:
+
+retry_http_status
+^^^^^^^^^^^^^^^^^
+
+- Default: ``(500, 502, 503, 504, 408, 429)``
+
+进行重试的HTTP状态码。
+
+可以用 ``x`` 表示通配，例如 ``20x`` 表示 ``200`` 、 ``202`` 等所有 ``20`` 开头的状态码， ``4xx`` 表示所有 ``4`` 开头的状态码。
+
+前面加 ``!`` 表示取反，例如 ``!2xx`` 表示所有不是以 ``2`` 开头的状态码。
 
 Speed Limit
 -----------
 
+.. _speed_limit_enabled:
+
+speed_limit_enabled
+^^^^^^^^^^^^^^^^^^^
+
+- Default: ``False``
+
+是否开启限速。
+
+.. _speed_limit_rate:
+
+speed_limit_rate
+^^^^^^^^^^^^^^^^
+
+- Default: ``1``
+
+下载速率，单位：请求/秒。
+
+.. _speed_limit_burst:
+
+speed_limit_burst
+^^^^^^^^^^^^^^^^^
+
+- Default: ``1``
+
+下载时最大并发量。
 
 Spider Behaviour
 ----------------
 
+.. _max_depth:
+
+max_depth
+^^^^^^^^^
+
+- Default: ``None``
+
+爬虫的爬取的最大深度， ``None`` 表示没有限制。
 
 Components
 ----------
 
+.. _spider_setting:
+
+spider
+^^^^^^
+
+- Default: ``None``
+
+使用的爬虫类或爬虫类路径。
+
+.. _downloader_middlewares_setting:
+
+downloader_middlewares
+^^^^^^^^^^^^^^^^^^^^^^
+
+- Default: ``None``
+
+使用的下载中间件。
+
+.. _spider_middlewares_setting:
+
+spider_middlewares
+^^^^^^^^^^^^^^^^^^
+
+- Default: ``None``
+
+使用的解析中间件。
+
+.. _item_pipelines_setting:
+
+item_pipelines
+^^^^^^^^^^^^^^
+
+- Default: ``None``
+
+使用的数据处理器。
+
+.. _extensions_setting:
+
+extensions
+^^^^^^^^^^
+
+- Default: ``None``
+
+使用的拓展。

@@ -3,15 +3,16 @@
 Change log
 ==========
 
-0.10.0 (2018-06-??)
+0.10.0 (2018-07-??)
 -------------------
 
 New features
 ~~~~~~~~~~~~
 
-- ``xpaw crawl`` 支持直接运行spider
-- ``xpaw crawl`` 支持指定配置文件
-- 提供了daemon模式运行爬虫
+- ``xpaw crawl`` 支持直接运行spider，支持指定配置文件，添加了更多的功能选项
+- 添加 ``daemon`` 配置项，支持以daemon模式运行爬虫
+- 添加 ``pid_file`` 配置项，支持将爬虫所在进程的PID写入文件
+- 添加 ``dump_dir`` 配置项，支持爬虫的暂停与恢复
 
 Bug fixes
 ~~~~~~~~~
@@ -22,10 +23,14 @@ Refactoring
 ~~~~~~~~~~~
 
 - 移除爬虫工程的入口文件setup.cfg，直接通过工程根目录下的config.py完成配置
-- 通过 ``speed_limit_enabled`` 控制限速插件SpeedLimitMiddleware的开启/关闭，默认为关闭状态
+- 重构ProxyMiddleware配置项
+- 通过 ``speed_limit_enabled`` 控制限速中间件SpeedLimitMiddleware的开启/关闭，默认为关闭状态
 - 配置项 ``verify_ssl`` 的默认值更改为 ``False``
-- 配置项 ``proxy_agent`` 更名为 ``proxy_provider``
-
+- 配置项 ``queue_cls`` 更名为 ``queue``
+- 配置项 ``dupe_filter_cls`` 更名为 ``dupe_filter``
+- cluster的 ``stats_center`` 更名为 ``stats_collector`` ，配置项 ``stats_center_cls`` 更名为 ``stats_collector``
+- 调整了中间件加载顺序权值
+- HttpRequest对 ``auth`` 、 ``cookie_jar`` 、 ``proxy`` 、 ``proxy_auth`` 的配置移至 ``meta`` 属性中。
 
 0.9.1 (2018-04-16)
 ------------------
@@ -115,7 +120,7 @@ Refactoring
 New features
 ~~~~~~~~~~~~
 
-- 通过 ``xpaw.handler.every`` 实现定时任务功能
+- 通过 ``@every`` 实现定时任务功能
 - HttpRequest添加 ``dont_filter`` 字段，为 ``True`` 时表示该请求不会被过滤
 - ``xpaw.run`` 模块中添加 ``run_spider`` 函数，便于在python代码中直接运行Spider类
 

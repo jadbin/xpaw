@@ -13,27 +13,26 @@ Spider
 Spider API
 ----------
 
-.. class:: xpaw.spider.Spider(config=None, cluster=None)
+.. class:: xpaw.spider.Spider(config=None, **kwargs)
 
-    用户自定义的spider需要继承此类，如需重写 ``__init___`` 需保持参数一致。
+    用户自定义的spider需要继承此类。
 
-    :param xpaw.config.Config config: 爬虫相关配置
-
-    :param xpaw.cluster.LocalCluster cluster: cluster
+    :param ~xpaw.config.Config config: 爬虫相关配置
+    :param kwargs: 其他参数会作为爬虫的属性
 
     .. classmethod:: from_cluster(cluster)
 
+        :param ~xpaw.cluster.LocalCluster cluster: cluster
+
         cluster通过该函数实例化spider，在该函数中会调用spider的构造器
-
-        :param xpaw.cluster.LocalCluster cluster: cluster
-
-    .. attribute:: cluster
-
-        通过cluster可以访问爬虫的各个组件，参见 :class:`~xpaw.cluster.LocalCluster` 。
 
     .. attribute:: config
 
         保存了爬虫相关的配置项，包括自定义配置项，参见 :class:`~xpaw.config.Config` 。
+
+    .. attribute:: cluster
+
+        通过cluster可以访问爬虫的各个组件，参见 :class:`~xpaw.cluster.LocalCluster` 。
 
     .. attribute:: logger
 
@@ -45,5 +44,55 @@ Spider API
 
     .. method:: start_requests()
 
+        生成初始请求，返回 :class:`~xpaw.http.HttpRequest` 的可迭代对象。
+
     .. method:: parse(response)
 
+        解析爬取结果，返回可迭代对象，包括提取的新的请求 :class:`~xpaw.http.HttpRequest` ，和提取的数据 :class:`~xpaw.item.Item` 、 ``dict`` 等。
+
+        :param ~xpaw.http.HttpResponse response: 爬取结果。
+
+    .. method:: open()
+
+        爬虫开始工作前会调用该函数。
+
+    .. method:: close()
+
+        爬虫完成工作时会调用该函数。
+
+Cron Job
+--------
+
+可以使用 ``@every`` 实现定时任务，每隔设定的时间会重复执行被修饰的 ``start_requests`` 函数:
+
+.. code-block:: python
+
+    from xpaw import Spider, HttpRequest, Selector, every
+    from xpaw.run import run_spider
+
+
+    class CronJobSpider(Spider):
+        @every(seconds=10)
+        def start_requests(self):
+            yield HttpRequest("http://news.qq.com/", callback=self.parse, dont_filter=True)
+
+        def parse(self, response):
+            selector = Selector(response.text)
+            major_news = selector.css("div.major a.linkto").text
+            self.log("Major news:")
+            for i in range(len(major_news)):
+                self.log("%s: %s", i + 1, major_news[i])
+
+
+    if __name__ == '__main__':
+        run_spider(CronJobSpider, log_level='DEBUG')
+
+``@every`` 可传入的参数:
+
+- ``hours`` : 间隔的小时数
+
+- ``minutes`` : 间隔的分钟数
+
+- ``seconds`` : 间隔的秒数
+
+注意需要通过参数 ``dont_filter=True`` 来设置request不经过去重过滤器，否则新产生的request会视为重复的请求。

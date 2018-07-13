@@ -5,6 +5,7 @@
 Tutorial II: Spider Project
 ===========================
 
+在这里我们将展示以工程的形式构建爬虫的流程。
 同 :ref:`tutorial1` 一样，我们的爬取 `quotes.toscrape.com <http://quotes.toscrape.com/>`_ 网站中所有的quotes并以json的形式保存下来，每个quote包含如下几个字段:
 
 ============  ======================
@@ -34,6 +35,8 @@ Creating our Project
             items.py          # 默认生成的数据类型模块
             pipelines.py      # 默认生成的数据处理模块
             spider.py         # 默认生成的爬虫模块
+
+其中config.py包含了整个工程的相关配置，也是工程运行时的入口文件，具体的配置项可参考 :ref:`settings` 。
 
 Definition of Data Fields
 -------------------------
@@ -127,19 +130,5 @@ Running our Project
     $ xpaw crawl ./ -l DEBUG
 
 其中 ``crawl`` 的参数为工程的根目录的路径， ``-l DEBUG`` 设定了日志的级别为DEBUG。
-
-我们将会看到类似这样的日志::
-
-    ... (omitted)
-    2017-11-02 13:40:46 xpaw.cluster [INFO]: Cluster is running
-    2017-11-02 13:40:46 xpaw.cluster [DEBUG]: The request (url=http://quotes.toscrape.com/) has been pulled by coro[0]
-    2017-11-02 13:40:46 xpaw.downloader [DEBUG]: HTTP request: GET http://quotes.toscrape.com/
-    2017-11-02 13:40:46 xpaw.downloader [DEBUG]: HTTP response: http://quotes.toscrape.com/ 200
-    2017-11-02 13:40:46 xpaw.pipeline [DEBUG]: Item (QuotesItem): {'text': '“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”', 'tags': ['change', 'deep-thoughts', 'thinking', 'world'], 'author': 'Albert Einstein', 'author_url': 'http://quotes.toscrape.com/author/Albert-Einstein'}
-    ...
-    2017-11-02 13:40:52 xpaw.pipeline [DEBUG]: Item (QuotesItem): {'text': '“... a mind needs books as a sword needs a whetstone, if it is to keep its edge.”', 'tags': ['books', 'mind'], 'author': 'George R.R. Martin', 'author_url': 'http://quotes.toscrape.com/author/George-R-R-Martin'}
-    2017-11-02 13:41:36 xpaw.cluster [INFO]: Shutdown now
-    2017-11-02 13:41:36 xpaw.cluster [INFO]: Cluster is stopped
-    ...
 
 运行结束之后，我们可以打开工程的根目录下的quotes.json的文件查看爬取到的数据。

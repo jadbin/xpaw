@@ -83,13 +83,13 @@ Table of Contents
 
     tutorial1
     tutorial2
-    usage
 
 .. toctree::
     :caption: Basic References
     :maxdepth: 2
 
     spider
+    req_resp
     settings
 
 .. toctree::
