@@ -160,6 +160,13 @@ class PidFile(Setting):
     short_desc = 'PID file'
 
 
+class DumpDir(Setting):
+    name = 'dump_dir'
+    cli = ['--dump-dir']
+    metavar = 'DIR'
+    short_desc = 'the directory to dump the state of a single job'
+
+
 class LogFile(Setting):
     name = 'log_file'
     cli = ['--log-file']
@@ -288,19 +295,12 @@ class MaxDepth(Setting):
     short_desc = 'maximum depth of spider'
 
 
-class DumpDir(Setting):
-    name = 'dump_dir'
-    cli = ['--dump-dir']
-    metavar = 'DIR'
-    short_desc = 'the directory to dump the state of a single job'
-
-
-class StatsCenterCls(Setting):
+class StatsCenter(Setting):
     name = 'stats_collector'
     default = 'xpaw.stats.StatsCollector'
 
 
-class QueueCls(Setting):
+class Queue(Setting):
     name = 'queue'
     default = 'xpaw.queue.PriorityQueue'
 

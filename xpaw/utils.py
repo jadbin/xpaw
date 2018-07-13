@@ -155,7 +155,7 @@ def cmp(a, b):
     return (a > b) - (a < b)
 
 
-def parse_params(params):
+def parse_request_params(params):
     if isinstance(params, dict):
         res = MultiDict()
         for k, v in params.items():
@@ -168,7 +168,7 @@ def parse_params(params):
     return params
 
 
-def parse_auth(auth):
+def parse_request_auth(auth):
     if isinstance(auth, (tuple, list)):
         auth = BasicAuth(*auth)
     elif isinstance(auth, str):
@@ -176,7 +176,7 @@ def parse_auth(auth):
     return auth
 
 
-def parse_url(url):
+def parse_request_url(url):
     if isinstance(url, str):
         res = urlsplit(url)
         if res.scheme == '':
@@ -233,7 +233,7 @@ def dump_to_dir(name, dump_dir, obj):
     if dump_dir:
         pkl_path = join(dump_dir, name + '.pkl')
         with open(pkl_path, 'wb') as f:
-            return pickle.dump(obj, f)
+            pickle.dump(obj, f)
 
 
 def load_from_dump_dir(name, dump_dir):

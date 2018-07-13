@@ -11,7 +11,7 @@ import async_timeout
 from .middleware import MiddlewareManager
 from .http import HttpRequest, HttpResponse
 from .errors import NetworkError
-from .utils import parse_auth, parse_params, parse_url
+from .utils import parse_request_auth, parse_request_params, parse_request_url
 
 log = logging.getLogger(__name__)
 
@@ -28,9 +28,9 @@ class Downloader:
         if timeout is None:
             timeout = self._timeout
         cookie_jar = request.meta.get('cookie_jar')
-        auth = parse_auth(request.meta.get('auth'))
-        proxy = parse_url(request.meta.get('proxy'))
-        proxy_auth = parse_auth(request.meta.get('proxy_auth'))
+        auth = parse_request_auth(request.meta.get('auth'))
+        proxy = parse_request_url(request.meta.get('proxy'))
+        proxy_auth = parse_request_auth(request.meta.get('proxy_auth'))
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=self._verify_ssl, loop=self._loop),
                                          cookies=request.cookies,
                                          cookie_jar=cookie_jar,
@@ -41,8 +41,8 @@ class Downloader:
                 else:
                     data, json = request.body, None
                 async with session.request(request.method,
-                                           parse_url(request.url),
-                                           params=parse_params(request.params),
+                                           parse_request_url(request.url),
+                                           params=parse_request_params(request.params),
                                            auth=auth,
                                            headers=request.headers,
                                            data=data,
@@ -91,7 +91,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 except CancelledError:
                     raise
                 except Exception as e:
-                    log.debug("Network error, %s: %s", type(e).__name__, e)
+                    log.debug("Network error: %s", e)
                     raise NetworkError(e)
                 else:
                     res = response
@@ -105,6 +105,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             _res = await self._handle_response(request, res)
             if _res:
                 res = _res
+            # bind request
+            res.request = request
         return res
 
     async def _handle_request(self, request):

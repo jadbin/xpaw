@@ -20,11 +20,7 @@ class HttpRequest:
         self._meta = dict(meta) if meta else {}
         self.priority = priority
         self.dont_filter = dont_filter
-        if callback and inspect.ismethod(callback):
-            callback = callback.__name__
         self.callback = callback
-        if errback and inspect.ismethod(errback):
-            errback = errback.__name__
         self.errback = errback
 
     def __str__(self):

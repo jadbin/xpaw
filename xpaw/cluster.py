@@ -191,8 +191,6 @@ class LocalCluster:
         if isinstance(resp, HttpRequest):
             await self._push_without_duplication(resp)
         elif isinstance(resp, HttpResponse):
-            # bind request
-            resp.request = req
             await self.event_bus.send(events.response_received, response=resp)
             try:
                 result = await self.spidermw.parse(self.spider, resp)

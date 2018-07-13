@@ -42,16 +42,31 @@ class Spider:
     def close(self):
         pass
 
+    async def request_success(self, response):
+        callback = response.request.callback
+        if callback:
+            res = self._parse_method(callback)(response)
+        else:
+            res = self.parse(response)
+        if inspect.iscoroutine(res):
+            res = await res
+        return res
+
     async def request_error(self, request, error):
         try:
             if request and request.errback:
-                r = getattr(self, request.errback)(request, error)
+                r = self._parse_method(request.errback)(request, error)
                 if inspect.iscoroutine(r):
                     await r
         except CancelledError:
             raise
         except Exception as e:
             log.warning("Error occurred in error callback: %s", e)
+
+    def _parse_method(self, method):
+        if isinstance(method, str):
+            method = getattr(self, method)
+        return method
 
 
 def _isiterable(obj):
@@ -91,12 +106,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             except Exception as e:
                 await spider.request_error(request, e)
                 raise e
-            if request.callback:
-                res = getattr(spider, request.callback)(response)
-            else:
-                res = spider.parse(response)
-            if inspect.iscoroutine(res):
-                res = await res
+            res = await spider.request_success(response)
             assert res is None or _isiterable(res), \
                 "Parsing result must be None or an iterable object, got {}".format(type(res).__name__)
             result = await iterable_to_list(res)

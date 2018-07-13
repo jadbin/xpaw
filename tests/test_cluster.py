@@ -241,7 +241,7 @@ class FooItemPipeLine:
         self.data['item'] = item
 
 
-class ItemSpider:
+class ItemSpider(Spider):
     def start_requests(self):
         yield HttpRequest('http://python.org/')
 
