@@ -11,7 +11,7 @@ from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
 from .errors import IgnoreRequest, IgnoreItem
 from .downloader import DownloaderMiddlewareManager
-from .spider import SpiderMiddlewareManager
+from .spider import Spider, SpiderMiddlewareManager
 from .eventbus import EventBus
 from . import events
 from .extension import ExtensionManager
@@ -38,6 +38,7 @@ class LocalCluster:
                                      verify_ssl=self.config.getbool('verify_ssl'),
                                      loop=self.loop)
         self.spider = self._new_object_from_cluster(self.config.get('spider'), self)
+        assert isinstance(self.spider, Spider), 'spider must inherit from the Spider class'
         log.info('Spider: %s', str(self.spider))
         self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
         log.info('Downloader middlewares: %s', self._log_objects(self.downloadermw.components))
