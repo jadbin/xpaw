@@ -3,7 +3,7 @@
 import random
 import logging
 import asyncio
-from os.path import join
+from os.path import join, isfile
 import pickle
 
 import aiohttp
@@ -150,12 +150,14 @@ class CookiesMiddleware:
 
     def open(self):
         if self._dump_dir:
-            with open(join(self._dump_dir, 'cookie_jar'), 'rb') as f:
-                jars = pickle.load(f)
-                for key in jars:
-                    cookie_jar = aiohttp.CookieJar(loop=self._loop)
-                    cookie_jar._cookies = jars[key]
-                    self._cookie_jars[key] = cookie_jar
+            file = join(self._dump_dir, 'cookie_jar')
+            if isfile(file):
+                with open(file, 'rb') as f:
+                    jars = pickle.load(f)
+                    for key in jars:
+                        cookie_jar = aiohttp.CookieJar(loop=self._loop)
+                        cookie_jar._cookies = jars[key]
+                        self._cookie_jars[key] = cookie_jar
 
     def close(self):
         if self._dump_dir:

@@ -6,7 +6,7 @@ import asyncio
 from asyncio import Semaphore
 from collections import deque
 from heapq import heappush, heappop
-from os.path import join
+from os.path import join, isfile
 import pickle
 
 from . import utils
@@ -42,11 +42,13 @@ class FifoQueue:
 
     async def open(self):
         if self._dump_dir:
-            with open(join(self._dump_dir, 'queue'), 'rb') as f:
-                arr = pickle.load(f)
-            for a in arr:
-                r = utils.request_from_dict(a)
-                await self.push(r)
+            file = join(self._dump_dir, 'queue')
+            if isfile(file):
+                with open(file, 'rb') as f:
+                    arr = pickle.load(f)
+                for a in arr:
+                    r = utils.request_from_dict(a)
+                    await self.push(r)
 
     async def close(self):
         if self._dump_dir:
@@ -65,12 +67,14 @@ class LifoQueue(FifoQueue):
 
     async def open(self):
         if self._dump_dir:
-            with open(join(self._dump_dir, 'queue'), 'rb') as f:
-                arr = pickle.load(f)
-            arr.reverse()
-            for a in arr:
-                r = utils.request_from_dict(a)
-                await self.push(r)
+            file = join(self._dump_dir, 'queue')
+            if isfile(file):
+                with open(file, 'rb') as f:
+                    arr = pickle.load(f)
+                arr.reverse()
+                for a in arr:
+                    r = utils.request_from_dict(a)
+                    await self.push(r)
 
 
 class PriorityQueue:
@@ -101,11 +105,13 @@ class PriorityQueue:
 
     async def open(self):
         if self._dump_dir:
-            with open(join(self._dump_dir, 'queue'), 'rb') as f:
-                arr = pickle.load(f)
-            for a in arr:
-                r = utils.request_from_dict(a)
-                await self.push(r)
+            file = join(self._dump_dir, 'queue')
+            if isfile(file):
+                with open(file, 'rb') as f:
+                    arr = pickle.load(f)
+                for a in arr:
+                    r = utils.request_from_dict(a)
+                    await self.push(r)
 
     async def close(self):
         if self._dump_dir:

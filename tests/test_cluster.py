@@ -27,7 +27,7 @@ def test_supervisor():
     run_spider(SleepSpider, downloader_timeout=0.1)
 
 
-class FooSpider(Spider):
+class StartRequestSpider(Spider):
     def start_requests(self):
         yield HttpRequest('http://python.org/')
 
@@ -51,14 +51,14 @@ class BadQueue2(PriorityQueue):
 
 
 def test_coro_terminated():
-    run_spider(FooSpider, downloader_clients=2, queue=BadQueue, max_retry_times=0, downloader_timeout=0.1)
+    run_spider(StartRequestSpider, downloader_clients=2, queue=BadQueue, max_retry_times=0, downloader_timeout=0.1)
 
 
 def test_coro_terminated2():
-    run_spider(FooSpider, downloader_clients=2, queue=BadQueue2, max_retry_times=0, downloader_timeout=0.1)
+    run_spider(StartRequestSpider, downloader_clients=2, queue=BadQueue2, max_retry_times=0, downloader_timeout=0.1)
 
 
-class WaitSpider(Spider):
+class ToKillSpider(Spider):
     def start_requests(self):
         yield HttpRequest('http://python.org/')
 
@@ -83,9 +83,9 @@ class ExceptionThread(Thread):
 def test_kill_spider(tmpdir):
     pid_file = join(str(tmpdir), 'pid')
     log_file = join(str(tmpdir), 'log')
-    t = ExceptionThread(target=_check_thread, args=(pid_file,))
+    t = ExceptionThread(target=kill_spider, args=(pid_file,))
     t.start()
-    run_spider(WaitSpider, pid_file=pid_file, log_file=log_file)
+    run_spider(ToKillSpider, pid_file=pid_file, log_file=log_file)
     t.join()
     assert len(t.bucket) == 0, 'Exception in thread'
 
@@ -99,7 +99,7 @@ def _check_pid(pid):
         return True
 
 
-def _check_thread(pid_file):
+def kill_spider(pid_file):
     t = 10
     while t > 0 and not exists(pid_file):
         t -= 1
@@ -255,3 +255,35 @@ def test_handle_item():
     data = {}
     run_spider(ItemSpider, log_level='DEBUG', data=data, item_pipelines=[FooItemPipeLine])
     assert isinstance(data.get('item'), DummyItem)
+
+
+class ToDumpSpider(Spider):
+    def start_requests(self):
+        yield HttpRequest('http://python.org/', callback=self.parse_response, meta={'key': 'value'})
+
+    async def parse_response(self, response):
+        while True:
+            await asyncio.sleep(5, loop=self.cluster.loop)
+
+
+class ToLoadSpider(Spider):
+    def start_requests(self):
+        pass
+
+    async def parse_response(self, response):
+        data = self.config.get('data')
+        data['url'] = response.request.url
+        data['meta'] = response.meta
+
+
+def test_dump_request(tmpdir):
+    dump_dir = str(tmpdir)
+    pid_file = join(dump_dir, 'pid')
+    t = Thread(target=kill_spider, args=(pid_file,))
+    t.start()
+    run_spider(ToDumpSpider, dump_dir=dump_dir, pid_file=pid_file)
+    t.join()
+    data = {}
+    run_spider(ToLoadSpider, dump_dir=dump_dir, data=data)
+    assert data['url'] == 'http://python.org/'
+    assert data['meta']['key'] == 'value'

@@ -1,7 +1,7 @@
 # coding=utf-8
 
 import logging
-from os.path import join
+from os.path import join, isfile
 
 from . import utils
 from . import events
@@ -37,9 +37,11 @@ class HashDupeFilter:
 
     def open(self):
         if self._dump_dir:
-            with open(join(self._dump_dir, 'dupe_filter'), 'r') as f:
-                for h in f:
-                    self._hash.add(h.rstrip())
+            file = join(self._dump_dir, 'dupe_filter')
+            if isfile(file):
+                with open(file, 'r') as f:
+                    for h in f:
+                        self._hash.add(h.rstrip())
 
     def close(self):
         if self._dump_dir:
