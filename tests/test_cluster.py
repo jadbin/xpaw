@@ -281,9 +281,9 @@ def test_dump_request(tmpdir):
     pid_file = join(dump_dir, 'pid')
     t = Thread(target=kill_spider, args=(pid_file,))
     t.start()
-    run_spider(ToDumpSpider, dump_dir=dump_dir, pid_file=pid_file)
+    run_spider(ToDumpSpider, dump_dir=dump_dir, pid_file=pid_file, cookie_jar_enabled=True)
     t.join()
     data = {}
-    run_spider(ToLoadSpider, dump_dir=dump_dir, data=data)
+    run_spider(ToLoadSpider, dump_dir=dump_dir, data=data, cookie_jar_enabled=True)
     assert data['url'] == 'http://python.org/'
     assert data['meta']['key'] == 'value'

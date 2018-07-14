@@ -202,6 +202,8 @@ def request_to_dict(request):
     errback = request.errback
     if inspect.ismethod(errback):
         errback = errback.__name__
+    meta = dict(request.meta)
+    meta.pop('cookie_jar')
     d = {
         'url': request.url,
         'method': request.method,
@@ -209,7 +211,7 @@ def request_to_dict(request):
         'params': request.params,
         'headers': request.headers,
         'cookies': request.cookies,
-        'meta': request.meta,
+        'meta': meta,
         'priority': request.priority,
         'dont_filter': request.dont_filter,
         'callback': callback,

@@ -103,7 +103,9 @@ Request Meta Keys
 
 - ``proxy_auth`` : 设置代理的HTTP Basic Auth。
 
-- ``cookie_jar`` : 当启用cookie jar时，可以通过设置一个 ``str`` 来代表cookie jar的标识符。
+- ``cookie_jar`` : 设置请求相关的cookie jar。
+
+- ``cookie_jar_key`` : 设置代表cookie jar的标识符。
 
 - ``depth`` : 当使用 :class:`~xpaw.spidermws.DepthMiddleware` 时，纪录当前request的深度。
 

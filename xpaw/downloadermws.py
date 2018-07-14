@@ -134,13 +134,10 @@ class CookiesMiddleware:
         config = cluster.config
         if not config.getbool('cookie_jar_enabled'):
             raise NotEnabled
-        mw = cls(dump_dir=utils.get_dump_dir(config), loop=cluster.loop)
-        cluster.event_bus.subscribe(mw.open, events.cluster_start)
-        cluster.event_bus.subscribe(mw.close, events.cluster_shutdown)
-        return mw
+        return cls(dump_dir=utils.get_dump_dir(config), loop=cluster.loop)
 
     def handle_request(self, request):
-        cookie_jar_key = request.meta.get('cookie_jar')
+        cookie_jar_key = request.meta.get('cookie_jar_key')
         if cookie_jar_key is None or isinstance(cookie_jar_key, (int, str)):
             cookie_jar = self._cookie_jars.get(cookie_jar_key)
             if cookie_jar is None:
