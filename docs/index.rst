@@ -39,8 +39,7 @@ Spider Example
 
 .. code-block:: python
 
-    from xpaw import Spider, HttpRequest, Selector
-    from xpaw.run import run_spider
+    from xpaw import Spider, HttpRequest, Selector, run_spider
 
 
     class TencentNewsSpider(Spider):

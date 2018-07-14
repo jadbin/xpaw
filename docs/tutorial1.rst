@@ -47,8 +47,7 @@ Spider Overview
     from urllib.parse import urljoin
     import json
 
-    from xpaw import Spider, HttpRequest, Selector
-    from xpaw.run import run_spider
+    from xpaw import Spider, HttpRequest, Selector, run_spider
 
 
     class QuotesSpider(Spider):

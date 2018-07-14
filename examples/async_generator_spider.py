@@ -1,7 +1,6 @@
 # coding=utf-8
 
-from xpaw import Spider, HttpRequest, Selector
-from xpaw.run import run_spider
+from xpaw import Spider, HttpRequest, Selector, run_spider
 
 
 class AsyncGeneratorSpider(Spider):

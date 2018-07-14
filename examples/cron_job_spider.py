@@ -1,7 +1,6 @@
 # coding=utf-8
 
-from xpaw import Spider, HttpRequest, Selector, every
-from xpaw.run import run_spider
+from xpaw import Spider, HttpRequest, Selector, every, run_spider
 
 
 class CronJobSpider(Spider):

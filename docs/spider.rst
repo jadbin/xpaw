@@ -67,8 +67,7 @@ Cron Job
 
 .. code-block:: python
 
-    from xpaw import Spider, HttpRequest, Selector, every
-    from xpaw.run import run_spider
+    from xpaw import Spider, HttpRequest, Selector, every, run_spider
 
 
     class CronJobSpider(Spider):

@@ -32,6 +32,7 @@ Refactoring
 - 调整了中间件加载顺序权值
 - HttpRequest对 ``auth`` 、 ``cookie_jar`` 、 ``proxy`` 、 ``proxy_auth`` 的配置移至 ``meta`` 属性中。
 - SetDupeFilter更名为HashDupeFilter
+- 修改aiohttp的版本限制为>=3.3.2
 
 0.9.1 (2018-04-16)
 ------------------
@@ -178,7 +179,7 @@ Refactoring
 Bug fixes
 ~~~~~~~~~
 
-- HttpResponse中的 ``url`` 字段源于aiohttp返回的ClientResponse中的 ``url`` 字段，实际应为 ``URL`` 对象
+- HttpResponse中的 ``url`` 字段源于aiohttp返回的ClientResponse中的 ``url`` 字段，实际应为 ``yarl.URL`` 对象
 
 Refactoring
 ~~~~~~~~~~~
