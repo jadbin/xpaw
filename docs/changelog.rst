@@ -31,6 +31,7 @@ Refactoring
 - cluster的 ``stats_center`` 更名为 ``stats_collector`` ，配置项 ``stats_center_cls`` 更名为 ``stats_collector``
 - 调整了中间件加载顺序权值
 - HttpRequest对 ``auth`` 、 ``cookie_jar`` 、 ``proxy`` 、 ``proxy_auth`` 的配置移至 ``meta`` 属性中。
+- SetDupeFilter更名为HashDupeFilter
 
 0.9.1 (2018-04-16)
 ------------------

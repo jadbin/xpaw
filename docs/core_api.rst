@@ -44,6 +44,17 @@ Cluster API
     爬虫相关的配置项，对于 :attr:`~xpaw.cluster.LocalCluster.config` 的使用可以参考 :ref:`config_api` 。
 
 
+    .. method:: start()
+
+        启动cluster
+
+    .. method:: shutdown(sig=None)
+
+        停止cluster
+
+        :param sig: 停止信号
+
+
 .. _config_api:
 
 Config API
@@ -65,3 +76,51 @@ Config API
 
     :param values: 需要更新的配置项
     :type values: dict or :class:`~xpaw.config.BaseConfig`
+
+    .. method:: get(name, default=None)
+
+        获取配置
+
+        :param str name: 参数名称
+        :param default: 缺省值
+
+    .. method:: getbool(name, default=None)
+
+        获取 ``bool`` 型参数，如果值不能转换为 ``bool`` 类型，返回 ``None`` 。
+
+    .. method:: getint(name, default=None)
+
+        获取 ``int`` 型参数，如果值不能转换为 ``int`` 类型，返回 ``None`` 。
+
+    .. method:: getint(name, default=None)
+
+        获取 ``float`` 型参数，如果值不能转换为 ``float`` 类型，返回 ``None`` 。
+
+    .. method:: getlist(name, default=None)
+
+        将参数值封装为 ``list`` 并返回。
+        如果参数值是 ``str`` ，则会根据 ``,`` 分隔为多个参数值。
+
+    .. method:: set(name, value):
+
+        设置参数值
+
+        :param str name: 参数名称
+        :param value: 参数值
+
+    .. method:: update(values):
+
+        更新参数
+
+        :param values: 新的参数
+        :type values: dict or :class:`~xpaw.config.BaseConfig`
+
+    .. method:: delete(name):
+
+        删除参数
+
+        :param name: 参数名称
+
+    .. method:: copy()
+
+        复制配置

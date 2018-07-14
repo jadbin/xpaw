@@ -82,11 +82,11 @@ Request API
 
     .. method:: copy()
 
-        复制request
+        复制request。
 
     .. method:: replace(**kwargs)
 
-        复制request并替换部分属性
+        复制request并替换部分属性。
 
 .. _request_meta:
 
@@ -161,8 +161,8 @@ Response API
 
     .. method:: copy()
 
-        复制response
+        复制response。
 
     .. method:: replace(**kwargs)
 
-        复制response并替换部分属性
+        复制response并替换部分属性。
