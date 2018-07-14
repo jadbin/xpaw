@@ -3,6 +3,8 @@
 import random
 import logging
 import asyncio
+from os.path import join
+import pickle
 
 import aiohttp
 from yarl import URL
@@ -147,19 +149,21 @@ class CookiesMiddleware:
             request.meta['cookie_jar'] = cookie_jar
 
     def open(self):
-        jars = utils.load_from_dump_dir('cookie_jar', self._dump_dir)
-        if jars:
-            for key in jars:
-                cookie_jar = aiohttp.CookieJar(loop=self._loop)
-                cookie_jar._cookies = jars[key]
-                self._cookie_jars[key] = cookie_jar
+        if self._dump_dir:
+            with open(join(self._dump_dir, 'cookie_jar'), 'rb') as f:
+                jars = pickle.load(f)
+                for key in jars:
+                    cookie_jar = aiohttp.CookieJar(loop=self._loop)
+                    cookie_jar._cookies = jars[key]
+                    self._cookie_jars[key] = cookie_jar
 
     def close(self):
         if self._dump_dir:
             jars = {}
             for key in self._cookie_jars:
                 jars[key] = self._cookie_jars[key]._cookies
-            utils.dump_to_dir('cookie_jar', self._dump_dir, jars)
+            with open(join(self._dump_dir, 'cookie_jar'), 'wb') as f:
+                pickle.dump(jars, f)
 
 
 class ProxyMiddleware:

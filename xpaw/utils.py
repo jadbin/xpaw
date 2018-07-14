@@ -8,14 +8,10 @@ import hashlib
 import logging
 from importlib import import_module
 import string
-from urllib.parse import urlsplit
-from os.path import isfile, exists, join
+from os.path import isfile, exists
 import inspect
-import pickle
 
 from yarl import URL
-from multidict import MultiDict
-from aiohttp.helpers import BasicAuth
 
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
@@ -155,36 +151,6 @@ def cmp(a, b):
     return (a > b) - (a < b)
 
 
-def parse_request_params(params):
-    if isinstance(params, dict):
-        res = MultiDict()
-        for k, v in params.items():
-            if isinstance(v, (tuple, list)):
-                for i in v:
-                    res.add(k, i)
-            else:
-                res.add(k, v)
-        params = res
-    return params
-
-
-def parse_request_auth(auth):
-    if isinstance(auth, (tuple, list)):
-        auth = BasicAuth(*auth)
-    elif isinstance(auth, str):
-        auth = BasicAuth(*auth.split(':', 1))
-    return auth
-
-
-def parse_request_url(url):
-    if isinstance(url, str):
-        res = urlsplit(url)
-        if res.scheme == '':
-            url = 'http://{}'.format(url)
-        url = URL(url)
-    return url
-
-
 def be_daemon():
     if os.fork():
         os._exit(0)
@@ -229,16 +195,30 @@ def get_dump_dir(config):
         return dump_dir
 
 
-def dump_to_dir(name, dump_dir, obj):
-    if dump_dir:
-        pkl_path = join(dump_dir, name + '.pkl')
-        with open(pkl_path, 'wb') as f:
-            pickle.dump(obj, f)
+def request_to_dict(request):
+    callback = request.callback
+    if inspect.ismethod(callback):
+        callback = callback.__name__
+    errback = request.errback
+    if inspect.ismethod(errback):
+        errback = errback.__name__
+    d = {
+        'url': request.url,
+        'method': request.method,
+        'body': request.body,
+        'params': request.params,
+        'headers': request.headers,
+        'cookies': request.cookies,
+        'meta': request.meta,
+        'priority': request.priority,
+        'dont_filter': request.dont_filter,
+        'callback': callback,
+        'errback': errback,
+        '_class': request.__module__ + '.' + request.__class__.__name__
+    }
+    return d
 
 
-def load_from_dump_dir(name, dump_dir):
-    if dump_dir:
-        pkl_path = join(dump_dir, name + '.pkl')
-        if exists(pkl_path):
-            with open(pkl_path, 'rb') as f:
-                return pickle.load(f)
+def request_from_dict(d):
+    req_cls = load_object(d.pop('_class'))
+    return req_cls(**d)

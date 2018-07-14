@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from xpaw.http import HttpRequest
-from xpaw.dupefilter import SetDupeFilter
+from xpaw.dupefilter import HashDupeFilter
 
 
 def run_any_dupe_filter(f):
@@ -36,12 +36,12 @@ def run_any_dupe_filter(f):
     assert f.is_duplicated(r_get_query_param) is True
 
 
-class TestSetDupeFilter:
+class TestHashDupeFilter:
     def test_is_duplicated(self):
-        run_any_dupe_filter(SetDupeFilter())
+        run_any_dupe_filter(HashDupeFilter())
 
     def test_clear(self):
-        f = SetDupeFilter()
+        f = HashDupeFilter()
         r_get = HttpRequest("http://example.com")
         assert f.is_duplicated(r_get) is False
         assert f.is_duplicated(r_get) is True
@@ -49,11 +49,11 @@ class TestSetDupeFilter:
         assert f.is_duplicated(r_get) is False
 
     def test_dump(self, tmpdir):
-        f = SetDupeFilter(dump_dir=str(tmpdir))
+        f = HashDupeFilter(dump_dir=str(tmpdir))
         r_get = HttpRequest("http://example.com")
         assert f.is_duplicated(r_get) is False
         assert f.is_duplicated(r_get) is True
         f.close()
-        f2 = SetDupeFilter(dump_dir=str(tmpdir))
+        f2 = HashDupeFilter(dump_dir=str(tmpdir))
         f2.open()
         assert f2.is_duplicated(r_get) is True

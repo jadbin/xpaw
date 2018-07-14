@@ -307,7 +307,7 @@ class Queue(Setting):
 
 class DupeFilter(Setting):
     name = 'dupe_filter'
-    default = 'xpaw.dupefilter.SetDupeFilter'
+    default = 'xpaw.dupefilter.HashDupeFilter'
 
 
 class Spider(Setting):

@@ -1,7 +1,5 @@
 # coding=utf-8
 
-import inspect
-
 from .utils import get_encoding_from_header, get_encoding_from_content
 
 

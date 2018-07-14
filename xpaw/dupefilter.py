@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import logging
+from os.path import join
 
 from . import utils
 from . import events
@@ -8,7 +9,7 @@ from . import events
 log = logging.getLogger(__name__)
 
 
-class SetDupeFilter:
+class HashDupeFilter:
     def __init__(self, dump_dir=None):
         self._dump_dir = dump_dir
         self._hash = set()
@@ -35,9 +36,13 @@ class SetDupeFilter:
         self._hash.clear()
 
     def open(self):
-        h = utils.load_from_dump_dir('dupe_filter', self._dump_dir)
-        if h:
-            self._hash = h
+        if self._dump_dir:
+            with open(join(self._dump_dir, 'dupe_filter'), 'r') as f:
+                for h in f:
+                    self._hash.add(h.rstrip())
 
     def close(self):
-        utils.dump_to_dir('dupe_filter', self._dump_dir, self._hash)
+        if self._dump_dir:
+            with open(join(self._dump_dir, 'dupe_filter'), 'w') as f:
+                for h in self._hash:
+                    f.write(h + '\n')

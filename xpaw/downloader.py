@@ -4,14 +4,17 @@ import logging
 import asyncio
 import inspect
 from asyncio import CancelledError
+from urllib.parse import urlsplit
 
 import aiohttp
 import async_timeout
+from yarl import URL
+from multidict import MultiDict
+from aiohttp.helpers import BasicAuth
 
 from .middleware import MiddlewareManager
 from .http import HttpRequest, HttpResponse
 from .errors import NetworkError
-from .utils import parse_request_auth, parse_request_params, parse_request_url
 
 log = logging.getLogger(__name__)
 
@@ -139,3 +142,33 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             if res:
                 return res
         return error
+
+
+def parse_request_params(params):
+    if isinstance(params, dict):
+        res = MultiDict()
+        for k, v in params.items():
+            if isinstance(v, (tuple, list)):
+                for i in v:
+                    res.add(k, i)
+            else:
+                res.add(k, v)
+        params = res
+    return params
+
+
+def parse_request_auth(auth):
+    if isinstance(auth, (tuple, list)):
+        auth = BasicAuth(*auth)
+    elif isinstance(auth, str):
+        auth = BasicAuth(*auth.split(':', 1))
+    return auth
+
+
+def parse_request_url(url):
+    if isinstance(url, str):
+        res = urlsplit(url)
+        if res.scheme == '':
+            url = 'http://{}'.format(url)
+        url = URL(url)
+    return url

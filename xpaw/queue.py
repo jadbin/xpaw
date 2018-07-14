@@ -6,6 +6,8 @@ import asyncio
 from asyncio import Semaphore
 from collections import deque
 from heapq import heappush, heappop
+from os.path import join
+import pickle
 
 from . import utils
 from . import events
@@ -38,20 +40,37 @@ class FifoQueue:
         await self._semaphore.acquire()
         return self._queue.popleft()
 
-    def open(self):
-        q = utils.load_from_dump_dir('queue', self._dump_dir)
-        if q:
-            self._queue = q
-            self._semaphore = Semaphore(len(self._queue), loop=self._loop)
+    async def open(self):
+        if self._dump_dir:
+            with open(join(self._dump_dir, 'queue'), 'rb') as f:
+                arr = pickle.load(f)
+            for a in arr:
+                r = utils.request_from_dict(a)
+                await self.push(r)
 
-    def close(self):
-        utils.dump_to_dir('queue', self._dump_dir, self._queue)
+    async def close(self):
+        if self._dump_dir:
+            reqs = []
+            while len(self) > 0:
+                r = await self.pop()
+                reqs.append(utils.request_to_dict(r))
+            with open(join(self._dump_dir, 'queue'), 'wb') as f:
+                pickle.dump(reqs, f)
 
 
 class LifoQueue(FifoQueue):
     async def pop(self):
         await self._semaphore.acquire()
         return self._queue.pop()
+
+    async def open(self):
+        if self._dump_dir:
+            with open(join(self._dump_dir, 'queue'), 'rb') as f:
+                arr = pickle.load(f)
+            arr.reverse()
+            for a in arr:
+                r = utils.request_from_dict(a)
+                await self.push(r)
 
 
 class PriorityQueue:
@@ -80,14 +99,22 @@ class PriorityQueue:
         item = heappop(self._queue)
         return item.request
 
-    def open(self):
-        q = utils.load_from_dump_dir('queue', self._dump_dir)
-        if q:
-            self._queue = q
-            self._semaphore = Semaphore(len(self._queue), loop=self._loop)
+    async def open(self):
+        if self._dump_dir:
+            with open(join(self._dump_dir, 'queue'), 'rb') as f:
+                arr = pickle.load(f)
+            for a in arr:
+                r = utils.request_from_dict(a)
+                await self.push(r)
 
-    def close(self):
-        utils.dump_to_dir('queue', self._dump_dir, self._queue)
+    async def close(self):
+        if self._dump_dir:
+            reqs = []
+            while len(self) > 0:
+                r = await self.pop()
+                reqs.append(utils.request_to_dict(r))
+            with open(join(self._dump_dir, 'queue'), 'wb') as f:
+                pickle.dump(reqs, f)
 
 
 class _PriorityQueueItem:
