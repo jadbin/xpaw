@@ -203,7 +203,8 @@ def request_to_dict(request):
     if inspect.ismethod(errback):
         errback = errback.__name__
     meta = dict(request.meta)
-    meta.pop('cookie_jar')
+    if 'cookie_jar' in meta:
+        del meta['cookie_jar']
     d = {
         'url': request.url,
         'method': request.method,
