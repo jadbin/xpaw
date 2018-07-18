@@ -178,7 +178,9 @@ class LocalCluster:
             except CancelledError:
                 raise
             except Exception as e:
-                if not isinstance(e, IgnoreRequest):
+                if isinstance(e, IgnoreRequest):
+                    await self.event_bus.send(events.request_ignored, request=req, error=e)
+                else:
                     log.warning("Failed to make the request %s: %s", req, e)
                 await self.spider.request_error(req, e)
             else:
@@ -212,7 +214,7 @@ class LocalCluster:
                 raise
             except Exception as e:
                 if isinstance(e, IgnoreItem):
-                    await self.event_bus.send(events.item_ignored, item=result)
+                    await self.event_bus.send(events.item_ignored, item=result, error=e)
                 else:
                     log.warning("Failed to handle item: %s", e)
             else:
