@@ -24,6 +24,8 @@ class HttpRequest:
     def __str__(self):
         return '<{}, {}>'.format(self.method, self.url)
 
+    __repr__ = __str__
+
     @property
     def meta(self):
         return self._meta
@@ -53,6 +55,8 @@ class HttpResponse:
 
     def __str__(self):
         return '<{}, {}>'.format(self.status, self.url)
+
+    __repr__ = __str__
 
     @property
     def encoding(self):

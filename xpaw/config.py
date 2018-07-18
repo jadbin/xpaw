@@ -179,7 +179,7 @@ class LogLevel(Setting):
     cli = ['-l', '--log-level']
     metavar = 'LEVEL'
     default = 'INFO'
-    short_desc = 'log level'
+    short_desc = 'log level: DEBUG, INFO, WARNING, ERROR'
 
 
 class LogFormat(Setting):

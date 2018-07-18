@@ -80,6 +80,7 @@ Table of Contents
     :caption: Getting Started
     :maxdepth: 2
 
+    make_requests
     tutorial1
     tutorial2
 

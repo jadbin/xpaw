@@ -7,6 +7,7 @@ from asyncio import CancelledError
 from .middleware import MiddlewareManager
 from . import events
 from .utils import iterable_to_list
+from .http import HttpRequest
 
 log = logging.getLogger(__name__)
 
@@ -187,3 +188,29 @@ def every(hours=None, minutes=None, seconds=None):
     if seconds is None:
         seconds = 0
     return wrapper
+
+
+class RequestsSpider(Spider):
+    def start_requests(self):
+        requests = self.config.get('start_requests')
+        i = 0
+        for r in requests:
+            if isinstance(r, str):
+                r = HttpRequest(r)
+            if isinstance(r, HttpRequest):
+                r.meta['request_index'] = i
+                r.dont_filter = True
+                r.callback = self.parse
+                r.errback = self.handle_error
+                yield r
+            else:
+                self.logger.warning('Requests must be str or HttpRequest, got %s', type(r).__name__)
+            i += 1
+
+    def parse(self, response):
+        results = self.config.get('results')
+        results[response.meta['request_index']] = response
+
+    def handle_error(self, request, err):
+        results = self.config.get('results')
+        results[request.meta['request_index']] = err

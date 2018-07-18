@@ -28,7 +28,7 @@ def load_object(path):
 
 def configure_logger(name, config):
     remove_logger(name)
-    log_level = config.get('log_level')
+    log_level = config.get('log_level').upper()
     log_format = config.get('log_format')
     log_dateformat = config.get('log_dateformat')
     logger = logging.getLogger(name)

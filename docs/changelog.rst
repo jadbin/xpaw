@@ -3,6 +3,15 @@
 Change log
 ==========
 
+0.10.1 (2018-07-??)
+-------------------
+
+New features
+~~~~~~~~~~~~
+
+- 新增 ``make_requests`` 函数，用于发起请求并获取对应的结果，详见 :ref:`make_requests`
+- ``log_level`` 支持小写字母配置，如 ``debug`` 等。
+
 0.10.0 (2018-07-15)
 -------------------
 
@@ -93,7 +102,7 @@ New features
   系统配置添加 ``stats_center_cls`` 项，用于替换默认的stats center的实现
 - SetDupeFilter添加 ``clear`` 函数
 - 系统配置添加 ``downloader_verify_ssl`` 项，用于开启或关闭SSL证书认证
-- HttpRequest的 ``body`` 参数支持bytes、str、FormData、dict (json)等形式
+- HttpRequest的 ``body`` 参数支持 ``bytes`` 、 ``str`` 、 ``FormData`` 、 ``dict`` 等形式
 - HttpRequest添加 ``params`` , ``auth`` , ``proxy_auth`` , ``priority`` 等属性
 - 添加深度优先队列LifoQueue，以及优先级队列PriorityQueue，默认 ``queue_cls`` 更改为 ``xpaw.queue.PriorityQueue``
 - 支持设定HTTP请求的优先级并按优先级进行爬取

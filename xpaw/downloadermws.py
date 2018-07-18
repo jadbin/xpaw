@@ -11,7 +11,7 @@ from yarl import URL
 
 from .errors import IgnoreRequest, NetworkError, NotEnabled
 from .version import __version__
-from . import events, utils
+from . import utils
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class RetryMiddleware:
 
     def handle_error(self, request, error):
         if isinstance(error, self.RETRY_ERRORS):
-            return self.retry(request, "{}: {}".format(type(error).__name__, error))
+            return self.retry(request, str(error))
 
     def retry(self, request, reason):
         retry_times = request.meta.get("retry_times", 0) + 1
@@ -78,7 +78,7 @@ class RetryMiddleware:
         else:
             log.info("The request %s has been retried %s times,"
                      " and it will be aborted", request, self._max_retry_times)
-            raise IgnoreRequest
+            raise IgnoreRequest(reason)
 
 
 class DefaultHeadersMiddleware:

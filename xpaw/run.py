@@ -8,6 +8,7 @@ import sys
 from .config import BaseConfig, Config
 from .cluster import LocalCluster
 from . import utils
+from .spider import RequestsSpider
 
 log = logging.getLogger(__name__)
 
@@ -68,3 +69,12 @@ def _remove_pid_file(pid_file):
             os.remove(pid_file)
         except Exception as e:
             log.warning('Cannot remove PID file %s: %s', pid_file, e)
+
+
+def make_requests(requests, **kwargs):
+    if 'log_level' not in kwargs:
+        kwargs['log_level'] = 'WARNING'
+    start_requests = [r for r in requests]
+    results = [None] * len(start_requests)
+    run_spider(RequestsSpider, start_requests=start_requests, results=results, **kwargs)
+    return results
