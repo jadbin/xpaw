@@ -2,6 +2,8 @@
 
 from collections import MutableMapping
 
+from . import config
+
 
 class BaseItem:
     """
@@ -29,7 +31,23 @@ class Item(MutableMapping, BaseItem):
     def __getitem__(self, key):
         if key not in self:
             return None
-        return self.values[key]
+        v = self.values[key]
+        t = self.fields[key].get('type')
+        if t:
+            if isinstance(t, str):
+                if t == 'str':
+                    v = str(v)
+                elif t == 'int':
+                    v = config.getint(v)
+                elif t == 'float':
+                    v = config.getfloat(v)
+                elif t == 'bool':
+                    v = config.getbool(v)
+                else:
+                    raise ValueError('Unsupported item filed type: {}'.format(t))
+            else:
+                v = t(v)
+        return v
 
     def __contains__(self, name):
         return name in self.values

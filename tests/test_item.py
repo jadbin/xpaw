@@ -32,3 +32,25 @@ def test_item():
     assert item['f2'] == 'new_v2'
     repr_str = repr(item)
     assert repr_str == "{'f1': 'v1', 'f2': 'new_v2'}" or repr_str == "{'f2': 'new_v2', 'f1': 'v1'}"
+
+
+class FieldTypeItem(Item):
+    none_field = Field()
+    str_field = Field(type='str')
+    int_field = Field(type='int')
+    float_field = Field(type='float')
+    bool_field = Field(type='bool')
+    func_field = Field(type=int)
+    error_field = Field(type='error type')
+
+
+def test_field_type():
+    item = FieldTypeItem(str_field=1, int_field='1', float_field='1', bool_field='1', func_field='1', error_field='1')
+    assert item['none_field'] is None
+    assert item['str_field'] == '1'
+    assert isinstance(item['int_field'], int) and item['int_field'] == 1
+    assert isinstance(item['float_field'], float) and item['float_field'] == 1
+    assert item['bool_field'] is True
+    assert isinstance(item['func_field'], int) and item['func_field'] == 1
+    with pytest.raises(ValueError):
+        print(item['error_field'])
