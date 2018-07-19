@@ -295,7 +295,6 @@ class UserAgentMiddleware:
             self._user_agent = ua
             return
         s = ua[1:].split(',')
-        s.reverse()
         for i in s:
             if i in self.DEVICE_TYPE:
                 self._device_type = i
@@ -308,8 +307,8 @@ class UserAgentMiddleware:
     @staticmethod
     def _gen_user_agent(device, browser):
         if browser == 'chrome':
-            chrome_version = '{}.0.{}.{}'.format(random.randint(50, 60),
-                                                 random.randint(0, 2999), random.randint(0, 99))
+            chrome_version = '{}.0.{}.{}'.format(random.randint(51, 70),
+                                                 random.randint(0, 9999), random.randint(0, 99))
             webkit = '{}.{}'.format(random.randint(531, 600), random.randint(0, 99))
             if device == 'desktop':
                 os = 'Macintosh; Intel Mac OS X 10_10_4'

@@ -135,6 +135,9 @@ user_agent
 
 其他字符串则直接视为User-Agent。
 
+.. note::
+    只有当 :ref:`default_headers` 中没有设置 ``User-Agent`` 时， :ref:`user_agent` 配置才会生效。
+
 .. _random_user_agent:
 
 random_user_agent

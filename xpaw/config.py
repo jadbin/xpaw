@@ -4,8 +4,6 @@ import copy
 from collections import MutableMapping
 import inspect
 
-from .version import __version__
-
 
 class BaseConfig(MutableMapping):
     def __init__(self, values=None):
@@ -240,7 +238,7 @@ class DefaultHeaders(Setting):
 
 class UserAgent(Setting):
     name = 'user_agent'
-    default = 'Mozilla/5.0 (compatible; xpaw/{})'.format(__version__)
+    default = ':desktop'
 
 
 class RandomUserAgent(Setting):

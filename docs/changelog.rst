@@ -12,6 +12,11 @@ New features
 - 新增 ``request_ignored`` 事件
 - Field添加 ``type`` 参数，表示该字段的类型，在获取该字段的值时会进行类型转换
 
+Refactoring
+~~~~~~~~~~~
+
+- ``user_agent`` 默认值设置为 ``:desktop``
+
 0.10.1 (2018-07-18)
 -------------------
 

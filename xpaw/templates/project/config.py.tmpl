@@ -14,7 +14,7 @@ item_pipelines = [
 ]
 
 # Configure downloader clients, i.e. the maximum concurrent requests (default: 100)
-# downloader_clients = 1
+# downloader_clients = 100
 
 # Enable cookie jar (disabled by default)
 # cookie_jar_enabled = True
@@ -38,7 +38,7 @@ item_pipelines = [
 # }
 
 # Configure user agent
-user_agent = ':desktop'
+# user_agent = ':desktop'
 
 # Enable imitating proxy, i.e. adding 'X-Forwarded-For' and 'Via' headers (disabled by default)
 # imitating_proxy_enabled = True
