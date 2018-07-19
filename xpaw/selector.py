@@ -24,12 +24,12 @@ def _get_text_type(text_type):
     raise ValueError('Invalid document type: {}'.format(text_type))
 
 
-def create_root_node(text, parser_cls, base_url=None):
-    return etree.fromstring(text, parser=parser_cls(), base_url=base_url)
+def create_root_node(text, parser_cls):
+    return etree.fromstring(text, parser=parser_cls())
 
 
 class Selector:
-    def __init__(self, text=None, root=None, text_type=None, base_url=None):
+    def __init__(self, text=None, root=None, text_type=None):
         self.type = _get_text_type(text_type)
         c = _text_type_config[self.type]
         self._parser_cls = c['parser_cls']
@@ -37,8 +37,8 @@ class Selector:
         self._css_translator = c['css_translator']
         if text is not None:
             if not isinstance(text, str):
-                raise TypeError("html argument must be a str")
-            root = create_root_node(text, parser_cls=self._parser_cls, base_url=base_url)
+                raise TypeError("'text' argument must be str")
+            root = create_root_node(text, parser_cls=self._parser_cls)
         elif root is None:
             raise ValueError("Needs either text or root argument")
         self.root = root
