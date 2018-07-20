@@ -5,7 +5,8 @@
 Tutorial II: Spider Project
 ===========================
 
-在这里我们将展示以工程的形式构建爬虫的流程。
+在这里我们将展示以工程的形式构建爬虫的流程，工程的完整代码位于 `examples/quotes <https://github.com/jadbin/xpaw/tree/master/examples/quotes>`_ 。
+
 同 :ref:`tutorial1` 一样，我们的爬取 `quotes.toscrape.com <http://quotes.toscrape.com/>`_ 网站中所有的quotes并以json的形式保存下来，每个quote包含如下几个字段:
 
 ============  ======================

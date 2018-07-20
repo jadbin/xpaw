@@ -44,13 +44,17 @@ Spider API
 
     .. method:: start_requests()
 
-        生成初始请求，返回 :class:`~xpaw.http.HttpRequest` 的可迭代对象。
+        生成初始请求
+
+        :return: :class:`~xpaw.http.HttpRequest` 的可迭代对象。
 
     .. method:: parse(response)
 
-        解析爬取结果，返回可迭代对象，包括提取的新的请求 :class:`~xpaw.http.HttpRequest` ，和提取的数据 :class:`~xpaw.item.Item` 、 ``dict`` 等。
+        解析爬取结果
 
         :param ~xpaw.http.HttpResponse response: 爬取结果。
+
+        :return: 可迭代对象，可以是新的请求 :class:`~xpaw.http.HttpRequest` ，和提取的数据 :class:`~xpaw.item.Item` 、 ``dict`` 等。
 
     .. method:: open()
 

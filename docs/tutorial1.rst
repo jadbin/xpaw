@@ -77,7 +77,7 @@ Spider Overview
 
 
     if __name__ == '__main__':
-        run_spider(QuotesSpider, log_level="DEBUG")
+        run_spider(QuotesSpider, log_level='DEBUG')
 
 Start Requests
 --------------
@@ -132,12 +132,12 @@ HTML Features of Data
         </div>
     </div>
 
-我们可以发现每个quote都是位于一个class=quote的<div>标签中，以及quote的各项属性 (text, author, author_url, tags) 所在节点的特征:
+我们可以发现每个quote都是位于一个 ``class=quote`` 的 ``<div>`` 标签中，以及quote的各项属性 (text, author, author_url, tags) 所在节点的特征:
 
-- **text** : 位于class=text的<span>标签中
-- **author** : 位于class=author的<small>标签中
-- **author_url** : <small>标签紧邻的<a>标签的href属性
-- **tags** : 所有class=tag的<a>标签中
+- **text** : 位于 ``class=text`` 的 ``<span>`` 标签中
+- **author** : 位于 ``class=author`` 的 ``<small>`` 标签中
+- **author_url** : ``<small>`` 标签紧邻的 ``<a>`` 标签的 ``href`` 属性
+- **tags** : 所有 ``class=tag`` 的 ``<a>`` 标签中
 
 HTML Features of Links
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -160,12 +160,12 @@ HTML Features of Links
     </nav>
 
 
-我们发现翻页 "Next |rarr|" 的对应着class=next的<li>标签中的<a>标签的href属性。
+我们发现翻页 "Next |rarr|" 的对应着 ``class=next`` 的 ``<li>`` 标签中的 ``<a>`` 标签的 ``href`` 属性。
 
 Extracting Data & Links
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-在得到了数据以及链接相关的HTML特征之后，我们将特征用CSS Selector语法对其描述，并借助selector的提取quote和翻页的链接:
+在得到了数据以及链接相关的HTML特征之后，我们将特征用CSS Selector语法对其描述，并借助 :class:`~xpaw.selector.Selector` 提取quote和翻页的链接:
 
 .. code-block:: python
 
@@ -184,25 +184,10 @@ Extracting Data & Links
             next_page_url = urljoin(str(response.url), next_page[0].attr('href'))
             yield HttpRequest(next_page_url, callback=self.parse)
 
-有关CSS Selector语法的详细信息可以参考 `CSS Selectors <http://w3schools.bootcss.com/cssref/css_selectors.html>`_ 。
+有关CSS Selector语法的详细信息，可以参考 `CSS Selector Reference <http://w3schools.bootcss.com/cssref/css_selectors.html>`_ 。
 
-我们也可以选择用XPath来定位quote的各项属性以及翻页按钮所在的节点：
-
-.. code-block:: python
-
-    ... (omitted)
-    selector = Selector(response.text)
-    for quote in selector.xpath('//div[@class="quote"]'):
-        text = quote.xpath('.//span[@itemprop="text"]')[0].text
-        author = quote.xpath('.//small[@itemprop="author"]')[0].text
-        author_url = quote.xpath('.//span/a/@href')[0].text
-        author_url = urljoin(str(response.url), author_url)
-        tags = quote.xpath('.//div[@class="tags"]/a').text
-        ...
-    next_page = selector.xpath('//li[@class="next"]/a/@href')
-    ...
-
-有关XPath的详细信息可以参考 `XPath Syntax <http://w3schools.bootcss.com/xsl/xpath_syntax.html>`_ 。
+我们也可以通过XPath语法来提取所需数据。
+更多有关 :class:`~xpaw.selector.Selector` 的使用方法，请参考 :ref:`selector` 章节。
 
 Storing Data
 ------------
@@ -220,12 +205,12 @@ Running Spider
 --------------
 
 我们通过xpaw内置的 ``run_spider`` 函数来运行spider，函数的第一个参数为spider类，相关配置可以通过关键词参数的形式进行设置。
-例如这里我们通过 ``log_level="DEBUG"`` 设定日志的级别为 ``DEBUG`` 。
+例如这里我们通过 ``log_level='DEBUG'`` 设定日志的级别为 ``DEBUG`` 。
 具体的配置项可参考 :ref:`settings` 。
 
 .. code-block:: python
 
     if __name__ == '__main__':
-        run_spider(QuotesSpider, log_level="DEBUG")
+        run_spider(QuotesSpider, log_level='DEBUG')
 
 运行我们的spider后会在同级目录下生成了quotes.json文件，打开即可看到爬取的quotes数据。

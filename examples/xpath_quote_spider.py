@@ -24,4 +24,4 @@ class XPathQuotesSpider(Spider):
 
 
 if __name__ == '__main__':
-    run_spider(XPathQuotesSpider, log_level="DEBUG")
+    run_spider(XPathQuotesSpider, log_level='DEBUG')

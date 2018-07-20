@@ -33,4 +33,4 @@ class QuotesSpider(Spider):
 
 
 if __name__ == '__main__':
-    run_spider(QuotesSpider, log_level="DEBUG")
+    run_spider(QuotesSpider, log_level='DEBUG')

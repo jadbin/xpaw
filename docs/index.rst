@@ -90,6 +90,7 @@ Table of Contents
 
     spider
     req_resp
+    selector
     settings
 
 .. toctree::
