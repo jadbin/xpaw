@@ -29,3 +29,9 @@ class UsageError(Exception):
     """
     CLI usage error.
     """
+
+
+class StopCluster(Exception):
+    """
+    Stop cluster.
+    """

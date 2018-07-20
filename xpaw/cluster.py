@@ -9,7 +9,7 @@ import inspect
 
 from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
-from .errors import IgnoreRequest, IgnoreItem
+from .errors import IgnoreRequest, IgnoreItem, StopCluster
 from .downloader import DownloaderMiddlewareManager
 from .spider import Spider, SpiderMiddlewareManager
 from .eventbus import EventBus
@@ -184,13 +184,13 @@ class LocalCluster:
                     log.warning("Failed to make the request %s: %s", req, e)
                 await self.spider.request_error(req, e)
             else:
-                await self._handle_response(req, resp)
+                await self._handle_response(resp)
             self._req_in_job[coro_id] = None
             # check if it's all done
             if self._all_done():
                 self.shutdown()
 
-    async def _handle_response(self, req, resp):
+    async def _handle_response(self, resp):
         if isinstance(resp, HttpRequest):
             await self._push_without_duplication(resp)
         elif isinstance(resp, HttpResponse):
@@ -202,7 +202,11 @@ class LocalCluster:
             except CancelledError:
                 raise
             except Exception as e:
-                log.warning("Failed to parse the response %s: %s", req, e)
+                if isinstance(e, StopCluster):
+                    log.info('Request to stop cluster: %s', e)
+                    self.shutdown()
+                else:
+                    log.warning("Failed to parse the response %s: %s", resp, e)
 
     async def _handle_result(self, result):
         if isinstance(result, HttpRequest):
