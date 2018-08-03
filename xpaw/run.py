@@ -25,27 +25,27 @@ def run_spider(spider, **kwargs):
 
 
 def run_cluster(proj_dir=None, base_config=None):
-    config = _load_job_config(proj_dir=proj_dir, base_config=base_config)
+    config = load_job_config(proj_dir=proj_dir, base_config=base_config)
     utils.configure_logger('xpaw', config)
     if config.getbool('daemon'):
         utils.be_daemon()
     pid_file = config.get('pid_file')
-    if pid_file is not None:
-        with open(pid_file, 'w') as f:
-            f.write(str(os.getpid()))
+    _write_pid_file(pid_file)
     try:
         cluster = LocalCluster(config)
     except Exception as e:
         log.error('Fatal error occurred when create cluster: %s', e)
         _remove_pid_file(pid_file)
+        utils.remove_logger('xpaw')
         raise
     try:
         cluster.start()
     finally:
         _remove_pid_file(pid_file)
+        utils.remove_logger('xpaw')
 
 
-def _load_job_config(proj_dir=None, base_config=None):
+def load_job_config(proj_dir=None, base_config=None):
     if proj_dir is not None and proj_dir not in sys.path:
         # add project path
         sys.path.append(proj_dir)
@@ -61,6 +61,12 @@ def _load_job_config(proj_dir=None, base_config=None):
                 job_config.set(k, v)
     job_config.update(base_config)
     return job_config
+
+
+def _write_pid_file(pid_file):
+    if pid_file is not None:
+        with open(pid_file, 'w') as f:
+            f.write(str(os.getpid()))
 
 
 def _remove_pid_file(pid_file):

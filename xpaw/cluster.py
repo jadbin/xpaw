@@ -54,40 +54,69 @@ class LocalCluster:
         self._start_future = None
         self._supervisor_future = None
         self._is_running = False
+        self._stop_loop = False
+        self._run_lock = None
 
     def start(self):
         if self._is_running:
             return
-        self.loop.run_until_complete(self.event_bus.send(events.cluster_start))
-        self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
-        self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.loop)
-        downloader_clients = self.config.getint("downloader_clients")
-        log.info("Downloader clients: %s", downloader_clients)
-        self._job_futures = []
-        for i in range(downloader_clients):
-            f = asyncio.ensure_future(self._pull_requests(i), loop=self.loop)
-            self._job_futures.append(f)
-        self._job_futures_done = set()
-        self._req_in_job = [None] * downloader_clients
-        self.loop.add_signal_handler(signal.SIGINT, lambda sig=signal.SIGINT: self.shutdown(sig=sig))
-        self.loop.add_signal_handler(signal.SIGTERM, lambda sig=signal.SIGTERM: self.shutdown(sig=sig))
         self._is_running = True
-        log.info("Cluster is running")
+        self._stop_loop = True
+        log.info("Event loop is running")
+        self.loop.add_signal_handler(signal.SIGINT, lambda sig=signal.SIGINT: self._exit(sig=sig))
+        self.loop.add_signal_handler(signal.SIGTERM, lambda sig=signal.SIGTERM: self._exit(sig=sig))
+        asyncio.ensure_future(self._run(), loop=self.loop)
         try:
             self.loop.run_forever()
         except Exception as e:
             log.error("Fatal error occurred while cluster is running: %s", e)
             raise
         finally:
-            log.info("Cluster is stopped")
+            log.info("Event loop is stopped")
 
-    def shutdown(self, sig=None):
-        if sig is not None:
-            log.info('Received shutdown signal: %s', sig)
+    async def run(self):
+        if self._is_running:
+            return
+        self._is_running = True
+        self._stop_loop = False
+        await self._run()
+        self._run_lock = asyncio.Future(loop=self.loop)
+        await self._run_lock
+        self._run_lock = None
+
+    async def _run(self):
+        await self.event_bus.send(events.cluster_start)
+        self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
+        self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.loop)
+        downloader_clients = self.config.getint("downloader_clients")
+        log.info("The maximum number of simultaneous clients: %s", downloader_clients)
+        self._job_futures = []
+        for i in range(downloader_clients):
+            f = asyncio.ensure_future(self._pull_requests(i), loop=self.loop)
+            self._job_futures.append(f)
+        self._job_futures_done = set()
+        self._req_in_job = [None] * downloader_clients
+        log.info('Cluster is loaded')
+
+    def stop(self):
         if not self._is_running:
             return
         self._is_running = False
-        asyncio.ensure_future(self._shutdown(), loop=self.loop)
+        if self._stop_loop:
+            asyncio.ensure_future(self._stop(), loop=self.loop)
+        else:
+            asyncio.ensure_future(self._shutdown(), loop=self.loop)
+
+    def _exit(self, sig=None):
+        if sig is not None:
+            log.info('Received exit signal: %s', sig)
+        self.stop()
+
+    async def _stop(self):
+        await self._shutdown()
+        self.loop.remove_signal_handler(signal.SIGINT)
+        self.loop.remove_signal_handler(signal.SIGTERM)
+        self.loop.stop()
 
     async def _shutdown(self):
         log.info("Shutdown now")
@@ -115,7 +144,9 @@ class LocalCluster:
         await self.event_bus.send(events.cluster_shutdown)
         # wait cancelled futures
         await asyncio.wait(cancelled_futures, loop=self.loop)
-        self.loop.stop()
+        log.info('Cluster is unloaded')
+        if self._run_lock:
+            self._run_lock.set_result(True)
 
     async def _supervisor(self):
         timeout = self.config.getfloat("downloader_timeout")
@@ -131,7 +162,7 @@ class LocalCluster:
                         self._req_in_job[i] = None
             if self._all_done():
                 break
-        self.shutdown()
+        self._exit()
 
     def _all_done(self):
         if self._start_future.done() and len(self.queue) <= 0:
@@ -188,7 +219,7 @@ class LocalCluster:
             self._req_in_job[coro_id] = None
             # check if it's all done
             if self._all_done():
-                self.shutdown()
+                self._exit()
 
     async def _handle_response(self, resp):
         if isinstance(resp, HttpRequest):
@@ -204,7 +235,7 @@ class LocalCluster:
             except Exception as e:
                 if isinstance(e, StopCluster):
                     log.info('Request to stop cluster: %s', e)
-                    self.shutdown()
+                    self._exit()
                 else:
                     log.warning("Failed to parse the response %s: %s", resp, e)
 
@@ -220,7 +251,7 @@ class LocalCluster:
                 if isinstance(e, IgnoreItem):
                     await self.event_bus.send(events.item_ignored, item=result, error=e)
                 else:
-                    log.warning("Failed to handle item: %s", e)
+                    log.warning("Failed to handle item %s: %s", result, e)
             else:
                 await self.event_bus.send(events.item_scraped, item=result)
 

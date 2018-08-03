@@ -196,7 +196,7 @@ class DownloaderClients(Setting):
     metavar = 'INT'
     type = int
     default = 100
-    short_desc = 'the number of downloader clients'
+    short_desc = 'the maximum number of simultaneous clients'
 
 
 class DownloaderTimeout(Setting):
