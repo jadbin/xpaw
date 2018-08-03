@@ -92,6 +92,7 @@ Table of Contents
     req_resp
     selector
     settings
+    errors
 
 .. toctree::
     :caption: Advanced Usage
