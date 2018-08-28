@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import signal
 from asyncio import CancelledError
 import time
 import inspect
@@ -23,13 +22,9 @@ log = logging.getLogger(__name__)
 
 
 class LocalCluster:
-    def __init__(self, config):
+    def __init__(self, config, loop=None):
         self.config = config
-        try:
-            self.loop = asyncio.get_event_loop()
-        except RuntimeError:
-            self.loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.loop)
+        self.loop = loop or asyncio.get_event_loop()
         self.event_bus = EventBus()
         self.stats_collector = self._new_object_from_cluster(self.config.get('stats_collector'), self)
         self.queue = self._new_object_from_cluster(self.config.get('queue'), self)
@@ -55,31 +50,12 @@ class LocalCluster:
         self._start_future = None
         self._supervisor_future = None
         self._is_running = False
-        self._stop_loop = False
         self._run_lock = None
-
-    def start(self):
-        if self._is_running:
-            return
-        self._is_running = True
-        self._stop_loop = True
-        log.info("Event loop is running")
-        self.loop.add_signal_handler(signal.SIGINT, lambda sig=signal.SIGINT: self._exit(sig=sig))
-        self.loop.add_signal_handler(signal.SIGTERM, lambda sig=signal.SIGTERM: self._exit(sig=sig))
-        asyncio.ensure_future(self._run(), loop=self.loop)
-        try:
-            self.loop.run_forever()
-        except Exception as e:
-            log.error("Fatal error occurred while cluster is running: %s", e)
-            raise
-        finally:
-            log.info("Event loop is stopped")
 
     async def run(self):
         if self._is_running:
             return
         self._is_running = True
-        self._stop_loop = False
         await self._run()
         self._run_lock = asyncio.Future(loop=self.loop)
         await self._run_lock
@@ -103,21 +79,7 @@ class LocalCluster:
         if not self._is_running:
             return
         self._is_running = False
-        if self._stop_loop:
-            asyncio.ensure_future(self._stop(), loop=self.loop)
-        else:
-            asyncio.ensure_future(self._shutdown(), loop=self.loop)
-
-    def _exit(self, sig=None):
-        if sig is not None:
-            log.info('Received exit signal: %s', sig)
-        self.stop()
-
-    async def _stop(self):
-        await self._shutdown()
-        self.loop.remove_signal_handler(signal.SIGINT)
-        self.loop.remove_signal_handler(signal.SIGTERM)
-        self.loop.stop()
+        asyncio.ensure_future(self._shutdown(), loop=self.loop)
 
     async def _shutdown(self):
         log.info("Shutdown now")
@@ -163,7 +125,7 @@ class LocalCluster:
                         self._req_in_job[i] = None
             if self._all_done():
                 break
-        self._exit()
+        self.stop()
 
     def _all_done(self):
         if self._start_future.done() and len(self.queue) <= 0:
@@ -220,7 +182,7 @@ class LocalCluster:
             self._req_in_job[coro_id] = None
             # check if it's all done
             if self._all_done():
-                self._exit()
+                self.stop()
 
     async def _handle_response(self, resp):
         if isinstance(resp, HttpRequest):
@@ -236,7 +198,7 @@ class LocalCluster:
             except Exception as e:
                 if isinstance(e, StopCluster):
                     log.info('Request to stop cluster: %s', e)
-                    self._exit()
+                    self.stop()
                 else:
                     log.warning("Failed to parse the response %s: %s", resp, e)
 

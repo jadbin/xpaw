@@ -51,6 +51,7 @@ def test_init(tmpdir, capsys):
     with pytest.raises(SystemExit) as excinfo:
         main(argv=['xpaw', 'init', proj_dir])
     assert excinfo.value.code == 1
+    _, _ = capsys.readouterr()
 
 
 def test_init_no_project_dir(capsys):

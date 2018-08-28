@@ -4,6 +4,8 @@ import logging
 import os
 from os.path import join, isfile
 import sys
+import asyncio
+import signal
 
 from .config import BaseConfig, Config
 from .cluster import LocalCluster
@@ -32,17 +34,38 @@ def run_cluster(proj_dir=None, base_config=None):
     pid_file = config.get('pid_file')
     _write_pid_file(pid_file)
     try:
-        cluster = LocalCluster(config)
+        loop = _get_event_loop()
+        cluster = LocalCluster(config, loop=loop)
     except Exception as e:
         log.error('Fatal error occurred when create cluster: %s', e)
         _remove_pid_file(pid_file)
         utils.remove_logger('xpaw')
         raise
+    default_signal_handlers = _set_signal_handlers(cluster)
     try:
-        cluster.start()
+        loop.run_until_complete(cluster.run())
     finally:
         _remove_pid_file(pid_file)
+        _recover_signal_handlers(default_signal_handlers)
         utils.remove_logger('xpaw')
+
+
+def make_requests(requests, **kwargs):
+    if 'log_level' not in kwargs:
+        kwargs['log_level'] = 'WARNING'
+    start_requests = [r for r in requests]
+    results = [None] * len(start_requests)
+    run_spider(RequestsSpider, start_requests=start_requests, results=results, **kwargs)
+    return results
+
+
+def _get_event_loop():
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop
 
 
 def load_job_config(proj_dir=None, base_config=None):
@@ -77,10 +100,18 @@ def _remove_pid_file(pid_file):
             log.warning('Cannot remove PID file %s: %s', pid_file, e)
 
 
-def make_requests(requests, **kwargs):
-    if 'log_level' not in kwargs:
-        kwargs['log_level'] = 'WARNING'
-    start_requests = [r for r in requests]
-    results = [None] * len(start_requests)
-    run_spider(RequestsSpider, start_requests=start_requests, results=results, **kwargs)
-    return results
+def _set_signal_handlers(cluster):
+    def _exit(signum, frame):
+        log.info('Received exit signal: %s', signum)
+        cluster.loop.call_soon_threadsafe(cluster.stop)
+
+    default_signal_handlers = [(signal.SIGINT, signal.getsignal(signal.SIGINT)),
+                               (signal.SIGTERM, signal.getsignal(signal.SIGTERM))]
+    signal.signal(signal.SIGINT, _exit)
+    signal.signal(signal.SIGTERM, _exit)
+    return default_signal_handlers
+
+
+def _recover_signal_handlers(handlers):
+    for h in handlers:
+        signal.signal(h[0], h[1])
