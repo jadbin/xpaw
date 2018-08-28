@@ -293,6 +293,38 @@ async def test_body(aiohttp_server, loop):
     await post_bytes()
 
 
+async def make_redirect_server(aiohttp_server):
+    async def process(request):
+        return web.Response(headers={'Location': 'http://python.org/'}, status=302)
+
+    app = web.Application()
+    app.router.add_route("GET", "/{tail:.*}", process)
+    server = await aiohttp_server(app)
+    return server
+
+
+async def test_allow_redirects(aiohttp_server, loop):
+    server = await make_redirect_server(aiohttp_server)
+    downloader = Downloader(loop=loop, allow_redirects=True)
+    downloader2 = Downloader(loop=loop, allow_redirects=False)
+
+    resp = await downloader.download(HttpRequest('http://{}:{}/'.format(server.host, server.port)))
+    assert resp.status // 100 == 2 and 'python.org' in str(resp.url)
+
+    resp = await downloader2.download(HttpRequest('http://{}:{}/'.format(server.host, server.port)))
+    assert resp.status // 100 == 3
+
+    req = HttpRequest('http://{}:{}/'.format(server.host, server.port))
+    req.meta['allow_redirects'] = False
+    resp = await downloader.download(req)
+    assert resp.status // 100 == 3
+
+    req = HttpRequest('http://{}:{}/'.format(server.host, server.port))
+    req.meta['allow_redirects'] = True
+    resp = await downloader2.download(req)
+    assert resp.status // 100 == 2 and 'python.org' in str(resp.url)
+
+
 class FooDownloadermw:
     def __init__(self, d):
         self.d = d

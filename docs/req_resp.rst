@@ -97,6 +97,10 @@ Request Meta Keys
 
 - ``timeout`` : 可以通过设置 ``timeout`` 分别控制每个request的超时时间。
 
+- ``verify_ssl`` : 是否校验SSL证书。
+
+- ``allow_redirects`` : 是否允许重定向。
+
 - ``auth`` : 设置request的HTTP Basic Auth，可以是 ``str`` 、 ``tuple`` 或 ``aiohttp.helpers.BasicAuth`` 。
 
 - ``proxy`` : 设置请求使用的代理。
@@ -108,7 +112,6 @@ Request Meta Keys
 - ``cookie_jar_key`` : 设置代表cookie jar的标识符。
 
 - ``depth`` : 当使用 :class:`~xpaw.spidermws.DepthMiddleware` 时，纪录当前request的深度。
-
 
 Response API
 ------------

@@ -101,7 +101,7 @@ class CrawlCommand(Command):
                 config.LogLevel, config.LogFile,
                 config.DumpDir,
                 config.DownloaderClients, config.DownloaderTimeout,
-                config.VerifySsl, config.CookieJarEnabled,
+                config.CookieJarEnabled,
                 config.MaxDepth)
 
     def add_arguments(self, parser):

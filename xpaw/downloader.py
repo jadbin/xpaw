@@ -20,9 +20,10 @@ log = logging.getLogger(__name__)
 
 
 class Downloader:
-    def __init__(self, timeout=None, verify_ssl=True, loop=None):
+    def __init__(self, timeout=None, verify_ssl=False, allow_redirects=True, loop=None):
         self._timeout = timeout
         self._verify_ssl = verify_ssl
+        self._allow_redirects = allow_redirects
         self._loop = loop or asyncio.get_event_loop()
 
     async def download(self, request):
@@ -30,11 +31,17 @@ class Downloader:
         timeout = request.meta.get("timeout")
         if timeout is None:
             timeout = self._timeout
+        verify_ssl = request.meta.get('verify_ssl')
+        if verify_ssl is None:
+            verify_ssl = self._verify_ssl
+        allow_redirects = request.meta.get('allow_redirects')
+        if allow_redirects is None:
+            allow_redirects = self._allow_redirects
         cookie_jar = request.meta.get('cookie_jar')
         auth = parse_request_auth(request.meta.get('auth'))
         proxy = parse_request_url(request.meta.get('proxy'))
         proxy_auth = parse_request_auth(request.meta.get('proxy_auth'))
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=self._verify_ssl, loop=self._loop),
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=verify_ssl, loop=self._loop),
                                          cookies=request.cookies,
                                          cookie_jar=cookie_jar,
                                          loop=self._loop) as session:
@@ -51,7 +58,8 @@ class Downloader:
                                            data=data,
                                            json=json,
                                            proxy=proxy,
-                                           proxy_auth=proxy_auth) as resp:
+                                           proxy_auth=proxy_auth,
+                                           allow_redirects=allow_redirects) as resp:
                     body = await resp.read()
                     cookies = resp.cookies
         response = HttpResponse(resp.url,

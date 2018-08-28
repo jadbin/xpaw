@@ -36,6 +36,7 @@ class LocalCluster:
         self.dupe_filter = self._new_object_from_cluster(self.config.get('dupe_filter'), self)
         self.downloader = Downloader(timeout=self.config.getfloat('downloader_timeout'),
                                      verify_ssl=self.config.getbool('verify_ssl'),
+                                     allow_redirects=self.config.getbool('allow_redirects'),
                                      loop=self.loop)
         self.spider = self._new_object_from_cluster(self.config.get('spider'), self)
         assert isinstance(self.spider, Spider), 'spider must inherit from the Spider class'

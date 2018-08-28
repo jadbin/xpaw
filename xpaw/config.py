@@ -210,10 +210,12 @@ class DownloaderTimeout(Setting):
 
 class VerifySsl(Setting):
     name = 'verify_ssl'
-    cli = ['--verify-ssl']
-    action = 'store_true'
     default = False
-    short_desc = 'verify ssl certifications'
+
+
+class AllowRedirects(Setting):
+    name = 'allow_redirects'
+    default = True
 
 
 class CookieJarEnabled(Setting):

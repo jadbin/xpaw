@@ -88,10 +88,18 @@ downloader_timeout
 verify_ssl
 ^^^^^^^^^^
 
-- ``--verify-ssl``
 - Default: ``False``
 
 是否验证ssl证书。
+
+.. _allow_redirects:
+
+allow_redirects
+^^^^^^^^^^^^^^^
+
+- Default: ``True``
+
+是否允许重定向。
 
 .. _cookie_jar_enabled:
 
