@@ -3,20 +3,28 @@
 Change log
 ==========
 
-0.10.2 (2018-??-??)
+0.10.2 (2018-08-28)
 -------------------
 
 New features
 ~~~~~~~~~~~~
 
-- 添加 ``request_ignored`` 事件
 - Field添加 ``type`` 参数，表示该字段的类型，在获取该字段的值时会进行类型转换
+- 添加 ``allow_redirects`` 配置项，控制是否允许重定向，默认为 ``True`` 。
+- HttpRequest的 ``meta`` 属性添加 ``verify_ssl`` 和 ``allow_redirects`` 字段，用于精确控制单次请求的相关行为。
 - 添加 ``StopCluster`` 异常，用于在spider在回调函数中停止cluster
+- 添加 ``request_ignored`` 事件
 
 Refactoring
 ~~~~~~~~~~~
 
 - ``user_agent`` 默认值设置为 ``:desktop``
+
+Bug fixes
+~~~~~~~~~
+
+- 运行spider之后不会再移除主程序已经设置的signal handler。
+
 
 0.10.1 (2018-07-18)
 -------------------
