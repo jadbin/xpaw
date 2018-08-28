@@ -70,8 +70,8 @@ class TestProxyMiddleware:
         monkeypatch.setattr(random, 'choice', Random().choice)
         proxy_list = ["105.12.103.232:3128", "16.82.3.20:3128"]
         mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list, loop=loop))
-        req = HttpRequest("http://example.com")
         for i in range(len(proxy_list)):
+            req = HttpRequest("http://example.com")
             mw.handle_request(req)
             assert req.meta['proxy'] == proxy_list[i]
 

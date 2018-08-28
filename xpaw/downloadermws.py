@@ -137,13 +137,14 @@ class CookiesMiddleware:
         return cls(dump_dir=utils.get_dump_dir(config), loop=cluster.loop)
 
     def handle_request(self, request):
-        cookie_jar_key = request.meta.get('cookie_jar_key')
-        if cookie_jar_key is None or isinstance(cookie_jar_key, (int, str)):
-            cookie_jar = self._cookie_jars.get(cookie_jar_key)
-            if cookie_jar is None:
-                cookie_jar = aiohttp.CookieJar(loop=self._loop)
-                self._cookie_jars[cookie_jar_key] = cookie_jar
-            request.meta['cookie_jar'] = cookie_jar
+        if 'cookie_jar' not in request.meta:
+            cookie_jar_key = request.meta.get('cookie_jar_key')
+            if cookie_jar_key is None or isinstance(cookie_jar_key, (int, str)):
+                cookie_jar = self._cookie_jars.get(cookie_jar_key)
+                if cookie_jar is None:
+                    cookie_jar = aiohttp.CookieJar(loop=self._loop)
+                    self._cookie_jars[cookie_jar_key] = cookie_jar
+                request.meta['cookie_jar'] = cookie_jar
 
     def open(self):
         if self._dump_dir:
@@ -182,13 +183,14 @@ class ProxyMiddleware:
         return cls(proxy=proxy)
 
     def handle_request(self, request):
-        if isinstance(request.url, str):
-            url = URL(request.url)
-        else:
-            url = request.url
-        proxy = self.get_proxy(url.scheme)
-        if proxy:
-            request.meta['proxy'] = proxy
+        if 'proxy' not in request.meta:
+            if isinstance(request.url, str):
+                url = URL(request.url)
+            else:
+                url = request.url
+            proxy = self.get_proxy(url.scheme)
+            if proxy:
+                request.meta['proxy'] = proxy
 
     def get_proxy(self, scheme):
         if scheme not in self._proxies:
