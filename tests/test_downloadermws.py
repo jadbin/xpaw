@@ -8,7 +8,7 @@ import pytest
 from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
-from xpaw.errors import IgnoreRequest, NetworkError, NotEnabled
+from xpaw.errors import IgnoreRequest, ClientError, NotEnabled, TimeoutError
 from xpaw.version import __version__
 from xpaw.downloader import Downloader
 from xpaw.eventbus import EventBus
@@ -124,9 +124,9 @@ class TestRetryMiddleware:
         req = HttpRequest("http://example.com")
         err = ValueError()
         assert mw.handle_error(req, err) is None
-        err2 = NetworkError()
-        retry_req2 = mw.handle_error(req, err2)
-        assert isinstance(retry_req2, HttpRequest) and str(retry_req2.url) == str(req.url)
+        for err in [ClientError(), TimeoutError()]:
+            retry_req = mw.handle_error(req, err)
+            assert isinstance(retry_req, HttpRequest) and str(retry_req.url) == str(req.url)
 
     def test_retry(self):
         max_retry_times = 2

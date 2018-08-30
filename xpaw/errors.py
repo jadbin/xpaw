@@ -1,5 +1,9 @@
 # coding=utf-8
 
+import asyncio
+
+TimeoutError = asyncio.TimeoutError
+
 
 class NotEnabled(Exception):
     """
@@ -7,9 +11,9 @@ class NotEnabled(Exception):
     """
 
 
-class NetworkError(Exception):
+class ClientError(Exception):
     """
-    Network error.
+    Downloader client error.
     """
 
 

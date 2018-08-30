@@ -14,7 +14,7 @@ from aiohttp.helpers import BasicAuth
 
 from .middleware import MiddlewareManager
 from .http import HttpRequest, HttpResponse
-from .errors import NetworkError
+from .errors import ClientError, TimeoutError
 
 log = logging.getLogger(__name__)
 
@@ -101,9 +101,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     response = await downloader.download(request)
                 except CancelledError:
                     raise
+                except asyncio.TimeoutError:
+                    log.debug('Request timeout: %s', request)
+                    raise TimeoutError('Request timeout')
                 except Exception as e:
-                    log.debug("Network error: %s", e)
-                    raise NetworkError(e)
+                    log.debug("Client error: %s %s", request, e)
+                    raise ClientError(e)
                 else:
                     res = response
         except CancelledError:

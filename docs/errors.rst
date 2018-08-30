@@ -13,9 +13,13 @@ Built-in Errors
 
     在加载组件的时候抛出的异常，表示该组件未启用。
 
-.. class:: xpaw.errors.NetworkError
+.. class:: xpaw.errors.ClientError
 
-    在downloader下载过程中抛出的异常，例如超时、服务器无法访问等。
+    在downloader发起请求过程中抛出的异常，例如服务器无法访问等。
+
+.. class:: xpaw.errors.TimeoutError
+
+    请求超时。
 
 .. class:: xpaw.errors.IgnoreRequest
 

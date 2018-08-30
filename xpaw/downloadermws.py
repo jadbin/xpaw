@@ -9,7 +9,7 @@ import pickle
 import aiohttp
 from yarl import URL
 
-from .errors import IgnoreRequest, NetworkError, NotEnabled
+from .errors import IgnoreRequest, ClientError, NotEnabled, TimeoutError
 from .version import __version__
 from . import utils
 
@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class RetryMiddleware:
-    RETRY_ERRORS = (NetworkError,)
+    RETRY_ERRORS = (ClientError, TimeoutError)
 
     def __init__(self, max_retry_times, retry_http_status=None):
         self._max_retry_times = max_retry_times
@@ -70,14 +70,13 @@ class RetryMiddleware:
     def retry(self, request, reason):
         retry_times = request.meta.get("retry_times", 0) + 1
         if retry_times <= self._max_retry_times:
-            log.debug("We will retry the request %s because of %s", request, reason)
+            log.debug('Retry %s (failed %s times): %s', request, retry_times, reason)
             retry_req = request.copy()
             retry_req.meta["retry_times"] = retry_times
             retry_req.dont_filter = True
             return retry_req
         else:
-            log.info("The request %s has been retried %s times,"
-                     " and it will be aborted", request, self._max_retry_times)
+            log.info('Abort %s (failed %s times): %s', request, retry_times, reason)
             raise IgnoreRequest(reason)
 
 
