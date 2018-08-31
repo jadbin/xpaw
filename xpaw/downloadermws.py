@@ -39,7 +39,7 @@ class RetryMiddleware:
     def handle_response(self, request, response):
         for p in self._http_status:
             if self.match_status(p, response.status):
-                return self.retry(request, "http status={}".format(response.status))
+                return self.retry(request, "HTTP status={}".format(response.status))
 
     @staticmethod
     def match_status(pattern, status):
@@ -65,7 +65,7 @@ class RetryMiddleware:
 
     def handle_error(self, request, error):
         if isinstance(error, self.RETRY_ERRORS):
-            return self.retry(request, str(error))
+            return self.retry(request, error)
 
     def retry(self, request, reason):
         retry_times = request.meta.get("retry_times", 0) + 1
@@ -76,7 +76,7 @@ class RetryMiddleware:
             retry_req.dont_filter = True
             return retry_req
         else:
-            log.info('Abort %s (failed %s times): %s', request, retry_times, reason)
+            log.debug('Abort %s (failed %s times): %s', request, retry_times, reason)
             raise IgnoreRequest(reason)
 
 
