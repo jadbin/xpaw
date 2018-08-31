@@ -1,16 +1,16 @@
 # coding=utf-8
 
 import sys
-from os.path import join, abspath, dirname
+from os.path import join, dirname
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
-with open('README.rst', 'r', encoding='utf-8') as fd:
+with open(join(dirname(__file__), 'README.rst'), 'r', encoding='utf-8') as fd:
     long_description = fd.read()
 
 
 def read_version():
-    p = join(abspath(dirname(__file__)), "xpaw", "version.py")
+    p = join(dirname(__file__), "xpaw", "version.py")
     with open(p, 'r', encoding='utf-8') as f:
         return f.read().split("=")[-1].strip().strip('"')
 
@@ -29,7 +29,7 @@ install_requires = [
     'cssselect>=1.0.3,<2.0'
 ]
 
-with open('requirements_test.txt', 'r') as f:
+with open(join(dirname(__file__), 'requirements_test.txt'), 'r', encoding='utf-8') as f:
     tests_require = [l.strip() for l in f]
 
 
