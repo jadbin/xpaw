@@ -151,7 +151,7 @@ class LocalCluster:
                 res = await self.spidermw.start_requests(self.spider)
                 for r in res:
                     if isinstance(r, HttpRequest):
-                        await self._push_without_duplication(r)
+                        await self.schedule(r)
                 if tick <= 0:
                     break
                 t = time.time() - t
@@ -186,7 +186,7 @@ class LocalCluster:
 
     async def _handle_response(self, resp):
         if isinstance(resp, HttpRequest):
-            await self._push_without_duplication(resp)
+            await self.schedule(resp)
         elif isinstance(resp, HttpResponse):
             await self.event_bus.send(events.response_received, response=resp)
             try:
@@ -204,7 +204,7 @@ class LocalCluster:
 
     async def _handle_result(self, result):
         if isinstance(result, HttpRequest):
-            await self._push_without_duplication(result)
+            await self.schedule(result)
         elif isinstance(result, (BaseItem, dict)):
             try:
                 await self.item_pipeline.handle_item(result)
@@ -227,7 +227,7 @@ class LocalCluster:
             obj = obj_cls()
         return obj
 
-    async def _push_without_duplication(self, request):
+    async def schedule(self, request):
         res = self.dupe_filter.is_duplicated(request)
         if inspect.iscoroutine(res):
             res = await res

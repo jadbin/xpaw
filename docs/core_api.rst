@@ -33,27 +33,31 @@ Cluster API
 ``from_cluster`` 提供了获取cluster的途径，通过cluster我们不仅可以获取到 :attr:`~xpaw.cluster.LocalCluster.config` ，也可以获取到其他的我们需要使用的cluster的属性。
 
 
-.. class:: xpaw.cluster.LocalCluster(config)
+.. class:: xpaw.cluster.LocalCluster(config, loop=None)
 
-    本地模式的cluster。
+    本地模式的cluster
 
-    :param ~xpaw.config.Config config: 爬虫相关的配置项。
+    :param ~xpaw.config.Config config: 爬虫相关的配置项
+
+    :param loop: event loop
 
     .. attribute:: config
 
     爬虫相关的配置项，对于 :attr:`~xpaw.cluster.LocalCluster.config` 的使用可以参考 :ref:`config_api` 。
 
-
-    .. method:: start()
+    .. method:: run()
 
         启动cluster
 
-    .. method:: shutdown(sig=None)
+    .. method:: stop()
 
         停止cluster
 
-        :param sig: 停止信号
+    .. method:: schedule(request)
 
+        向运行中的cluster添加请求
+
+        :param ~xpaw.http.HttpRequest request: 请求
 
 .. _config_api:
 
