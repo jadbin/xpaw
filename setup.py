@@ -29,7 +29,8 @@ install_requires = [
     'cssselect>=1.0.3,<2.0'
 ]
 
-tests_requires = install_requires + ['pytest', 'pytest-aiohttp>=0.3.0,<0.4']
+with open('requirements_test.txt', 'r') as f:
+    tests_require = [l.strip() for l in f]
 
 
 def main():
@@ -51,8 +52,9 @@ def main():
         entry_points={
             "console_scripts": ["xpaw = xpaw.cli:main"]
         },
+        python_requires='>=3.5.3',
         install_requires=install_requires,
-        tests_require=tests_requires,
+        tests_require=tests_require,
         cmdclass={"test": PyTest},
         classifiers=[
             "License :: OSI Approved :: Apache Software License",
