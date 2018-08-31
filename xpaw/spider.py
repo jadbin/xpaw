@@ -8,6 +8,7 @@ from .middleware import MiddlewareManager
 from . import events
 from .utils import iterable_to_list
 from .http import HttpRequest
+from .errors import IgnoreRequest
 
 log = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ class Spider:
         return res
 
     async def request_error(self, request, error):
+        log.warning('%s is failed: %s', request, error, exc_info=None if isinstance(error, IgnoreRequest) else True)
         try:
             if request and request.errback:
                 r = self._parse_method(request.errback)(request, error)
@@ -61,8 +63,8 @@ class Spider:
                     await r
         except CancelledError:
             raise
-        except Exception as e:
-            log.warning("Error occurred in error callback: %s", e)
+        except Exception:
+            log.warning("Error occurred in error callback", exc_info=True)
 
     def _parse_method(self, method):
         if isinstance(method, str):

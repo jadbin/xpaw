@@ -36,8 +36,8 @@ def run_cluster(proj_dir=None, base_config=None):
     try:
         loop = _get_event_loop()
         cluster = LocalCluster(config, loop=loop)
-    except Exception as e:
-        log.error('Fatal error occurred when create cluster: %s', e)
+    except Exception:
+        log.error('Failed to create cluster', exc_info=True)
         _remove_pid_file(pid_file)
         utils.remove_logger('xpaw')
         raise

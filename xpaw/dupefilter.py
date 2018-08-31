@@ -27,7 +27,7 @@ class HashDupeFilter:
             return False
         h = utils.request_fingerprint(request)
         if h in self._hash:
-            log.debug("Find the request %s is duplicated", request)
+            log.debug("%s is duplicated", request)
             return True
         self._hash.add(h)
         return False

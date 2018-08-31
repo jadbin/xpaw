@@ -29,7 +29,7 @@ class DepthMiddleware:
                 if self._max_depth is None or depth <= self._max_depth:
                     yield r
                 else:
-                    log.debug("The request %s will be aborted as the depth > %s", r, self._max_depth)
+                    log.debug("Abort %s: depth > %s", r, self._max_depth)
             else:
                 yield r
 

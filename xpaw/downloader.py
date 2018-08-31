@@ -102,10 +102,10 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 except CancelledError:
                     raise
                 except asyncio.TimeoutError:
-                    log.debug('Request timeout: %s', request)
+                    log.debug('%s is timeout', request)
                     raise TimeoutError('Request timeout')
                 except Exception as e:
-                    log.debug("Client error: %s %s", request, e)
+                    log.debug("%s is error: %s", request, e)
                     raise ClientError(e)
                 else:
                     res = response

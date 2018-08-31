@@ -120,7 +120,7 @@ class LocalCluster:
                 if f.done():
                     if i not in self._job_futures_done:
                         self._job_futures_done.add(i)
-                        reason = "cancelled" if f.cancelled() else str(f.exception())
+                        reason = "This future is cancelled" if f.cancelled() else str(f.exception())
                         log.error("Worker[%s] is shutdown: %s", i, reason)
                         self._req_in_job[i] = None
             if self._all_done():
@@ -159,13 +159,13 @@ class LocalCluster:
                     await asyncio.sleep(tick - t, loop=self.loop)
         except CancelledError:
             raise
-        except Exception as e:
-            log.warning("Failed to generate start requests: %s", e)
+        except Exception:
+            log.warning("Failed to generate start requests", exc_info=True)
 
     async def _pull_requests(self, coro_id):
         while True:
             req = await self.queue.pop()
-            log.debug("The request %s has been pulled by worker[%s]", req, coro_id)
+            log.debug("%s -> worker[%s]", req, coro_id)
             self._req_in_job[coro_id] = req
             try:
                 resp = await self.downloadermw.download(self.downloader, req)
@@ -174,8 +174,6 @@ class LocalCluster:
             except Exception as e:
                 if isinstance(e, IgnoreRequest):
                     await self.event_bus.send(events.request_ignored, request=req, error=e)
-                else:
-                    log.warning("Failed to make the request %s: %s", req, e)
                 await self.spider.request_error(req, e)
             else:
                 await self._handle_response(resp)
@@ -200,7 +198,7 @@ class LocalCluster:
                     log.info('Request to stop cluster: %s', e)
                     self.stop()
                 else:
-                    log.warning("Failed to parse the response %s: %s", resp, e)
+                    log.warning("Failed to parse %s", resp, exc_info=True)
 
     async def _handle_result(self, result):
         if isinstance(result, HttpRequest):
@@ -214,7 +212,7 @@ class LocalCluster:
                 if isinstance(e, IgnoreItem):
                     await self.event_bus.send(events.item_ignored, item=result, error=e)
                 else:
-                    log.warning("Failed to handle item %s: %s", result, e)
+                    log.warning("Failed to handle %s", result, exc_info=True)
             else:
                 await self.event_bus.send(events.item_scraped, item=result)
 

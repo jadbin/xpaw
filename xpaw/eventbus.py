@@ -45,8 +45,8 @@ class EventBus:
                         await res
                 except CancelledError:
                     raise
-                except Exception as e:
-                    log.warning("Failed to send a event: %s", e)
+                except Exception:
+                    log.warning("Failed to send the event", exec_info=True)
         for i in del_list:
             del self._refs[event][i]
         del del_list
