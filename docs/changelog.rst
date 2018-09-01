@@ -3,6 +3,17 @@
 Change log
 ==========
 
+0.10.3 (2018-09-01)
+-------------------
+
+Refactoring
+~~~~~~~~~~~
+
+- ProxyMiddleware不会覆盖用户在HttpRequest ``meta`` 中设置的 ``proxy``
+- CookiesMiddleware不会覆盖用户在HttpRequest ``meta`` 中设置的 ``cookie_jar``
+- NetworkError更名为ClientError，同时请求超时改由新增的TimeoutError表示
+
+
 0.10.2 (2018-08-28)
 -------------------
 
@@ -35,6 +46,7 @@ New features
 - 新增 ``make_requests`` 函数，用于发起请求并获取对应的结果，详见 :ref:`make_requests`
 - ``log_level`` 支持小写字母配置，如 ``debug`` 等。
 
+
 0.10.0 (2018-07-15)
 -------------------
 
@@ -66,6 +78,7 @@ Refactoring
 - SetDupeFilter更名为HashDupeFilter
 - 修改aiohttp的版本限制为>=3.3.2
 
+
 0.9.1 (2018-04-16)
 ------------------
 
@@ -87,8 +100,8 @@ Refactoring
 New features
 ~~~~~~~~~~~~
 
-- 中间件的加载细分为内置中间件和用户自定义中间件两部分，内置中间件自动加载，用户中间件的加载由配置项确定；
-  中间件加载的顺序由配置的权值确定，权值越大越贴近downloader/spider
+- 中间件的加载细分为内置中间件和用户自定义中间件两部分，内置中间件自动加载，用户中间件的加载由配置项确定
+- 中间件加载的顺序由配置的权值确定，权值越大越贴近downloader/spider
 - 添加 ``NotEnabled`` 异常，在中间件/拓展的构造函数中控制抛出该异常来实现开启或禁用该中间件/拓展。
 - 添加UserAgentMiddleware，支持选择PC端或移动端的User-Agent，支持随机User-Agent
 - 支持配置日志写入指定文件
@@ -103,8 +116,8 @@ Refactoring
 
 - 移除ResponseNotMatchMiddleware
 - 移除ProxyAgentMiddle，原有功能并入ProxyMiddleware
-- 中间件的参数配置扁平化，修改了RetryMiddleware、ProxyMiddleware、DepthMiddleware的参数配置方式
-- ForwardedForMiddleware更名为ImitatingProxyMiddleware，新增添加 ``Via`` 请求头的功能
+- 修改了RetryMiddleware、ProxyMiddleware、DepthMiddleware的参数配置方式
+- ForwardedForMiddleware更名为ImitatingProxyMiddleware，用于设置HTTP请求头的 ``X-Forwarded-For`` 和 ``Via`` 字段
 - 系统配置 ``downloader_verify_ssl`` 更名为 ``verify_ssl`` ， ``downloader_cookie_jar_enabled`` 更名为 ``cookie_jar_enabled``
 - 更新了downloader和spider相关的错误处理流程
 - 更新了判定job结束的逻辑
@@ -234,7 +247,7 @@ New features
 - HttpResponse添加 ``encoding`` 和 ``text`` 字段，分别用于获取网页的编码及字符串形式的内容
 - 添加ResponseMatchMiddleware，用于初步判断得到的页面是否符合要求
 - 添加CookieJarMiddleware，用于维护请求过程中产生的cookie，同时HttpRequest的meta中添加系统项 ``cookie_jar`` 作为发起请求时使用的cookie jar
-- HttpRequest的meta中添加系统项 ``timeout`` ，用于精确控制某个请求的超时时间
+- HttpRequest的meta中添加 ``timeout`` 字段，用于精确控制某个请求的超时时间
 - 系统配置添加 ``queue_cls`` 项，用于替换默认的请求队列
 
 
