@@ -220,7 +220,7 @@ class AllowRedirects(Setting):
 
 class CookieJarEnabled(Setting):
     name = 'cookie_jar_enabled'
-    cli = ['--cookie-jar-enabled']
+    cli = ['--enable-cookie-jar']
     action = 'store_true'
     default = False
     short_desc = 'enable cookie jar'
