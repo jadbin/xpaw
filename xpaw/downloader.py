@@ -41,7 +41,9 @@ class Downloader:
         auth = parse_request_auth(request.meta.get('auth'))
         proxy = parse_request_url(request.meta.get('proxy'))
         proxy_auth = parse_request_auth(request.meta.get('proxy_auth'))
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=verify_ssl, loop=self._loop),
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=verify_ssl,
+                                                                        enable_cleanup_closed=True,
+                                                                        loop=self._loop),
                                          cookies=request.cookies,
                                          cookie_jar=cookie_jar,
                                          loop=self._loop) as session:
