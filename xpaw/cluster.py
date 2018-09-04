@@ -8,7 +8,7 @@ import inspect
 
 from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
-from .errors import IgnoreRequest, IgnoreItem, StopCluster
+from .errors import IgnoreRequest, IgnoreItem, StopCluster, TimeoutError, ClientError
 from .downloader import DownloaderMiddlewareManager
 from .spider import Spider, SpiderMiddlewareManager
 from .eventbus import EventBus
@@ -64,12 +64,12 @@ class LocalCluster:
     async def _run(self):
         await self.event_bus.send(events.cluster_start)
         self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
-        self._start_future = asyncio.ensure_future(self._push_start_requests(), loop=self.loop)
+        self._start_future = asyncio.ensure_future(self._generate_start_requests(), loop=self.loop)
         downloader_clients = self.config.getint("downloader_clients")
         log.info("The maximum number of simultaneous clients: %s", downloader_clients)
         self._job_futures = []
         for i in range(downloader_clients):
-            f = asyncio.ensure_future(self._pull_requests(i), loop=self.loop)
+            f = asyncio.ensure_future(self._download(i), loop=self.loop)
             self._job_futures.append(f)
         self._job_futures_done = set()
         self._req_in_job = [None] * downloader_clients
@@ -140,7 +140,7 @@ class LocalCluster:
             return True
         return False
 
-    async def _push_start_requests(self):
+    async def _generate_start_requests(self):
         try:
             if hasattr(self.spider.start_requests, "cron_job"):
                 tick = self.spider.start_requests.cron_tick
@@ -162,7 +162,7 @@ class LocalCluster:
         except Exception:
             log.warning("Failed to generate start requests", exc_info=True)
 
-    async def _pull_requests(self, coro_id):
+    async def _download(self, coro_id):
         while True:
             req = await self.queue.pop()
             log.debug("%s -> worker[%s]", req, coro_id)
@@ -175,6 +175,8 @@ class LocalCluster:
                 if isinstance(e, IgnoreRequest):
                     await self.event_bus.send(events.request_ignored, request=req, error=e)
                 await self.spider.request_error(req, e)
+                if not isinstance(e, (IgnoreRequest, TimeoutError, ClientError)):
+                    log.warning("Failed to request %s", req, exc_info=True)
             else:
                 await self._handle_response(resp)
             self._req_in_job[coro_id] = None
@@ -189,18 +191,21 @@ class LocalCluster:
             await self.event_bus.send(events.response_received, response=resp)
             try:
                 result = await self.spidermw.parse(self.spider, resp)
-                for r in result:
-                    await self._handle_result(r)
             except CancelledError:
                 raise
             except Exception as e:
                 if isinstance(e, StopCluster):
                     log.info('Request to stop cluster: %s', e)
                     self.stop()
-                else:
+                elif isinstance(e, IgnoreRequest):
+                    await self.event_bus.send(events.request_ignored, request=resp.request, error=e)
+                if not isinstance(e, (StopCluster, IgnoreRequest)):
                     log.warning("Failed to parse %s", resp, exc_info=True)
+            else:
+                for r in result:
+                    await self._handle_parsing_result(r)
 
-    async def _handle_result(self, result):
+    async def _handle_parsing_result(self, result):
         if isinstance(result, HttpRequest):
             await self.schedule(result)
         elif isinstance(result, (BaseItem, dict)):
@@ -211,7 +216,7 @@ class LocalCluster:
             except Exception as e:
                 if isinstance(e, IgnoreItem):
                     await self.event_bus.send(events.item_ignored, item=result, error=e)
-                else:
+                if not isinstance(e, IgnoreItem):
                     log.warning("Failed to handle %s", result, exc_info=True)
             else:
                 await self.event_bus.send(events.item_scraped, item=result)

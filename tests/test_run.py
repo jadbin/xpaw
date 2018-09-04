@@ -8,7 +8,7 @@ from xpaw.spider import Spider
 from xpaw.cli import main
 from xpaw.run import run_crawler, run_spider, make_requests
 from xpaw.http import HttpRequest, HttpResponse
-from xpaw.errors import IgnoreRequest
+from xpaw.errors import ClientError, HttpError
 
 
 def test_run_crawler(tmpdir):
@@ -48,10 +48,13 @@ def test_run_spider():
 
 
 def test_make_requests():
-    requests = [None, 'http://localhost:80', 'http://python.org/', HttpRequest('http://python.org')]
+    requests = [None, 'http://localhost:80',
+                'http://python.org/', HttpRequest('http://python.org'),
+                'http://httpbin.org/status/404']
     results = make_requests(requests)
     assert len(results) == len(requests)
     assert results[0] is None
-    assert isinstance(results[1], IgnoreRequest)
+    assert isinstance(results[1], ClientError)
     assert isinstance(results[2], HttpResponse) and results[2].status == 200
     assert isinstance(results[3], HttpResponse) and results[3].status == 200
+    assert isinstance(results[4], HttpError) and results[4].response.status == 404

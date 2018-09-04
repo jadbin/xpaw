@@ -55,10 +55,6 @@ class Spider:
         return res
 
     async def request_error(self, request, error):
-        if isinstance(error, IgnoreRequest):
-            log.debug('%s is failed: %s', request, error)
-        else:
-            log.warning('%s is failed: %s', request, error, exc_info=True)
         try:
             if request and request.errback:
                 r = self._parse_method(request.errback)(request, error)
@@ -67,7 +63,7 @@ class Spider:
         except CancelledError:
             raise
         except Exception:
-            log.warning("Error occurred in error callback", exc_info=True)
+            log.warning("Error occurred in the error callback of spider", exc_info=True)
 
     def _parse_method(self, method):
         if isinstance(method, str):

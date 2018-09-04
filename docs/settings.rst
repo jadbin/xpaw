@@ -252,6 +252,16 @@ max_depth
 
 爬虫的爬取的最大深度， ``None`` 表示没有限制。
 
+.. _allow_all_http_status:
+
+allow_all_http_status
+^^^^^^^^^^^^^^^^^^^^^
+
+- Default: ``False``
+
+允许处理所有HTTP status的 :class:`~xpaw.http.HttpResponse` 。
+默认情况下非2xx的 :class:`~xpaw.http.HttpResponse` 会被认为是请求失败。
+
 Components
 ----------
 

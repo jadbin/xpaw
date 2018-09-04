@@ -295,6 +295,11 @@ class MaxDepth(Setting):
     short_desc = 'maximum depth of spider'
 
 
+class AllowAllHttpStatus(Setting):
+    name = 'allow_all_http_status'
+    default = False
+
+
 class StatsCenter(Setting):
     name = 'stats_collector'
     default = 'xpaw.stats.StatsCollector'
@@ -341,6 +346,7 @@ class SpiderMiddlewaresBase(Setting):
     name = 'spider_middlewares_base'
     default = {
         # cluster side
+        'xpaw.spidermws.HttpErrorMiddleware': 100,
         'xpaw.spidermws.DepthMiddleware': 900
         # spider side
     }

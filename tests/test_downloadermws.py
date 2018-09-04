@@ -8,7 +8,7 @@ import pytest
 from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
-from xpaw.errors import IgnoreRequest, ClientError, NotEnabled, TimeoutError
+from xpaw.errors import ClientError, NotEnabled, TimeoutError
 from xpaw.version import __version__
 from xpaw.downloader import Downloader
 from xpaw.eventbus import EventBus
@@ -98,7 +98,7 @@ class TestProxyMiddleware:
 
 class TestRetryMiddleware:
     def test_handle_reponse(self):
-        mw = RetryMiddleware.from_cluster(Cluster(retry_http_status=(500,)))
+        mw = RetryMiddleware.from_cluster(Cluster(retry_http_status=(500,), max_retry_times=3))
         req = HttpRequest("http://example.com")
         resp = HttpResponse(URL("http://example.com"), 502)
         assert mw.handle_response(req, resp) is None
@@ -116,8 +116,7 @@ class TestRetryMiddleware:
         req4 = HttpRequest("http://example.com")
         req4.meta['retry_times'] = 3
         resp4 = HttpResponse(URL("http://example.com"), 500)
-        with pytest.raises(IgnoreRequest):
-            mw.handle_response(req4, resp4)
+        assert mw.handle_response(req4, resp4) is None
 
     def test_handle_error(self):
         mw = RetryMiddleware.from_cluster(Cluster())
@@ -137,8 +136,7 @@ class TestRetryMiddleware:
             retry_req = mw.retry(req, "")
             assert isinstance(retry_req, HttpRequest) and str(retry_req.url) == str(req.url)
             req = retry_req
-        with pytest.raises(IgnoreRequest):
-            mw.retry(req, "")
+        assert mw.retry(req, "") is None
 
     def test_not_enabled(self):
         with pytest.raises(NotEnabled):

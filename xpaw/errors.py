@@ -2,13 +2,20 @@
 
 import asyncio
 
-TimeoutError = asyncio.TimeoutError
-
 
 class NotEnabled(Exception):
     """
     Not enabled.
     """
+
+
+class UsageError(Exception):
+    """
+    CLI usage error.
+    """
+
+
+TimeoutError = asyncio.TimeoutError
 
 
 class ClientError(Exception):
@@ -23,15 +30,19 @@ class IgnoreRequest(Exception):
     """
 
 
+class HttpError(IgnoreRequest):
+    """
+    HTTP status is not 2xx.
+    """
+
+    def __init__(self, *args, response=None, **kwargs):
+        self.response = response
+        super().__init__(*args, **kwargs)
+
+
 class IgnoreItem(Exception):
     """
     Ignore this item.
-    """
-
-
-class UsageError(Exception):
-    """
-    CLI usage error.
     """
 
 

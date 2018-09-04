@@ -9,7 +9,7 @@ import pickle
 import aiohttp
 from yarl import URL
 
-from .errors import IgnoreRequest, ClientError, NotEnabled, TimeoutError
+from .errors import ClientError, NotEnabled, TimeoutError
 from .version import __version__
 from . import utils
 
@@ -76,8 +76,7 @@ class RetryMiddleware:
             retry_req.dont_filter = True
             return retry_req
         else:
-            log.debug('Abort %s (failed %s times): %s', request, retry_times, reason)
-            raise IgnoreRequest(reason)
+            log.debug('Give up retrying %s (failed %s times): %s', request, retry_times, reason)
 
 
 class DefaultHeadersMiddleware:
@@ -312,11 +311,11 @@ class UserAgentMiddleware:
                                                  random.randint(0, 9999), random.randint(0, 99))
             webkit = '{}.{}'.format(random.randint(531, 600), random.randint(0, 99))
             if device == 'desktop':
-                os = 'Macintosh; Intel Mac OS X 10_10_4'
+                os = 'Macintosh; Intel Mac OS X 10_13_6'
                 return ('Mozilla/5.0 ({}) AppleWebKit/{} (KHTML, like Gecko) '
                         'Chrome/{} Safari/{}').format(os, webkit, chrome_version, webkit)
             elif device == 'mobile':
-                os = 'iPhone; CPU iPhone OS 10_3 like Mac OS X'
-                mobile = '14E{:03d}'.format(random.randint(0, 999))
+                os = 'iPhone; CPU iPhone OS 11_4_1 like Mac OS X'
+                mobile = '15E{:03d}'.format(random.randint(0, 999))
                 return ('Mozilla/5.0 ({}) AppleWebKit/{} (KHTML, like Gecko) '
                         'CriOS/{} Mobile/{} Safari/{}').format(os, webkit, chrome_version, mobile, webkit)
