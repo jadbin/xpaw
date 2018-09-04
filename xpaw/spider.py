@@ -55,7 +55,10 @@ class Spider:
         return res
 
     async def request_error(self, request, error):
-        log.warning('%s is failed: %s', request, error, exc_info=None if isinstance(error, IgnoreRequest) else True)
+        if isinstance(error, IgnoreRequest):
+            log.debug('%s is failed: %s', request, error)
+        else:
+            log.warning('%s is failed: %s', request, error, exc_info=True)
         try:
             if request and request.errback:
                 r = self._parse_method(request.errback)(request, error)
