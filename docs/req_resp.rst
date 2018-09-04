@@ -18,7 +18,7 @@ Request API
     :param url: URL地址
     :type url: str or yarl.URL
     :param str method: HTTP method，``GET`` 、 ``POST`` 等
-    :param body: 请求发送的数据
+    :param body: 请求发送的数据。如果类型为 ``dict`` ，会默认为发送json格式的数据。
     :type body: bytes or str or dict or aiohttp.FormData
     :param params: 请求参数
     :type params: dict or multidict.MultiDict
@@ -93,7 +93,7 @@ Request API
 Request Meta Keys
 -----------------
 
-:class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 属性用于存储请求相关的元信息，其中xpaw预设的各项元信息如下：
+:class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 属性用于存储请求相关的元信息，其中内置的关键字如下：
 
 - ``timeout`` : 可以通过设置 ``timeout`` 分别控制每个request的超时时间。
 
@@ -162,7 +162,7 @@ Response API
 
     .. attribute:: meta
 
-        只读属性，是 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 属性的映射。
+        只读属性，即为对应的 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 属性。
 
     .. method:: copy()
 

@@ -20,12 +20,11 @@ Make Requests
 因此可以先通过 ``isinstance`` 判断是否是正常返回的结果 :class:`~xpaw.http.HttpResponse` 。
 其次，如果是 ``Exception`` ，则表示请求出现了错误，例如常见的有 :class:`~xpaw.errors.IgnoreRequest` ，表示经过若干次重试之后依然没正常返回结果。
 
-使用 :func:`~xpaw.run.make_requests` 可以避免自己实现并发的代价，并提供了错误重试等诸多可选功能。
+使用 :func:`~xpaw.run.make_requests` 可以实现请求的并发执行，并提供了错误重试等诸多可选功能。
 
 .. note::
-    :func:`~xpaw.run.make_requests` 不可以在 :class:`~xpaw.spider.Spider` 中使用。
-    其设计的初衷是我们可能面临这样的场景，只是想下载URL对应的网页，但又不想写爬虫这么复杂东西。
-    此外，在 :class:`~xpaw.spider.Spider` 中处理请求的过程已经是并发的，因而也无需使用 :func:`~xpaw.run.make_requests` 。
+    :func:`~xpaw.run.make_requests` 在 :class:`~xpaw.spider.Spider` 中使用会报错。
+    在 :class:`~xpaw.spider.Spider` 中处理请求的过程已经是并发的，因而也无需使用 :func:`~xpaw.run.make_requests` 。
 
 .. function:: xpaw.run.make_requests(requests, **kwargs)
 

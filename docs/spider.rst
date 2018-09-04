@@ -5,10 +5,11 @@ Spider
 
 用户自定义的spider需要继承 :class:`xpaw.spider.Spider` ，并重写如下函数:
 
-- :meth:`~xpaw.spider.Spider.start_requests` ：生成初始入口链接。
-- :meth:`~xpaw.spider.Spider.parse` ：从爬取的网页中提取出所需的数据和后续待爬取的链接。
-  该函数是默认处理 :class:`~xpaw.http.HttpResponse` 的函数，如果在每个生成的 :class:`~xpaw.http.HttpRequest` 中都通过 :attr:`~xpaw.http.HttpRequest.callback` 指定了相应的处理函数 ，也可以 **不重写** 该函数。
+- :meth:`~xpaw.spider.Spider.start_requests` ：返回初始入口URL构成的 :class:`~xpaw.http.HttpRequest` 。
+- :meth:`~xpaw.spider.Spider.parse` ：返回从爬取的网页中提取出所需的数据和后续待爬取的 :class:`~xpaw.http.HttpRequest` 。
 
+.. note::
+    :meth:`~xpaw.spider.Spider.parse` 是默认处理 :class:`~xpaw.http.HttpResponse` 的函数，如果在每个生成的 :class:`~xpaw.http.HttpRequest` 中都通过 :attr:`~xpaw.http.HttpRequest.callback` 指定了相应的处理函数 ，也可以不重写该函数。
 
 Spider API
 ----------
@@ -63,6 +64,43 @@ Spider API
     .. method:: close()
 
         爬虫完成工作时会调用该函数。
+
+Parsing Data to Callback
+------------------------
+
+我们可以通过 :attr:`~xpaw.http.HttpRequest.callback` 指定 :class:`~xpaw.http.HttpRequest` spider的某个成员函数来处理得到的 :class:`~xpaw.http.HttpResponse` 。
+例如：
+
+.. code-block:: python
+
+    def parse_index_page(self, response):
+        yield xpaw.HttpRequest("http://www.example.com/some_page.html",
+                               callback=self.parse_some_page)
+
+    def parse_some_page(self, response):
+        # handle the response of "http://www.example.com/some_page.html"
+        self.log('Visited: %s', response.url)
+
+有些时候，我们同时想传递一些和 :class:`~xpaw.http.HttpRequest` 相关的参数并能够在callback中获取到。
+例如，我们可能希望纪录父级页面的URL，即是由哪个页面跳转而来的。
+我们可以通过 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 实现参数的传递。
+以下是一个纪录父级页面的URL的示例：
+
+.. code-block:: python
+
+    def parse_index_page(self, response):
+        request = xpaw.HttpRequest("http://www.example.com/some_page.html",
+                                   callback=self.parse_some_page)
+        request.meta['referred'] = response.url
+        yield request
+
+    def parse_some_page(self, response):
+        self.log('Visited: %s', response.url)
+        self.log('Referred: %s', response.meta['referred'])
+
+.. note::
+    - :class:`~xpaw.http.HttpResponse` 的 :attr:`~xpaw.http.HttpResponse.meta` 属性即为对应 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 属性。
+    - 在使用 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 传递参数时，请避免使用内置的关键字，详见 :ref:`request_meta` 。
 
 Cron Job
 --------

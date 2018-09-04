@@ -105,7 +105,7 @@ xpaw成功获取到response之后，会调用在request中指定的 ``callback``
 在这个任务中，我们在 ``parse`` 函数中提取出quote的各项属性和翻页链接。
 
 .. note::
-    - spider中处理response的函数的返回值需为可迭代对象，如tuple, list, generator等。
+    - spider中处理response的函数的返回值需为 ``None`` 或可迭代对象，如tuple, list, generator等。
     - 在提取链接时我们不需要关注提取出URL是否重复了，xpaw会自动帮我们完成URL去重的工作。
 
 HTML Features of Data
