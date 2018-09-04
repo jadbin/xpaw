@@ -1,6 +1,10 @@
 # coding=utf-8
 
+import aiohttp
+
 from .utils import get_encoding_from_header, get_encoding_from_content
+
+FormData = aiohttp.FormData
 
 
 class HttpRequest:
