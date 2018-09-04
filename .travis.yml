@@ -1,9 +1,5 @@
 language: python
 sudo: false
-branches:
-  only:
-    - master
-    - develop
 matrix:
   include:
     - python: 3.5
