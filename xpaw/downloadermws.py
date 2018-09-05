@@ -37,6 +37,8 @@ class RetryMiddleware:
                    retry_http_status=config.getlist('retry_http_status'))
 
     def handle_response(self, request, response):
+        if request.meta.get('dont_retry', False):
+            return None
         for p in self._http_status:
             if self.match_status(p, response.status):
                 return self.retry(request, "HTTP status={}".format(response.status))
@@ -64,6 +66,8 @@ class RetryMiddleware:
         return match
 
     def handle_error(self, request, error):
+        if request.meta.get('dont_retry', False):
+            return None
         if isinstance(error, self.RETRY_ERRORS):
             return self.retry(request, error)
 

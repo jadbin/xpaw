@@ -153,6 +153,20 @@ class TestRetryMiddleware:
         assert RetryMiddleware.match_status("!20x", 400) is True
         assert RetryMiddleware.match_status("0200", 200) is False
 
+    def test_dont_retry(self):
+        mw = RetryMiddleware.from_cluster(Cluster(max_retry_times=1,
+                                                  retry_http_status=(500,)))
+        req = HttpRequest("http://example.com")
+        resp = HttpResponse(req.url, 500)
+        assert isinstance(mw.handle_response(req, resp), HttpRequest)
+        req.meta['dont_retry'] = True
+        assert mw.handle_response(req, resp) is None
+        del req.meta['dont_retry']
+        err = ClientError()
+        assert isinstance(mw.handle_error(req, err), HttpRequest)
+        req.meta['dont_retry'] = True
+        assert mw.handle_error(req, err) is None
+
 
 class TestCookiesMiddleware:
     def test_not_enabled(self):
