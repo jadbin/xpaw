@@ -16,14 +16,14 @@ Request API
     用户通过此类封装HTTP请求。
 
     :param url: URL地址
-    :type url: str or yarl.URL
+    :type url: str or :class:`~xpaw.http.URL`
     :param str method: HTTP method，``GET`` 、 ``POST`` 等
     :param body: 请求发送的数据。如果类型为 ``dict`` ，会默认为发送json格式的数据。
-    :type body: bytes or str or dict or aiohttp.FormData
+    :type body: bytes or str or dict or :class:`~xpaw.http.FormData`
     :param params: 请求参数
-    :type params: dict or multidict.MultiDict
+    :type params: dict or :class:`~xpaw.http.MultiDict`
     :param headers: HTTP headers
-    :type headers: dict or multidict.CIMultiDict
+    :type headers: dict or :class:`~xpaw.http.CIMultiDict`
     :param cookies: cookies
     :type cookies: dict
     :param dict meta: :attr:`~xpaw.http.HttpRequest.meta` 属性的初始值，用于存储请求相关的元信息
@@ -88,6 +88,23 @@ Request API
 
         复制request并替换部分属性。
 
+.. class:: xpaw.http.URL
+
+    同 ``yarl.URL`` ，提供了丰富的解析URL的方法。
+
+.. class:: xpaw.http.FormData
+
+    同 ``aiohttp.FormData`` ，用于构造POST请求的form data。
+
+.. class:: xpaw.http.MultiDict
+
+    同 ``multidict.MultiDict`` ，多值字典。
+
+.. class:: xpaw.http.CIMultiDict
+
+    同 ``multidict.CIMultiDict`` ，关键字大小写不敏感的多值字典。
+
+
 .. _request_meta:
 
 Request Meta Keys
@@ -113,24 +130,28 @@ Request Meta Keys
 
 - ``depth`` : 当使用 :class:`~xpaw.spidermws.DepthMiddleware` 时，纪录当前request的深度。
 
+- ``retry_times`` : 请求重试的次数。
+
+- ``dont_retry`` : 禁止重试请求。
+
 Response API
 ------------
 
 .. class:: xpaw.http.HttpResponse(url, status, body=None, headers=None, cookies=None, request=None)
 
     :param url: URL地址
-    :type url: str or yarl.URL
+    :type url: str or :class:`~xpaw.http.URL`
     :param int status: HTTP状态码
     :param bytes body: HTTP body
     :param headers: HTTP headers
-    :type headers: dict or multidict.CIMultiDict
+    :type headers: dict or :class:`~xpaw.http.CIMultiDict`
     :param cookies: cookies
     :type cookies: dict
     :param ~xpaw.http.HttpRequest request: 爬虫请求
 
     .. attribute:: url
 
-        URL地址，如果是xpaw生成的response则类型为 ``yarl.URL`` 。
+        URL地址，如果是xpaw生成的response则类型为 :class:`~xpaw.http.URL` 。
 
     .. attribute:: status
 
@@ -150,7 +171,7 @@ Response API
 
     .. attribute:: headers
 
-        HTTP headers，如果是xpaw生成的response则类型为 ``multidict.CIMultiDictProxy`` 。
+        HTTP headers，如果是xpaw生成的response则类型为 :class:`~xpaw.http.CIMultiDict` 。
 
     .. attribute:: cookies
 

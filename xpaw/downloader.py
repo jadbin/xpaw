@@ -8,12 +8,10 @@ from urllib.parse import urlsplit
 
 import aiohttp
 import async_timeout
-from yarl import URL
-from multidict import MultiDict
 from aiohttp.helpers import BasicAuth
 
 from .middleware import MiddlewareManager
-from .http import HttpRequest, HttpResponse
+from .http import HttpRequest, HttpResponse, URL, MultiDict, CIMultiDict
 from .errors import ClientError, TimeoutError
 
 log = logging.getLogger(__name__)
@@ -38,9 +36,9 @@ class Downloader:
         if allow_redirects is None:
             allow_redirects = self._allow_redirects
         cookie_jar = request.meta.get('cookie_jar')
-        auth = parse_request_auth(request.meta.get('auth'))
-        proxy = parse_request_url(request.meta.get('proxy'))
-        proxy_auth = parse_request_auth(request.meta.get('proxy_auth'))
+        auth = prepare_request_auth(request.meta.get('auth'))
+        proxy = prepare_request_url(request.meta.get('proxy'))
+        proxy_auth = prepare_request_auth(request.meta.get('proxy_auth'))
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=verify_ssl,
                                                                         enable_cleanup_closed=True,
                                                                         loop=self._loop),
@@ -53,10 +51,10 @@ class Downloader:
                 else:
                     data, json = request.body, None
                 async with session.request(request.method,
-                                           parse_request_url(request.url),
-                                           params=parse_request_params(request.params),
+                                           prepare_request_url(request.url),
+                                           params=prepare_request_params(request.params),
                                            auth=auth,
-                                           headers=request.headers,
+                                           headers=prepare_request_headers(request.headers),
                                            data=data,
                                            json=json,
                                            proxy=proxy,
@@ -64,9 +62,10 @@ class Downloader:
                                            allow_redirects=allow_redirects) as resp:
                     body = await resp.read()
                     cookies = resp.cookies
+        resp_headers = resp.headers.copy()
         response = HttpResponse(resp.url,
                                 resp.status,
-                                headers=resp.headers,
+                                headers=resp_headers,
                                 body=body,
                                 cookies=cookies)
         log.debug("HTTP response: %s", response)
@@ -157,7 +156,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         return error
 
 
-def parse_request_params(params):
+def prepare_request_params(params):
     if isinstance(params, dict):
         res = MultiDict()
         for k, v in params.items():
@@ -170,7 +169,20 @@ def parse_request_params(params):
     return params
 
 
-def parse_request_auth(auth):
+def prepare_request_headers(headers):
+    if isinstance(headers, dict):
+        res = CIMultiDict()
+        for k, v in headers.items():
+            if isinstance(v, (tuple, list)):
+                for i in v:
+                    res.add(k, i)
+            else:
+                res.add(k, v)
+        headers = res
+    return headers
+
+
+def prepare_request_auth(auth):
     if isinstance(auth, (tuple, list)):
         auth = BasicAuth(*auth)
     elif isinstance(auth, str):
@@ -178,7 +190,7 @@ def parse_request_auth(auth):
     return auth
 
 
-def parse_request_url(url):
+def prepare_request_url(url):
     if isinstance(url, str):
         res = urlsplit(url)
         if res.scheme == '':

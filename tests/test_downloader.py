@@ -5,10 +5,9 @@ import random
 
 from aiohttp import web
 from aiohttp.helpers import BasicAuth
-from multidict import MultiDict
 from aiohttp import FormData
 
-from xpaw.http import HttpRequest
+from xpaw.http import HttpRequest, MultiDict
 from xpaw.downloader import Downloader, DownloaderMiddlewareManager
 from xpaw.eventbus import EventBus
 from xpaw.config import Config

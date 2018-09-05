@@ -2,7 +2,6 @@
 
 import os
 import re
-import cgi
 import sys
 import hashlib
 import logging
@@ -11,7 +10,7 @@ import string
 from os.path import isfile, exists
 import inspect
 
-from yarl import URL
+from .http import URL
 
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
@@ -46,34 +45,6 @@ def configure_logger(name, config):
 
 def remove_logger(name):
     logging.getLogger(name).handlers.clear()
-
-
-def get_encoding_from_header(content_type):
-    if content_type:
-        content_type, params = cgi.parse_header(content_type)
-        if "charset" in params:
-            return params["charset"]
-
-
-_charset_flag = re.compile(r"""<meta.*?charset=["']*(.+?)["'>]""", flags=re.I)
-_pragma_flag = re.compile(r"""<meta.*?content=["']*;?charset=(.+?)["'>]""", flags=re.I)
-_xml_flag = re.compile(r"""^<\?xml.*?encoding=["']*(.+?)["'>]""")
-
-
-def get_encoding_from_content(content):
-    if isinstance(content, bytes):
-        content = content.decode("ascii", errors="ignore")
-    elif not isinstance(content, str):
-        raise ValueError("content should be bytes or str")
-    s = _charset_flag.search(content)
-    if s:
-        return s.group(1).strip()
-    s = _pragma_flag.search(content)
-    if s:
-        return s.group(1).strip()
-    s = _xml_flag.search(content)
-    if s:
-        return s.group(1).strip()
 
 
 def request_fingerprint(request):

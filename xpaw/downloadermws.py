@@ -7,11 +7,11 @@ from os.path import join, isfile
 import pickle
 
 import aiohttp
-from yarl import URL
 
 from .errors import ClientError, NotEnabled, TimeoutError
 from .version import __version__
 from . import utils
+from .http import URL
 
 log = logging.getLogger(__name__)
 
