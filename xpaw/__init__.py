@@ -1,8 +1,5 @@
 # coding=utf-8
 
-# Add patch to avoid 'TIME_WAIT'
-from . import _patch
-
 from .http import FormData, URL, MultiDict, CIMultiDict, HttpRequest, HttpResponse
 from .downloader import Downloader
 from .spider import Spider, every
@@ -16,5 +13,3 @@ __all__ = ['FormData', 'URL', 'MultiDict', 'CIMultiDict', 'HttpRequest', 'HttpRe
            'Selector',
            'Item', 'Field',
            'run_spider', 'run_crawler', 'make_requests']
-
-del _patch
