@@ -3,6 +3,21 @@
 Change log
 ==========
 
+0.11.0 (2018-??-??)
+-------------------
+
+New features
+~~~~~~~~~~~~
+
+- 新增HttpErrorMiddleware，默认情况下非2xx的HttpResponse将视为请求失败并抛出 ``HttpError`` 异常进入错误处理流程，可通过设置 ``allow_all_http_status=True`` 表示接受所有状态码的HttpResponse
+- HttpRequest ``meta`` 添加 ``dont_retry`` 字段，表示不重试该请求。
+
+Refactoring
+~~~~~~~~~~~
+
+- RetryMiddleware不再raise IgnoreRequest，即因达到重试次数上限而导致请求失败时不再封装为IgnoreRequest，将保留原有的HttpResponse或异常。
+- 命令行参数 ``--cookie-jar-enabled`` 更名为 ``--enable-cookie-jar`` ，配置项 ``cookie_jar_enabled`` 保持不变
+
 0.10.3 (2018-09-01)
 -------------------
 
@@ -11,7 +26,7 @@ Refactoring
 
 - ProxyMiddleware不会覆盖用户在HttpRequest ``meta`` 中设置的 ``proxy``
 - CookiesMiddleware不会覆盖用户在HttpRequest ``meta`` 中设置的 ``cookie_jar``
-- NetworkError更名为ClientError，同时请求超时改由新增的TimeoutError表示
+- NetworkError更名为ClientError，同时请求超时改由TimeoutError表示
 
 
 0.10.2 (2018-08-28)
@@ -22,7 +37,7 @@ New features
 
 - Field添加 ``type`` 参数，表示该字段的类型，在获取该字段的值时会进行类型转换
 - 添加 ``allow_redirects`` 配置项，控制是否允许重定向，默认为 ``True`` 。
-- HttpRequest的 ``meta`` 属性添加 ``verify_ssl`` 和 ``allow_redirects`` 字段，用于精确控制单次请求的相关行为。
+- HttpRequest ``meta`` 添加 ``verify_ssl`` 和 ``allow_redirects`` 字段，用于精确控制单次请求的相关行为。
 - 添加 ``StopCluster`` 异常，用于在spider在回调函数中停止cluster
 - 添加 ``request_ignored`` 事件
 
@@ -109,7 +124,7 @@ New features
 Bug fixes
 ~~~~~~~~~
 
-- 修复了request的fingerprint计算时没有考虑端口号的bug
+- 修复了HttpRequest的fingerprint计算时没有考虑端口号的bug
 
 Refactoring
 ~~~~~~~~~~~
@@ -246,8 +261,8 @@ New features
 
 - HttpResponse添加 ``encoding`` 和 ``text`` 字段，分别用于获取网页的编码及字符串形式的内容
 - 添加ResponseMatchMiddleware，用于初步判断得到的页面是否符合要求
-- 添加CookieJarMiddleware，用于维护请求过程中产生的cookie，同时HttpRequest的meta中添加系统项 ``cookie_jar`` 作为发起请求时使用的cookie jar
-- HttpRequest的meta中添加 ``timeout`` 字段，用于精确控制某个请求的超时时间
+- 添加CookieJarMiddleware，用于维护请求过程中产生的cookie，同时HttpRequest ``meta`` 中添加系统项 ``cookie_jar`` 作为发起请求时使用的cookie jar
+- HttpRequest ``meta`` 添加 ``timeout`` 字段，用于精确控制某个请求的超时时间
 - 系统配置添加 ``queue_cls`` 项，用于替换默认的请求队列
 
 

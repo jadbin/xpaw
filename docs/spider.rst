@@ -65,10 +65,10 @@ Spider API
 
         爬虫完成工作时会调用该函数。
 
-Parsing Data to Callback
-------------------------
+Parsing Data to Callback Functions
+----------------------------------
 
-我们可以通过 :attr:`~xpaw.http.HttpRequest.callback` 指定 :class:`~xpaw.http.HttpRequest` spider的某个成员函数来处理得到的 :class:`~xpaw.http.HttpResponse` 。
+我们可以通过 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.callback` 指定spider的某个成员函数来处理得到的 :class:`~xpaw.http.HttpResponse` 。
 例如：
 
 .. code-block:: python
@@ -81,7 +81,7 @@ Parsing Data to Callback
         # handle the response of "http://www.example.com/some_page.html"
         self.log('Visited: %s', response.url)
 
-有些时候，我们同时想传递一些和 :class:`~xpaw.http.HttpRequest` 相关的参数并能够在callback中获取到。
+有些时候，我们同时想传递一些和 :class:`~xpaw.http.HttpRequest` 相关的参数并能够在callback函数中获取到。
 例如，我们可能希望纪录父级页面的URL，即是由哪个页面跳转而来的。
 我们可以通过 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 实现参数的传递。
 以下是一个纪录父级页面的URL的示例：
@@ -91,16 +91,57 @@ Parsing Data to Callback
     def parse_index_page(self, response):
         request = xpaw.HttpRequest("http://www.example.com/some_page.html",
                                    callback=self.parse_some_page)
-        request.meta['referred'] = response.url
+        request.meta['referer'] = response.url
         yield request
 
     def parse_some_page(self, response):
         self.log('Visited: %s', response.url)
-        self.log('Referred: %s', response.meta['referred'])
+        self.log('Referer: %s', response.meta['referer'])
 
 .. note::
     - :class:`~xpaw.http.HttpResponse` 的 :attr:`~xpaw.http.HttpResponse.meta` 属性即为对应 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 属性。
     - 在使用 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 传递参数时，请避免使用内置的关键字，详见 :ref:`request_meta` 。
+
+Request Error Handling in Errback Functions
+-------------------------------------------
+
+我们可以通过 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.errback` 指定spider的某个成员函数来处理请过程中出现的异常。
+下面给出了一个区分不同的异常并进行处理的示例：
+
+.. code-block:: python
+
+    from xpaw import Spider, HttpRequest, run_spider
+    from xpaw.errors import HttpError, TimeoutError, ClientError
+
+
+    class ErrorHandlingSpider(Spider):
+        start_urls = [
+            "http://www.python.org/",  # 200 OK
+            "http://www.httpbin.org/status/404",  # 404 Not Found
+            "http://www.httpbin.org/status/500",  # 500 Service Not Available
+            "http://www.example.com:8080/",  # TimeoutError
+            "http://foo.example.com/",  # ClientError
+        ]
+
+        def start_requests(self):
+            for url in self.start_urls:
+                yield HttpRequest(url, errback=self.handle_error)
+
+        def parse(self, response):
+            self.logger.info('Successful response: %s', response)
+
+        def handle_error(self, request, error):
+            if isinstance(error, HttpError):
+                response = error.response
+                self.logger.error('HttpError on %s: HTTP status=%s', request.url, response.status)
+            elif isinstance(error, TimeoutError):
+                self.logger.error('TimeoutError on %s', request.url)
+            elif isinstance(error, ClientError):
+                self.logger.error('ClientError on %s: %s', request.url, error)
+
+
+    if __name__ == '__main__':
+        run_spider(ErrorHandlingSpider, retry_enabled=False)
 
 Cron Job
 --------
@@ -126,7 +167,7 @@ Cron Job
 
 
     if __name__ == '__main__':
-        run_spider(CronJobSpider, log_level='DEBUG')
+        run_spider(CronJobSpider)
 
 ``@every`` 可传入的参数:
 
@@ -136,4 +177,4 @@ Cron Job
 
 - ``seconds`` : 间隔的秒数
 
-注意需要通过参数 ``dont_filter=True`` 来设置request不经过去重过滤器，否则新产生的request会视为重复的请求。
+注意需要通过参数 ``dont_filter=True`` 来设置 :class:`~xpaw.http.HttpRequest` 不经过去重过滤器，否则新产生的 :class:`~xpaw.http.HttpRequest` 会视为重复的请求。

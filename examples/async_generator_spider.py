@@ -19,4 +19,4 @@ class AsyncGeneratorSpider(Spider):
 
 
 if __name__ == '__main__':
-    run_spider(AsyncGeneratorSpider, log_level="DEBUG")
+    run_spider(AsyncGeneratorSpider)
