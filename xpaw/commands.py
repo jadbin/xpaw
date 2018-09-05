@@ -12,7 +12,7 @@ import inspect
 from .errors import UsageError
 from . import config
 from .utils import string_camelcase, render_template_file
-from .version import __version__
+from . import __version__
 from .run import run_cluster
 from .spider import Spider
 from . import utils

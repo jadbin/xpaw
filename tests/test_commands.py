@@ -6,7 +6,7 @@ from os import remove
 import time
 
 from xpaw.cli import main
-from xpaw.version import __version__
+from xpaw import __version__
 
 
 def test_print_help(capsys):

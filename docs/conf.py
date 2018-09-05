@@ -17,10 +17,8 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import sys
-from os.path import join, abspath, dirname
-
-sys.path.insert(0, dirname(abspath(dirname(__file__))))
+import re
+from os.path import join, dirname
 
 # -- General configuration ------------------------------------------------
 
@@ -57,9 +55,9 @@ author = 'jadbin'
 #
 # The short X.Y version.
 def read_version():
-    p = join(dirname(abspath(dirname(__file__))), "xpaw", "version.py")
+    p = join(dirname(dirname(__file__)), 'xpaw', '__init__.py')
     with open(p, 'r', encoding='utf-8') as f:
-        return f.read().split("=")[-1].strip().strip('"')
+        return re.search(r"__version__ = '([^']+)'", f.read()).group(1)
 
 
 version = read_version()

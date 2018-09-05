@@ -9,7 +9,7 @@ import pickle
 import aiohttp
 
 from .errors import ClientError, NotEnabled, TimeoutError
-from .version import __version__
+from . import __version__
 from . import utils
 from .http import URL
 

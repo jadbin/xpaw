@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import re
 import sys
 from os.path import join, dirname
 from setuptools import setup, find_packages
@@ -10,9 +11,9 @@ with open(join(dirname(__file__), 'README.rst'), 'r', encoding='utf-8') as fd:
 
 
 def read_version():
-    p = join(dirname(__file__), "xpaw", "version.py")
+    p = join(dirname(__file__), 'xpaw', '__init__.py')
     with open(p, 'r', encoding='utf-8') as f:
-        return f.read().split("=")[-1].strip().strip('"')
+        return re.search(r"__version__ = '([^']+)'", f.read()).group(1)
 
 
 class PyTest(TestCommand):

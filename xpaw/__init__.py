@@ -13,3 +13,5 @@ __all__ = ['FormData', 'URL', 'MultiDict', 'CIMultiDict', 'HttpRequest', 'HttpRe
            'Selector',
            'Item', 'Field',
            'run_spider', 'run_crawler', 'make_requests']
+
+__version__ = '0.10.3'

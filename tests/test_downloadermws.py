@@ -9,7 +9,7 @@ from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
 from xpaw.errors import ClientError, NotEnabled, TimeoutError
-from xpaw.version import __version__
+from xpaw import __version__
 from xpaw.downloader import Downloader
 from xpaw.eventbus import EventBus
 
