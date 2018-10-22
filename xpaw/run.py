@@ -22,7 +22,7 @@ def run_crawler(proj_dir, **kwargs):
 
 def run_spider(spider, **kwargs):
     config = BaseConfig(kwargs)
-    config.set("spider", spider)
+    config['spider'] = spider
     run_cluster(base_config=config)
 
 
@@ -78,7 +78,7 @@ def load_job_config(proj_dir=None, base_config=None):
         if isfile(config_file):
             c = utils.load_config(config_file)
             for k, v in utils.iter_settings(c):
-                job_config.set(k, v)
+                job_config[k] = v
     job_config.update(base_config)
     return job_config
 

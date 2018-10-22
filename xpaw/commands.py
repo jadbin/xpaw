@@ -62,7 +62,7 @@ class Command:
         for s in self.settings:
             v = getattr(args, s.name)
             if v is not None:
-                self.config.set(s.name, v)
+                self.config[s.name] = v
 
     def run(self, args):
         raise NotImplementedError
@@ -117,7 +117,7 @@ class CrawlCommand(Command):
         if args.config is not None:
             c = utils.load_config(args.config)
             for k, v in utils.iter_settings(c):
-                self.config.set(k, v)
+                self.config[k] = v
         super().process_arguments(args)
         try:
             self.config.update(dict(x.split("=", 1) for x in args.set))
@@ -127,7 +127,7 @@ class CrawlCommand(Command):
     def run(self, args):
         if isfile(args.path):
             spider = _import_spider(args.path)
-            self.config.set('spider', spider)
+            self.config['spider'] = spider
             run_cluster(proj_dir=None, base_config=self.config)
         elif isdir(args.path):
             run_cluster(proj_dir=args.path, base_config=self.config)

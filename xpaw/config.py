@@ -6,14 +6,14 @@ import inspect
 
 
 class BaseConfig(MutableMapping):
-    def __init__(self, values=None):
+    def __init__(self, __values=None, **kwargs):
         self.attributes = {}
-        self.update(values)
+        self.update(__values, **kwargs)
 
-    def __getitem__(self, opt_name):
-        if opt_name not in self:
+    def __getitem__(self, name):
+        if name not in self:
             return None
-        return self.attributes[opt_name]
+        return self.attributes[name]
 
     def __contains__(self, name):
         return name in self.attributes
@@ -38,25 +38,25 @@ class BaseConfig(MutableMapping):
         return getlist(v)
 
     def __setitem__(self, name, value):
-        self.set(name, value)
-
-    def set(self, name, value):
         self.attributes[name] = value
 
+    def set(self, name, value):
+        self[name] = value
+
     def setdefault(self, k, default=None):
-        if self[k] is None:
+        if k not in self:
             self[k] = default
 
-    def update(self, values, **kwargs):
-        if values is not None:
-            if isinstance(values, BaseConfig):
-                for name in values:
-                    self.set(name, values[name])
+    def update(self, __values=None, **kwargs):
+        if __values is not None:
+            if isinstance(__values, BaseConfig):
+                for name in __values:
+                    self[name] = __values[name]
             else:
-                for name, value in values.items():
-                    self.set(name, value)
+                for name, value in __values.items():
+                    self[name] = value
         for k, v in kwargs.items():
-            self.set(k, v)
+            self[k] = v
 
     def delete(self, name):
         del self.attributes[name]
@@ -112,11 +112,11 @@ def getlist(v):
 
 
 class Config(BaseConfig):
-    def __init__(self, values=None):
+    def __init__(self, __values=None, **kwargs):
         super().__init__()
         for v in KNOWN_SETTINGS.values():
-            self.set(v.name, v.value)
-        self.update(values)
+            self[v.name] = v.value
+        self.update(__values, **kwargs)
 
 
 class Setting:
