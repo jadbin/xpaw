@@ -85,7 +85,7 @@ def render_template_file(path, **kwargs):
         os.remove(path)
 
 
-_camelcase_invalid_chars = re.compile('[^a-zA-Z\d]')
+_camelcase_invalid_chars = re.compile(r'[^a-zA-Z\d]')
 
 
 def string_camelcase(s):
@@ -161,7 +161,7 @@ def get_dump_dir(config):
     dump_dir = config.get('dump_dir')
     if dump_dir:
         if not exists(dump_dir):
-            os.makedirs(dump_dir, 755)
+            os.makedirs(dump_dir, 0o755)
         return dump_dir
 
 

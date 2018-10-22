@@ -2,9 +2,9 @@
 
 import os
 from os.path import exists, join, abspath, isfile, isdir, basename, dirname, split, splitext
-from shutil import move, copy2, copystat, ignore_patterns
+from shutil import move, copy, copymode, ignore_patterns
 from datetime import datetime
-import logging.config
+import logging
 from importlib import import_module
 import sys
 import inspect
@@ -86,7 +86,7 @@ def _import_spider(file):
 class CrawlCommand(Command):
     @property
     def syntax(self):
-        return "[OPTIONS] <PATH>"
+        return "[options] <PATH>"
 
     @property
     def name(self):
@@ -107,7 +107,7 @@ class CrawlCommand(Command):
     def add_arguments(self, parser):
         parser.add_argument("path", metavar="PATH", nargs=1, help="project directory or spider file")
         parser.add_argument('-c', '--config', dest='config', metavar='FILE',
-                            help='configuration file')
+                            help='configuration file (default: None)')
         super().add_arguments(parser)
         parser.add_argument("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE",
                             help="set/override setting (can be repeated)")
@@ -157,7 +157,8 @@ class InitCommand(Command):
     def add_arguments(self, parser):
         parser.add_argument("project_dir", metavar="DIR", nargs=1,
                             help="project directory, the last part of the path is the project name")
-        parser.add_argument('--templates', metavar='DIR', default=join(dirname(__file__), 'templates'),
+        parser.add_argument('--templates', metavar='DIR', dest='templates',
+                            default=join(dirname(__file__), 'templates'),
                             help='the directory of templates')
 
     def process_arguments(self, args):
@@ -188,13 +189,12 @@ class InitCommand(Command):
                                                           project_name=project_name,
                                                           ProjectName=string_camelcase(project_name)))
 
-        print("New project '{}', created in:".format(project_name))
-        print("    {}".format(abspath(project_dir)))
+        print("New project '{}' created in {}".format(project_name, abspath(project_dir)))
 
     def _copytree(self, src, dst):
         if not exists(dst):
-            os.makedirs(dst)
-        copystat(src, dst)
+            os.makedirs(dst, 0o755)
+        copymode(src, dst)
         names = os.listdir(src)
         ignored_names = _ignore_file_type(src, names)
         for name in names:
@@ -205,7 +205,7 @@ class InitCommand(Command):
             if isdir(srcname):
                 self._copytree(srcname, dstname)
             else:
-                copy2(srcname, dstname)
+                copy(srcname, dstname)
 
     def _render_files(self, src, render):
         names = os.listdir(src)

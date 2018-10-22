@@ -34,8 +34,8 @@ def _print_commands():
 
 
 def _print_unknown_command(cmdname):
-    print("Unknown command: %s\n" % cmdname)
-    print('Use "xpaw" to see available commands')
+    print("Unknown command: %s\n" % cmdname, file=sys.stderr)
+    print('Use "xpaw" to see available commands', file=sys.stderr)
 
 
 def main(argv=None):
@@ -60,9 +60,10 @@ def main(argv=None):
         cmd.process_arguments(args)
         cmd.run(args)
     except UsageError as e:
-        parser.error(str(e))
-    except Exception as e:
-        parser.error(str(e))
+        if e.print_help:
+            parser.print_help(sys.stderr)
+        print('Error: {}'.format(e), file=sys.stderr)
+        sys.exit(2)
     else:
         if cmd.exitcode:
             sys.exit(cmd.exitcode)

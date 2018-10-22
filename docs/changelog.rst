@@ -1,28 +1,18 @@
 .. _changelog:
 
-Change log
-==========
+Changelog
+=========
 
 0.11.0 (2018-??-??)
 -------------------
 
-New features
-~~~~~~~~~~~~
-
 - 新增HttpErrorMiddleware，默认情况下非2xx的HttpResponse将视为请求失败并抛出 ``HttpError`` 异常进入错误处理流程，可通过设置 ``allow_all_http_status=True`` 表示接受所有状态码的HttpResponse
 - HttpRequest ``meta`` 添加 ``dont_retry`` 字段，表示不重试该请求。
-
-Refactoring
-~~~~~~~~~~~
-
 - RetryMiddleware不再raise IgnoreRequest，即因达到重试次数上限而导致请求失败时不再封装为IgnoreRequest，将保留原有的HttpResponse或异常。
 - 命令行参数 ``--cookie-jar-enabled`` 更名为 ``--enable-cookie-jar`` ，配置项 ``cookie_jar_enabled`` 保持不变
 
 0.10.3 (2018-09-01)
 -------------------
-
-Refactoring
-~~~~~~~~~~~
 
 - ProxyMiddleware不会覆盖用户在HttpRequest ``meta`` 中设置的 ``proxy``
 - CookiesMiddleware不会覆盖用户在HttpRequest ``meta`` 中设置的 ``cookie_jar``
@@ -32,31 +22,17 @@ Refactoring
 0.10.2 (2018-08-28)
 -------------------
 
-New features
-~~~~~~~~~~~~
-
 - Field添加 ``type`` 参数，表示该字段的类型，在获取该字段的值时会进行类型转换
 - 添加 ``allow_redirects`` 配置项，控制是否允许重定向，默认为 ``True`` 。
 - HttpRequest ``meta`` 添加 ``verify_ssl`` 和 ``allow_redirects`` 字段，用于精确控制单次请求的相关行为。
 - 添加 ``StopCluster`` 异常，用于在spider在回调函数中停止cluster
 - 添加 ``request_ignored`` 事件
-
-Refactoring
-~~~~~~~~~~~
-
 - ``user_agent`` 默认值设置为 ``:desktop``
-
-Bug fixes
-~~~~~~~~~
-
 - 运行spider之后不会再移除主程序已经设置的signal handler。
 
 
 0.10.1 (2018-07-18)
 -------------------
-
-New features
-~~~~~~~~~~~~
 
 - 新增 ``make_requests`` 函数，用于发起请求并获取对应的结果，详见 :ref:`make_requests`
 - ``log_level`` 支持小写字母配置，如 ``debug`` 等。
@@ -65,22 +41,11 @@ New features
 0.10.0 (2018-07-15)
 -------------------
 
-New features
-~~~~~~~~~~~~
-
 - ``xpaw crawl`` 支持直接运行spider，支持指定配置文件，添加了更多的功能选项
 - 添加 ``daemon`` 配置项，支持以daemon模式运行爬虫
 - 添加 ``pid_file`` 配置项，支持将爬虫所在进程的PID写入文件
 - 添加 ``dump_dir`` 配置项，支持爬虫的暂停与恢复
-
-Bug fixes
-~~~~~~~~~
-
 - 运行spider结束时移除配置的log handler，避免先后多次运行spider时打印多余的日志
-
-Refactoring
-~~~~~~~~~~~
-
 - 移除爬虫工程的入口文件setup.cfg，直接通过工程根目录下的config.py完成配置
 - 重构ProxyMiddleware配置项
 - 通过 ``speed_limit_enabled`` 控制限速中间件SpeedLimitMiddleware的开启/关闭，默认为关闭状态
@@ -97,14 +62,7 @@ Refactoring
 0.9.1 (2018-04-16)
 ------------------
 
-Bug fixes
-~~~~~~~~~
-
 - 修复了setup.py中读取README的编码设置问题
-
-Refactoring
-~~~~~~~~~~~
-
 - 不再只依赖于通过定时轮询判定job是否结束，单次下载完成后即判定job是否结束
 - 修改依赖库的版本限制
 
@@ -112,23 +70,12 @@ Refactoring
 0.9.0 (2017-11-13)
 ------------------
 
-New features
-~~~~~~~~~~~~
-
 - 中间件的加载细分为内置中间件和用户自定义中间件两部分，内置中间件自动加载，用户中间件的加载由配置项确定
 - 中间件加载的顺序由配置的权值确定，权值越大越贴近downloader/spider
 - 添加 ``NotEnabled`` 异常，在中间件/拓展的构造函数中控制抛出该异常来实现开启或禁用该中间件/拓展。
 - 添加UserAgentMiddleware，支持选择PC端或移动端的User-Agent，支持随机User-Agent
 - 支持配置日志写入指定文件
-
-Bug fixes
-~~~~~~~~~
-
 - 修复了HttpRequest的fingerprint计算时没有考虑端口号的bug
-
-Refactoring
-~~~~~~~~~~~
-
 - 移除ResponseNotMatchMiddleware
 - 移除ProxyAgentMiddle，原有功能并入ProxyMiddleware
 - 修改了RetryMiddleware、ProxyMiddleware、DepthMiddleware的参数配置方式
@@ -140,9 +87,6 @@ Refactoring
 
 0.8.0 (2017-11-5)
 -----------------
-
-New features
-~~~~~~~~~~~~
 
 - spider的 ``start_requests`` 和 ``parse`` 函数支持async类型和python 3.6中的async generator类型
 - spider中间件的handle_*函数支持async类型
@@ -158,10 +102,6 @@ New features
 - 添加深度优先队列LifoQueue，以及优先级队列PriorityQueue，默认 ``queue_cls`` 更改为 ``xpaw.queue.PriorityQueue``
 - 支持设定HTTP请求的优先级并按优先级进行爬取
 - 添加item、pipeline模块，支持spider在处理response时返回BaseItem的实例或dict，并交由用户自定义的item pipelines进行处理
-
-Refactoring
-~~~~~~~~~~~
-
 - 实例化中间件的classmethod ``from_config`` 更改为 ``from_cluster`` ，现在 ``config`` 参数可以通过 ``cluster.config`` 获取
 - queue组件的 ``push`` , ``pop`` 函数，以及dupefilter组件的 ``is_duplicated`` 函数改为async类型
 - 移除queue组件和dupefilter组件的基类，RequestDequeue更名为FifoQueue
@@ -179,16 +119,9 @@ Refactoring
 0.7.1 (2017-10-25)
 ------------------
 
-New features
-~~~~~~~~~~~~
-
 - 通过 ``@every`` 实现定时任务功能
 - HttpRequest添加 ``dont_filter`` 字段，为 ``True`` 时表示该请求不会被过滤
 - ``xpaw.run`` 模块中添加 ``run_spider`` 函数，便于在python代码中直接运行Spider类
-
-Refactoring
-~~~~~~~~~~~
-
 - ``xpaw.utils.run`` 模块中 ``run_crawler`` 函数移动至 ``xpaw.run`` 模块
 - 原utils, commands, downloadersmws, spidermws各合并为一个模块
 
@@ -196,15 +129,8 @@ Refactoring
 0.7.0 (2017-10-24)
 ------------------
 
-New features
-~~~~~~~~~~~~
-
 - 使用继承Dupefilter的去重过滤器来实现去重功能，系统配置添加 ``dupefilter_cls`` 项，用于替换默认的去重过滤器
 - ``xpaw.utils.run`` 模块中添加 ``run_crawler`` 函数，便于在python代码中控制开启爬虫
-
-Refactoring
-~~~~~~~~~~~
-
 - 使用config.py替代config.yaml作为配置文件，移除对pyyaml的依赖
 - ForwardedForMiddleware移动到 ``xpaw.downloadermws.headers`` 模块下
 - 修改aiohttp的版本限制为>=2.2.0
@@ -216,19 +142,8 @@ Refactoring
 0.6.5 (2017-05-09)
 ------------------
 
-New features
-~~~~~~~~~~~~
-
 - HttpRequest添加 ``errback`` 字段，表示无法正常获取到HttpResponse时触发的函数
-
-Bug fixes
-~~~~~~~~~
-
 - ResponseMatchMiddleware的配置修改为列表
-
-Refactoring
-~~~~~~~~~~~
-
 - middleware的顺序修改为依次向downloader/spider靠近，层层包裹
 - 移除任务配置中随机生成的 ``task_id``
 
@@ -236,28 +151,13 @@ Refactoring
 0.6.4 (2017-05-05)
 ------------------
 
-Bug fixes
-~~~~~~~~~
-
 - HttpResponse中的 ``url`` 字段源于aiohttp返回的ClientResponse中的 ``url`` 字段，实际应为 ``yarl.URL`` 对象
-
-Refactoring
-~~~~~~~~~~~
-
 - LocalCluster启动时不再新建一个线程
-
-
-0.6.3 (2017-05-01)
-------------------
-
 - 优化日志工具中设置日志的接口
 
 
 0.6.2 (2017-03-30)
 ------------------
-
-New features
-~~~~~~~~~~~~
 
 - HttpResponse添加 ``encoding`` 和 ``text`` 字段，分别用于获取网页的编码及字符串形式的内容
 - 添加ResponseMatchMiddleware，用于初步判断得到的页面是否符合要求
@@ -269,17 +169,10 @@ New features
 0.6.1 (2017-03-23)
 ------------------
 
-New features
-~~~~~~~~~~~~
-
 - 中间件添加 ``open`` 和 ``close`` 两个钩子函数，分别对应开启和关闭爬虫的事件
 - RetryMiddleware中可以自定义需要重试的HTTP状态码
 - 添加SpeedLimitMiddleware，用于爬虫限速
 - 添加ProxyMiddleware，用于为请求添加指定代理
-
-Refactoring
-~~~~~~~~~~~
-
 - 移除MongoDedupeMiddleware及对pymongo的依赖
 - 修改ProxyAgentMiddleware、RetryMiddleware在配置文件中的参数格式
 - DepthMiddleware更名为MaxDepthMiddleware

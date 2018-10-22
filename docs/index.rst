@@ -3,9 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-============================
-xpaw |version| documentation
-============================
+=========================
+Welcome to xpaw |version|
+=========================
 
 Key Features
 ============
@@ -16,7 +16,7 @@ Key Features
 Installation
 ============
 
-安装xpaw需要Python 3.5.3及更高版本的环境支持。
+安装xpaw需要Python 3.5.3或更高版本的环境支持。
 
 可以使用如下命令安装xpaw:
 

@@ -133,6 +133,16 @@ class TestBaseConfig:
         del c['k3']
         assert len(c) == 0 and 'k3' not in c
 
+    def test_setdefault(self):
+        c = BaseConfig()
+        c.setdefault('k1', 'v1')
+        assert c['k1'] == 'v1'
+        c.setdefault('k1', 'v2')
+        assert c['k1'] == 'v1'
+        c['k2'] = None
+        c.setdefault('k2', 'v2')
+        assert c['k2'] is 'v2'
+
 
 def test_config():
     c = Config()

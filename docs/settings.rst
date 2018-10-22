@@ -49,7 +49,7 @@ log_level
 - ``-l, --log-level``
 - Default: ``INFO``
 
-日志级别，包括 ``DEBUG`` 、 ``INFO`` 、 ``WARNING`` 和 ``ERROR`` ，以及对应的小写形式。
+日志级别，包括 ``DEBUG`` , ``INFO`` , ``WARNING`` , ``ERROR`` , ``CRITICAL`` ，以及对应的小写形式。
 
 .. _log_file:
 

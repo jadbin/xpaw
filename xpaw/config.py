@@ -43,7 +43,11 @@ class BaseConfig(MutableMapping):
     def set(self, name, value):
         self.attributes[name] = value
 
-    def update(self, values):
+    def setdefault(self, k, default=None):
+        if self[k] is None:
+            self[k] = default
+
+    def update(self, values, **kwargs):
         if values is not None:
             if isinstance(values, BaseConfig):
                 for name in values:
@@ -51,6 +55,8 @@ class BaseConfig(MutableMapping):
             else:
                 for name, value in values.items():
                     self.set(name, value)
+        for k, v in kwargs.items():
+            self.set(k, v)
 
     def delete(self, name):
         del self.attributes[name]
