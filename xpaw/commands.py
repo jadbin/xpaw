@@ -115,10 +115,7 @@ class CrawlCommand(Command):
     def process_arguments(self, args):
         args.path = args.path[0]
         if args.config is not None:
-            try:
-                c = utils.load_config(args.config)
-            except Exception:
-                raise RuntimeError('Cannot read the configuration file {}'.format(args.config))
+            c = utils.load_config(args.config)
             for k, v in utils.iter_settings(c):
                 self.config.set(k, v)
         super().process_arguments(args)
@@ -170,17 +167,7 @@ class InitCommand(Command):
         project_dir = abspath(args.project_dir)
         project_name = basename(project_dir)
         templates_dir = abspath(args.templates)
-
-        if exists(join(project_dir, 'config.py')):
-            self.exitcode = 1
-            print("Error: config.py already exists in {}".format(project_dir))
-            return
         module_dir = join(project_dir, project_name)
-        if exists(module_dir):
-            self.exitcode = 1
-            print('Error: module already exists in {}'.format(module_dir))
-            return
-
         self._copytree(join(templates_dir, 'project'), project_dir)
         move(join(project_dir, "module"), module_dir)
         self._render_files(project_dir,

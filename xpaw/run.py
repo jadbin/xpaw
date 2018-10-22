@@ -76,10 +76,7 @@ def load_job_config(proj_dir=None, base_config=None):
     if proj_dir is not None:
         config_file = join(proj_dir, 'config.py')
         if isfile(config_file):
-            try:
-                c = utils.load_config(config_file)
-            except Exception:
-                raise RuntimeError('Cannot read the configuration file {}'.format(config_file))
+            c = utils.load_config(config_file)
             for k, v in utils.iter_settings(c):
                 job_config.set(k, v)
     job_config.update(base_config)

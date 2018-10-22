@@ -23,7 +23,7 @@ def test_run_crawler_bad_config(tmpdir, capsys):
     config_file = join(proj_dir, 'config.py')
     with open(config_file, 'w') as f:
         f.write('bad config')
-    with pytest.raises(RuntimeError):
+    with pytest.raises(SyntaxError):
         run_crawler(proj_dir, log_level='DEBUG')
     _, _ = capsys.readouterr()
 

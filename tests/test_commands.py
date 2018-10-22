@@ -41,16 +41,9 @@ def test_init(tmpdir, capsys):
     assert isfile(join(proj_dir, proj_name, 'items.py'))
     assert isfile(join(proj_dir, proj_name, 'pipelines.py'))
     assert isfile(join(proj_dir, proj_name, 'spider.py'))
-    with pytest.raises(SystemExit) as excinfo:
-        main(argv=['xpaw', 'init', proj_dir])
-    assert excinfo.value.code == 1
     main(argv=['xpaw', 'crawl', proj_dir, '-s', 'downloader_timeout=0.01', '-l', 'WARNING'])
     _, _ = capsys.readouterr()
     remove(join(proj_dir, 'config.py'))
-    with pytest.raises(SystemExit) as excinfo:
-        main(argv=['xpaw', 'init', proj_dir])
-    assert excinfo.value.code == 1
-    _, _ = capsys.readouterr()
 
 
 def test_init_no_project_dir(capsys):
@@ -92,10 +85,9 @@ def test_crawl_spider_no_config_file(tmpdir, capsys):
     proj_name = 'test_crawl_spider'
     proj_dir = join(str(tmpdir), proj_name)
     main(argv=['xpaw', 'init', proj_dir])
-    with pytest.raises(SystemExit) as excinfo:
+    with pytest.raises(ValueError):
         main(argv=['xpaw', 'crawl', join(proj_dir, proj_name, 'spider.py'),
                    '-c', 'no_such_config.py', '--downloader-timeout=0.01'])
-    assert excinfo.value.code == 2
     _, _ = capsys.readouterr()
 
 
