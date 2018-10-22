@@ -153,7 +153,7 @@ def load_config(fname):
 
 def iter_settings(config):
     for key, value in config.items():
-        if not key.startswith('_') and not inspect.ismodule(value) and not inspect.isfunction(value):
+        if not key.startswith('_'):
             yield key, value
 
 
