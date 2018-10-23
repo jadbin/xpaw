@@ -4,8 +4,9 @@ import logging
 import os
 from os.path import join, isfile
 import sys
-import asyncio
 import signal
+
+from tornado.ioloop import IOLoop
 
 from .config import BaseConfig, Config
 from .cluster import LocalCluster
@@ -34,8 +35,7 @@ def run_cluster(proj_dir=None, base_config=None):
     pid_file = config.get('pid_file')
     _write_pid_file(pid_file)
     try:
-        loop = _get_event_loop()
-        cluster = LocalCluster(config, loop=loop)
+        cluster = LocalCluster(config)
     except Exception:
         log.error('Failed to create cluster', exc_info=True)
         _remove_pid_file(pid_file)
@@ -43,7 +43,7 @@ def run_cluster(proj_dir=None, base_config=None):
         raise
     default_signal_handlers = _set_signal_handlers(cluster)
     try:
-        loop.run_until_complete(cluster.run())
+        IOLoop.current().run_sync(cluster.run)
     finally:
         _remove_pid_file(pid_file)
         _recover_signal_handlers(default_signal_handlers)
@@ -57,16 +57,6 @@ def make_requests(requests, **kwargs):
     results = [None] * len(start_requests)
     run_spider(RequestsSpider, start_requests=start_requests, results=results, **kwargs)
     return results
-
-
-def _get_event_loop():
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    return loop
-
 
 def load_job_config(proj_dir=None, base_config=None):
     if proj_dir is not None and proj_dir not in sys.path:
@@ -100,7 +90,7 @@ def _remove_pid_file(pid_file):
 def _set_signal_handlers(cluster):
     def _exit(signum, frame):
         log.info('Received exit signal: %s', signum)
-        cluster.loop.call_soon_threadsafe(cluster.stop)
+        IOLoop.current().add_callback(cluster.stop)
 
     default_signal_handlers = [(signal.SIGINT, signal.getsignal(signal.SIGINT)),
                                (signal.SIGTERM, signal.getsignal(signal.SIGTERM))]
