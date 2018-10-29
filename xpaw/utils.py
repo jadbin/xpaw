@@ -99,28 +99,15 @@ def string_camelcase(s):
     return _camelcase_invalid_chars.sub('', s.title())
 
 
-class AsyncGenWrapper:
-    def __init__(self, gen):
-        if not gen:
-            gen = ()
-        self.iter = gen.__iter__()
-
-    async def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        try:
-            return next(self.iter)
-        except StopIteration:
-            raise StopAsyncIteration
-
-
 async def iterable_to_list(gen):
     res = []
-    if not hasattr(gen, '__aiter__'):
-        gen = AsyncGenWrapper(gen)
-    async for r in gen:
-        res.append(r)
+    if gen is not None:
+        if hasattr(gen, '__aiter__'):
+            async for r in gen:
+                res.append(r)
+        else:
+            for r in gen:
+                res.append(r)
     return res
 
 
