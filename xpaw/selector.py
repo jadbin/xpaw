@@ -44,24 +44,15 @@ class Selector:
         self.root = root
 
     def xpath(self, xpath, **kwargs):
-        try:
-            res = self.root.xpath(xpath, smart_strings=False, **kwargs)
-        except Exception:
-            return SelectorList([])
+        kwargs.setdefault('smart_strings', False)
+        res = self.root.xpath(xpath, **kwargs)
         if not isinstance(res, list):
             res = [res]
         return SelectorList([self.__class__(root=i) for i in res])
 
     def css(self, css, **kwargs):
-        try:
-            path = self._css_translator.css_to_xpath(css)
-            xpath = etree.XPath(path, smart_strings=False, **kwargs)
-            res = xpath(self.root)
-        except Exception:
-            return SelectorList([])
-        if not isinstance(res, list):
-            res = [res]
-        return SelectorList([self.__class__(root=i) for i in res])
+        xpath = self._css_translator.css_to_xpath(css)
+        return self.xpath(xpath, **kwargs)
 
     @property
     def string(self):

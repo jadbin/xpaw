@@ -31,7 +31,6 @@ class TestXPathSelector:
         assert s.xpath("//var/text()").text == ["x", "y", "z"]
         assert s.xpath("//var").text == ["x", "y", "z"]
         assert s.xpath("//p")[0].text == "expression: x+y=z"
-        assert s.xpath("//p/text()")[0].string == "expression: "
 
     def test_diff_between_string_and_text(self):
         html = """<div><p>expression: <var>x</var>+<var>y</var>=<var>z</var></p></div>"""
@@ -156,21 +155,3 @@ class TestXmlText:
         xml = """expression: <var>x</var>+<var>y</var>=<var>z</var>"""
         with pytest.raises(XMLSyntaxError):
             xs = Selector(xml, text_type='xml')
-
-
-def test_selection_error():
-    xml = """
-    <bookstore>
-      <book>
-        <title lang="eng">Harry Potter</title>
-        <price>29.99</price>
-      </book>
-      <book>
-        <title lang="eng">Learning XML</title>
-        <price>39.95</price>
-      </book>
-    </bookstore>"""
-
-    s = Selector(xml, text_type='xml')
-    assert s.xpath('/bookstore/book[first()]') == []
-    assert s.css('book >> price') == []
