@@ -29,7 +29,9 @@ def run_spider(spider, **kwargs):
 
 def run_cluster(proj_dir=None, base_config=None):
     config = load_job_config(proj_dir=proj_dir, base_config=base_config)
-    utils.configure_logger('xpaw', config)
+    logger = utils.configure_logger('xpaw', config)
+    utils.redirect_logger('tornado', logger, override=False)
+
     if config.getbool('daemon'):
         utils.be_daemon()
     pid_file = config.get('pid_file')
@@ -39,7 +41,6 @@ def run_cluster(proj_dir=None, base_config=None):
     except Exception:
         log.error('Failed to create cluster', exc_info=True)
         _remove_pid_file(pid_file)
-        utils.remove_logger('xpaw')
         raise
     default_signal_handlers = _set_signal_handlers(cluster)
     try:
@@ -47,7 +48,6 @@ def run_cluster(proj_dir=None, base_config=None):
     finally:
         _remove_pid_file(pid_file)
         _recover_signal_handlers(default_signal_handlers)
-        utils.remove_logger('xpaw')
 
 
 def make_requests(requests, **kwargs):
@@ -57,6 +57,7 @@ def make_requests(requests, **kwargs):
     results = [None] * len(start_requests)
     run_spider(RequestsSpider, start_requests=start_requests, results=results, **kwargs)
     return results
+
 
 def load_job_config(proj_dir=None, base_config=None):
     if proj_dir is not None and proj_dir not in sys.path:

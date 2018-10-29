@@ -39,12 +39,17 @@ def configure_logger(name, config):
     handler.setLevel(log_level)
     formatter = logging.Formatter(log_format, log_dateformat)
     handler.setFormatter(formatter)
+    logger.handlers.clear()
     logger.addHandler(handler)
-    return handler
+    return logger
 
 
-def remove_logger(name):
-    logging.getLogger(name).handlers.clear()
+def redirect_logger(name, logger, override=True):
+    log = logging.getLogger(name)
+    if log.handlers is not None and not override:
+        return
+    log.handlers = logger.handlers
+    log.setLevel(logger.level)
 
 
 def request_fingerprint(request):
