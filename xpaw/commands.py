@@ -3,7 +3,6 @@
 import os
 from os.path import exists, join, abspath, isfile, isdir, basename, dirname, split, splitext
 from shutil import move, copy, copymode, ignore_patterns
-from datetime import datetime
 import logging
 from importlib import import_module
 import sys
@@ -100,8 +99,7 @@ class CrawlCommand(Command):
         return (config.Daemon, config.PidFile,
                 config.LogLevel, config.LogFile,
                 config.DumpDir,
-                config.DownloaderClients, config.DownloaderTimeout,
-                config.CookieJarEnabled,
+                config.DownloaderClients,
                 config.MaxDepth)
 
     def add_arguments(self, parser):
@@ -172,7 +170,6 @@ class InitCommand(Command):
         move(join(project_dir, "module"), module_dir)
         self._render_files(project_dir,
                            lambda f: render_template_file(f, version=__version__,
-                                                          datetime_now=datetime.now().strftime("%b %d %Y %H:%M:%S"),
                                                           project_name=project_name,
                                                           ProjectName=string_camelcase(project_name)))
 

@@ -1,75 +1,97 @@
 # coding=utf-8
 
 import logging
-import asyncio
 import inspect
 from asyncio import CancelledError
 from urllib.parse import urlsplit
 
-import aiohttp
-import async_timeout
-from aiohttp.helpers import BasicAuth
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPClientError
+from tornado.httputil import url_concat
 
 from .middleware import MiddlewareManager
-from .http import HttpRequest, HttpResponse, URL, MultiDict, CIMultiDict
-from .errors import ClientError, TimeoutError
+from .http import HttpRequest, HttpResponse, HttpHeaders
+from .errors import ClientError, RequestTimeout, HttpError
 
 log = logging.getLogger(__name__)
 
 
 class Downloader:
-    def __init__(self, timeout=None, verify_ssl=False, allow_redirects=True, loop=None):
-        self._timeout = timeout
-        self._verify_ssl = verify_ssl
-        self._allow_redirects = allow_redirects
-        self._loop = loop or asyncio.get_event_loop()
+    def __init__(self, max_clients=10):
+        self._max_clients = max_clients
+        self._http_client = AsyncHTTPClient(max_clients=max_clients)
+
+    @property
+    def max_clients(self):
+        return self._max_clients
 
     async def download(self, request):
         log.debug("HTTP request: %s", request)
-        timeout = request.meta.get("timeout")
-        if timeout is None:
-            timeout = self._timeout
-        verify_ssl = request.meta.get('verify_ssl')
-        if verify_ssl is None:
-            verify_ssl = self._verify_ssl
-        allow_redirects = request.meta.get('allow_redirects')
-        if allow_redirects is None:
-            allow_redirects = self._allow_redirects
-        cookie_jar = request.meta.get('cookie_jar')
-        auth = prepare_request_auth(request.meta.get('auth'))
-        proxy = prepare_request_url(request.meta.get('proxy'))
-        proxy_auth = prepare_request_auth(request.meta.get('proxy_auth'))
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=verify_ssl,
-                                                                        enable_cleanup_closed=True,
-                                                                        loop=self._loop),
-                                         cookies=request.cookies,
-                                         cookie_jar=cookie_jar,
-                                         loop=self._loop) as session:
-            with async_timeout.timeout(timeout, loop=self._loop):
-                if isinstance(request.body, dict):
-                    data, json = None, request.body
-                else:
-                    data, json = request.body, None
-                async with session.request(request.method,
-                                           prepare_request_url(request.url),
-                                           params=prepare_request_params(request.params),
-                                           auth=auth,
-                                           headers=prepare_request_headers(request.headers),
-                                           data=data,
-                                           json=json,
-                                           proxy=proxy,
-                                           proxy_auth=proxy_auth,
-                                           allow_redirects=allow_redirects) as resp:
-                    body = await resp.read()
-                    cookies = resp.cookies
-        resp_headers = resp.headers.copy()
-        response = HttpResponse(resp.url,
-                                resp.status,
-                                headers=resp_headers,
-                                body=body,
-                                cookies=cookies)
+        req = self._make_request(request)
+        try:
+            resp = await self._http_client.fetch(req)
+        except HTTPClientError as e:
+            if e.code == 599:
+                log.debug('%s is timeout', request)
+                raise RequestTimeout
+            elif e.response is not None:
+                raise HttpError(response=self._make_response(e.response))
+            raise
+        response = self._make_response(resp)
         log.debug("HTTP response: %s", response)
         return response
+
+    @classmethod
+    def _make_request(cls, request):
+        url = url_concat(cls._make_request_url(request.url), request.params)
+        kwargs = {'method': request.method,
+                  'headers': cls._make_request_headers(request.headers),
+                  'body': request.body,
+                  'request_timeout': request.timeout,
+                  'follow_redirects': request.allow_redirects,
+                  'validate_cert': request.verify_ssl}
+        if request.auth is not None:
+            auth_username, auth_password = request.auth
+            kwargs['auth_username'] = auth_username
+            kwargs['auth_password'] = auth_password
+        if request.proxy is not None:
+            proxy = urlsplit(cls._make_request_url(request.proxy))
+            kwargs['proxy_host'] = proxy.hostname
+            kwargs['proxy_port'] = proxy.port
+        if request.proxy_auth is not None:
+            proxy_username, proxy_password = request.proxy_auth
+            kwargs['proxy_username'] = proxy_username
+            kwargs['proxy_password'] = proxy_password
+        return HTTPRequest(url, **kwargs)
+
+    @staticmethod
+    def _make_response(resp):
+        return HttpResponse(resp.effective_url,
+                            resp.code,
+                            headers=resp.headers,
+                            body=resp.body)
+
+    @staticmethod
+    def _make_request_headers(headers):
+        res = HttpHeaders()
+        if isinstance(headers, dict):
+            for k, v in headers.items():
+                if isinstance(v, (tuple, list)):
+                    for i in v:
+                        res.add(k, i)
+                else:
+                    res.add(k, v)
+        elif isinstance(headers, (tuple, list)):
+            for k, v in headers:
+                res.add(k, v)
+        return res
+
+    @staticmethod
+    def _make_request_url(url):
+        if isinstance(url, str):
+            res = urlsplit(url)
+            if res.scheme == '':
+                url = 'http://{}'.format(url)
+        return url
 
 
 class DownloaderMiddlewareManager(MiddlewareManager):
@@ -100,16 +122,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             if res is None:
                 try:
                     response = await downloader.download(request)
-                except CancelledError:
+                except (CancelledError, RequestTimeout, HttpError):
                     raise
-                except asyncio.TimeoutError:
-                    log.debug('%s is timeout', request)
-                    raise TimeoutError('Request timeout')
                 except Exception as e:
                     log.debug("%s is error: %s", request, e)
                     raise ClientError(e)
-                else:
-                    res = response
+                res = response
         except CancelledError:
             raise
         except Exception as e:
@@ -154,46 +172,3 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             if res:
                 return res
         return error
-
-
-def prepare_request_params(params):
-    if isinstance(params, dict):
-        res = MultiDict()
-        for k, v in params.items():
-            if isinstance(v, (tuple, list)):
-                for i in v:
-                    res.add(k, i)
-            else:
-                res.add(k, v)
-        params = res
-    return params
-
-
-def prepare_request_headers(headers):
-    if isinstance(headers, dict):
-        res = CIMultiDict()
-        for k, v in headers.items():
-            if isinstance(v, (tuple, list)):
-                for i in v:
-                    res.add(k, i)
-            else:
-                res.add(k, v)
-        headers = res
-    return headers
-
-
-def prepare_request_auth(auth):
-    if isinstance(auth, (tuple, list)):
-        auth = BasicAuth(*auth)
-    elif isinstance(auth, str):
-        auth = BasicAuth(*auth.split(':', 1))
-    return auth
-
-
-def prepare_request_url(url):
-    if isinstance(url, str):
-        res = urlsplit(url)
-        if res.scheme == '':
-            url = 'http://{}'.format(url)
-        url = URL(url)
-    return url

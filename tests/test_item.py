@@ -53,4 +53,4 @@ def test_field_type():
     assert item['bool_field'] is True
     assert isinstance(item['func_field'], int) and item['func_field'] == 1
     with pytest.raises(ValueError):
-        print(item['error_field'])
+        item['error_field']

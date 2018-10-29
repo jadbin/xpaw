@@ -15,18 +15,6 @@ from xpaw.item import Item
 from xpaw.errors import IgnoreItem
 
 
-class SleepSpider(Spider):
-    async def start_requests(self):
-        await asyncio.sleep(0.2, loop=self.cluster.loop)
-
-    def parse(self, response):
-        pass
-
-
-def test_supervisor():
-    run_spider(SleepSpider, downloader_timeout=0.1)
-
-
 class StartRequestSpider(Spider):
     def start_requests(self):
         yield HttpRequest('http://python.org/')
@@ -36,10 +24,6 @@ class StartRequestSpider(Spider):
 
 
 class BadQueue(PriorityQueue):
-    def __init__(self, loop=None, **kwargs):
-        super().__init__(loop=loop, **kwargs)
-        self.loop = loop
-
     async def pop(self):
         await super().pop()
         raise RuntimeError('not an error actually')
@@ -51,11 +35,11 @@ class BadQueue2(PriorityQueue):
 
 
 def test_coro_terminated():
-    run_spider(StartRequestSpider, downloader_clients=2, queue=BadQueue, max_retry_times=0, downloader_timeout=0.1)
+    run_spider(StartRequestSpider, downloader_clients=2, queue=BadQueue, max_retry_times=0)
 
 
 def test_coro_terminated2():
-    run_spider(StartRequestSpider, downloader_clients=2, queue=BadQueue2, max_retry_times=0, downloader_timeout=0.1)
+    run_spider(StartRequestSpider, downloader_clients=2, queue=BadQueue2, max_retry_times=0)
 
 
 class ToKillSpider(Spider):
@@ -64,7 +48,7 @@ class ToKillSpider(Spider):
 
     async def parse(self, response):
         while True:
-            await asyncio.sleep(5, loop=self.cluster.loop)
+            await asyncio.sleep(5)
 
 
 class ExceptionThread(Thread):
@@ -146,7 +130,6 @@ class HandlerSpider(Spider):
         yield HttpRequest("http://localhost:80", errback=self.error_back)
         yield HttpRequest("http://localhost:80", dont_filter=True, errback=self.async_error_back)
         yield HttpRequest("http://{}/error".format(self.server_address), errback=self.handle_request_error)
-        yield HttpRequest("http://{}/not-found".format(self.server_address), errback=self.handle_input_error)
         yield HttpRequest("http://{}/".format(self.server_address), dont_filter=True)
         yield HttpRequest("http://{}/".format(self.server_address), dont_filter=True, callback=self.generator_parse)
         yield HttpRequest("http://{}/".format(self.server_address), dont_filter=True, callback=self.func_prase)
@@ -168,10 +151,6 @@ class HandlerSpider(Spider):
     def handle_request_error(self, request, error):
         assert isinstance(error, FooError)
         self.data.add('handle_request_error')
-
-    def handle_input_error(self, request, error):
-        assert isinstance(error, FooError)
-        self.data.add('handle_input_error')
 
     def generator_parse(self, response):
         self.data.add('generator_parse')
@@ -205,7 +184,6 @@ def test_spider_handlers():
     assert 'error_back' in data
     assert 'async_error_back' in data
     assert 'handle_request_error' in data
-    assert 'handle_input_error' in data
     assert 'generator_parse' in data
     assert 'func_parse' in data
     assert 'async_parse' in data
@@ -263,7 +241,7 @@ class ToDumpSpider(Spider):
 
     async def parse_response(self, response):
         while True:
-            await asyncio.sleep(5, loop=self.cluster.loop)
+            await asyncio.sleep(10)
 
 
 class ToLoadSpider(Spider):
@@ -281,9 +259,9 @@ def test_dump_request(tmpdir):
     pid_file = join(dump_dir, 'pid')
     t = Thread(target=kill_spider, args=(pid_file,))
     t.start()
-    run_spider(ToDumpSpider, dump_dir=dump_dir, pid_file=pid_file, cookie_jar_enabled=True)
+    run_spider(ToDumpSpider, dump_dir=dump_dir, pid_file=pid_file)
     t.join()
     data = {}
-    run_spider(ToLoadSpider, dump_dir=dump_dir, data=data, cookie_jar_enabled=True)
+    run_spider(ToLoadSpider, dump_dir=dump_dir, data=data)
     assert data['url'] == 'http://python.org/'
     assert data['meta']['key'] == 'value'

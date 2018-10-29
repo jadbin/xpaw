@@ -182,8 +182,8 @@ class LogLevel(Setting):
     name = 'log_level'
     cli = ['-l', '--log-level']
     metavar = 'LEVEL'
-    default = 'INFO'
-    short_desc = 'log level: DEBUG, INFO, WARNING, ERROR'
+    default = 'info'
+    short_desc = 'log level'
 
 
 class LogFormat(Setting):
@@ -203,33 +203,6 @@ class DownloaderClients(Setting):
     type = int
     default = 100
     short_desc = 'the maximum number of simultaneous clients'
-
-
-class DownloaderTimeout(Setting):
-    name = 'downloader_timeout'
-    cli = ['--downloader-timeout']
-    metavar = 'FLOAT'
-    type = float
-    default = 20
-    short_desc = 'timeout of downloader in seconds'
-
-
-class VerifySsl(Setting):
-    name = 'verify_ssl'
-    default = False
-
-
-class AllowRedirects(Setting):
-    name = 'allow_redirects'
-    default = True
-
-
-class CookieJarEnabled(Setting):
-    name = 'cookie_jar_enabled'
-    cli = ['--enable-cookie-jar']
-    action = 'store_true'
-    default = False
-    short_desc = 'enable cookie jar'
 
 
 class DefaultHeaders(Setting):
@@ -254,11 +227,6 @@ class RandomUserAgent(Setting):
     default = False
 
 
-class ImitatingProxyEnabled(Setting):
-    name = 'imitating_proxy_enabled'
-    default = False
-
-
 class Proxy(Setting):
     name = 'proxy'
 
@@ -275,22 +243,17 @@ class MaxRetryTimes(Setting):
 
 class RetryHttpStatus(Setting):
     name = 'retry_http_status'
-    default = (500, 502, 503, 504, 408, 429)
-
-
-class SpeedLimitEnabled(Setting):
-    name = 'speed_limit_enabled'
-    default = False
+    default = None
 
 
 class SpeedLimitRate(Setting):
     name = 'speed_limit_rate'
-    default = 1
+    default = None
 
 
 class SpeedLimitBurst(Setting):
     name = 'speed_limit_burst'
-    default = 1
+    default = None
 
 
 class MaxDepth(Setting):
@@ -299,11 +262,6 @@ class MaxDepth(Setting):
     metavar = 'INT'
     type = int
     short_desc = 'maximum depth of spider'
-
-
-class AllowAllHttpStatus(Setting):
-    name = 'allow_all_http_status'
-    default = False
 
 
 class StatsCenter(Setting):
@@ -329,15 +287,13 @@ class DownloaderMiddlewares(Setting):
     name = 'downloader_middlewares'
 
 
-class DownloaderMiddlewaresBase(Setting):
-    name = 'downloader_middlewares_base'
+class DefaultDownloaderMiddlewares(Setting):
+    name = 'default_downloader_middlewares'
     default = {
         # cluster side
         'xpaw.downloadermws.DefaultHeadersMiddleware': 300,
-        'xpaw.downloadermws.ImitatingProxyMiddleware': 350,
         'xpaw.downloadermws.UserAgentMiddleware': 400,
         'xpaw.downloadermws.RetryMiddleware': 500,
-        'xpaw.downloadermws.CookiesMiddleware': 600,
         'xpaw.downloadermws.ProxyMiddleware': 700,
         'xpaw.downloadermws.SpeedLimitMiddleware': 900,
         # downloader side
@@ -348,11 +304,10 @@ class SpiderMiddlewares(Setting):
     name = 'spider_middlewares'
 
 
-class SpiderMiddlewaresBase(Setting):
-    name = 'spider_middlewares_base'
+class DefaultSpiderMiddlewares(Setting):
+    name = 'default_spider_middlewares'
     default = {
         # cluster side
-        'xpaw.spidermws.HttpErrorMiddleware': 100,
         'xpaw.spidermws.DepthMiddleware': 900
         # spider side
     }

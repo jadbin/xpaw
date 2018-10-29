@@ -1,37 +1,18 @@
 # coding=utf-8
 
-import re
-import json
-
 import pytest
 
 from xpaw.config import Config
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
-from xpaw.errors import ClientError, NotEnabled, TimeoutError
-from xpaw import __version__
-from xpaw.downloader import Downloader
+from xpaw.errors import ClientError, NotEnabled
 from xpaw.eventbus import EventBus
 
 
 class Cluster:
-    def __init__(self, loop=None, **kwargs):
-        self.loop = loop
+    def __init__(self, **kwargs):
         self.config = Config(kwargs)
         self.event_bus = EventBus()
-
-
-class TestImitatingProxyMiddleware:
-    def test_handle_request(self):
-        mw = ImitatingProxyMiddleware.from_cluster(Cluster(imitating_proxy_enabled=True))
-        req = HttpRequest("http://example.com")
-        mw.handle_request(req)
-        assert re.search(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", req.headers["X-Forwarded-For"])
-        assert req.headers['Via'] == '{} xpaw'.format(__version__)
-
-    def test_not_enabled(self):
-        with pytest.raises(NotEnabled):
-            ImitatingProxyMiddleware.from_cluster(Cluster())
 
 
 class TestDefaultHeadersMiddleware:
@@ -43,9 +24,9 @@ class TestDefaultHeadersMiddleware:
         mw.handle_request(req)
         assert req_headers == req.headers
 
-    def test_not_enabled(self, loop):
+    def test_not_enabled(self):
         with pytest.raises(NotEnabled):
-            DefaultHeadersMiddleware.from_cluster(Cluster(loop=loop, default_headers=None))
+            DefaultHeadersMiddleware.from_cluster(Cluster(default_headers=None))
 
 
 class Random:
@@ -59,63 +40,50 @@ class Random:
 
 
 class TestProxyMiddleware:
-    def test_proxy_str(self, loop):
-        proxy = '153.10.32.18:3128'
-        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy, loop=loop))
-        req = HttpRequest(URL("http://example.com"))
+    def test_proxy_str(self):
+        proxy = '127.0.0.1:3128'
+        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy))
+        req = HttpRequest("http://example.com")
         mw.handle_request(req)
-        assert req.meta['proxy'] == '153.10.32.18:3128'
+        assert req.proxy == proxy
 
-    def test_proxy_list(self, monkeypatch, loop):
-        monkeypatch.setattr(random, 'choice', Random().choice)
-        proxy_list = ["105.12.103.232:3128", "16.82.3.20:3128"]
-        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_list, loop=loop))
-        for i in range(len(proxy_list)):
-            req = HttpRequest("http://example.com")
-            mw.handle_request(req)
-            assert req.meta['proxy'] == proxy_list[i]
-
-        req2 = HttpRequest('ftp://example.com')
-        mw.handle_request(req2)
-        assert 'proxy' not in req2.meta
-
-    def test_proxy_dict(self, monkeypatch, loop):
-        monkeypatch.setattr(random, 'choice', Random().choice)
-        proxy_dict = {'http': ['132.39.13.100:3128', '18.39.9.10:3128'], 'https': '177.13.233.2:3128'}
-        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_dict, loop=loop))
+    def test_proxy_dict(self):
+        proxy_dict = {'http': '127.0.0.1:3128', 'https': '127.0.0.1:3129'}
+        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_dict))
         req_list = []
-        for i in ['http://example.com', 'https://example.com', 'http://example.com', 'http://example.com']:
+        for i in ['http://example.com', 'https://example.com']:
             req_list.append(HttpRequest(i))
-        res = ['132.39.13.100:3128', '177.13.233.2:3128', '132.39.13.100:3128', '18.39.9.10:3128']
+        res = ['127.0.0.1:3128', '127.0.0.1:3129']
         for i in range(len(req_list)):
             mw.handle_request(req_list[i])
-            assert req_list[i].meta['proxy'] == res[i]
+            assert req_list[i].proxy == res[i]
 
-    async def test_not_enabled(self, loop):
+    @pytest.mark.asyncio
+    async def test_not_enabled(self):
         with pytest.raises(NotEnabled):
-            ProxyMiddleware.from_cluster(Cluster(loop=loop))
+            ProxyMiddleware.from_cluster(Cluster())
 
 
 class TestRetryMiddleware:
     def test_handle_reponse(self):
         mw = RetryMiddleware.from_cluster(Cluster(retry_http_status=(500,), max_retry_times=3))
         req = HttpRequest("http://example.com")
-        resp = HttpResponse(URL("http://example.com"), 502)
+        resp = HttpResponse("http://example.com", 502)
         assert mw.handle_response(req, resp) is None
         req2 = HttpRequest("http://example.com")
-        resp2 = HttpResponse(URL("http://example.com"), 500)
+        resp2 = HttpResponse("http://example.com", 500)
         retry_req2 = mw.handle_response(req2, resp2)
         assert retry_req2.meta['retry_times'] == 1
         assert str(retry_req2.url) == str(req2.url)
         req3 = HttpRequest("http://example.com")
-        resp3 = HttpResponse(URL("http://example.com"), 500)
+        resp3 = HttpResponse("http://example.com", 500)
         req3.meta['retry_times'] = 2
         retry_req3 = mw.handle_response(req3, resp3)
         assert retry_req3.meta['retry_times'] == 3
         assert str(retry_req3.url) == str(req3.url)
         req4 = HttpRequest("http://example.com")
         req4.meta['retry_times'] = 3
-        resp4 = HttpResponse(URL("http://example.com"), 500)
+        resp4 = HttpResponse("http://example.com", 500)
         assert mw.handle_response(req4, resp4) is None
 
     def test_handle_error(self):
@@ -123,7 +91,7 @@ class TestRetryMiddleware:
         req = HttpRequest("http://example.com")
         err = ValueError()
         assert mw.handle_error(req, err) is None
-        for err in [ClientError(), TimeoutError()]:
+        for err in [ClientError(), RequestTimeout()]:
             retry_req = mw.handle_error(req, err)
             assert isinstance(retry_req, HttpRequest) and str(retry_req.url) == str(req.url)
 
@@ -168,72 +136,23 @@ class TestRetryMiddleware:
         assert mw.handle_error(req, err) is None
 
 
-class TestCookiesMiddleware:
-    def test_not_enabled(self):
-        with pytest.raises(NotEnabled):
-            CookiesMiddleware.from_cluster(Cluster())
-
-    async def test_cookie_jar(self, loop):
-        mw = CookiesMiddleware.from_cluster(Cluster(cookie_jar_enabled=True, loop=loop))
-        downloader = Downloader(timeout=60, loop=loop)
-        seed = str(random.randint(0, 2147483647))
-        req = HttpRequest("http://httpbin.org/cookies/set?seed={}".format(seed))
-        mw.handle_request(req)
-        await downloader.download(req)
-        req2 = HttpRequest("http://httpbin.org/cookies")
-        mw.handle_request(req2)
-        resp = await downloader.download(req2)
-        assert resp.status == 200
-        cookies = json.loads(resp.text)["cookies"]
-        assert len(cookies) == 1 and cookies.get("seed") == seed
-        req3 = HttpRequest("http://httpbin.org/cookies/delete?seed=")
-        mw.handle_request(req3)
-        await downloader.download(req3)
-        req4 = HttpRequest("http://httpbin.org/cookies")
-        mw.handle_request(req4)
-        resp = await downloader.download(req4)
-        assert resp.status == 200
-        cookies = json.loads(resp.text)["cookies"]
-        assert len(cookies) == 0
-
-    async def test_dump(self, loop, tmpdir):
-        mw = CookiesMiddleware.from_cluster(Cluster(cookie_jar_enabled=True, loop=loop, dump_dir=str(tmpdir)))
-        downloader = Downloader(timeout=60, loop=loop)
-        seed = str(random.randint(0, 2147483647))
-        req = HttpRequest("http://httpbin.org/cookies/set?seed={}".format(seed))
-        mw.handle_request(req)
-        await downloader.download(req)
-        mw.close()
-        mw2 = CookiesMiddleware.from_cluster(Cluster(cookie_jar_enabled=True, loop=loop, dump_dir=str(tmpdir)))
-        mw2.open()
-        req2 = HttpRequest("http://httpbin.org/cookies")
-        mw2.handle_request(req2)
-        resp = await downloader.download(req2)
-        assert resp.status == 200
-        cookies = json.loads(resp.text)["cookies"]
-        assert len(cookies) == 1 and cookies.get("seed") == seed
-
-
 class TestSpeedLimitMiddleware:
-    async def test_value_error(self, loop):
+    @pytest.mark.asyncio
+    async def test_value_error(self):
         with pytest.raises(ValueError):
-            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_enabled=True,
-                                                      speed_limit_rate=0,
-                                                      speed_limit_burst=1,
-                                                      loop=loop))
+            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=0,
+                                                      speed_limit_burst=1))
         with pytest.raises(ValueError):
-            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_enabled=True,
-                                                      speed_limit_rate=1,
-                                                      speed_limit_burst=0,
-                                                      loop=loop))
-
-    async def test_not_enabled(self, loop):
-        with pytest.raises(NotEnabled):
             SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=1,
-                                                      speed_limit_burst=1,
-                                                      loop=loop))
+                                                      speed_limit_burst=0))
 
-    async def test_handle_request(self, loop):
+    @pytest.mark.asyncio
+    async def test_not_enabled(self):
+        with pytest.raises(NotEnabled):
+            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=1))
+
+    @pytest.mark.asyncio
+    async def test_handle_request(self):
         class Counter:
             def __init__(self):
                 self.n = 0
@@ -247,19 +166,17 @@ class TestSpeedLimitMiddleware:
                 counter.inc()
 
         counter = Counter()
-        mw = SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_enabled=True,
-                                                       speed_limit_rate=1000,
-                                                       speed_limit_burst=5,
-                                                       loop=loop))
+        mw = SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=1000,
+                                                       speed_limit_burst=5))
         futures = []
         for i in range(100):
-            futures.append(asyncio.ensure_future(processor(), loop=loop))
+            futures.append(asyncio.ensure_future(processor()))
         mw.open()
-        await asyncio.sleep(0.1, loop=loop)
+        await asyncio.sleep(0.1)
         mw.close()
         for f in futures:
             assert f.cancel() is True
-        await asyncio.sleep(0.01, loop=loop)
+        await asyncio.sleep(0.01)
         assert counter.n <= 105
 
 

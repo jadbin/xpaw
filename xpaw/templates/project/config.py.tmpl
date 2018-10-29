@@ -1,10 +1,5 @@
 # coding=utf-8
 
-# Configuration file, created by xpaw/${version} on ${datetime_now}
-
-project_name = '${project_name}'
-project_description = ''
-
 # Configure spider
 spider = '${project_name}.spider.${ProjectName}Spider'
 
@@ -16,14 +11,7 @@ item_pipelines = [
 # Configure the maximum number of simultaneous clients (default: 100)
 # downloader_clients = 100
 
-# Enable cookie jar (disabled by default)
-# cookie_jar_enabled = True
-
-# Disable SSL verification (enabled by default)
-# verify_ssl = False
-
-# Enable and configure speed limit (disabled by default)
-# speed_limit_enabled = True
+# Enable speed limit (disabled by default)
 # speed_limit_rate = 1
 # speed_limit_burst = 1
 
@@ -39,9 +27,6 @@ item_pipelines = [
 
 # Configure user agent
 # user_agent = ':desktop'
-
-# Enable imitating proxy, i.e. adding 'X-Forwarded-For' and 'Via' headers (disabled by default)
-# imitating_proxy_enabled = True
 
 # Configure proxy
 # proxy = None

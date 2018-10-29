@@ -25,12 +25,12 @@ class PyTest(TestCommand):
 
 
 install_requires = [
-    'aiohttp>=3.3.2,<4.0',
-    'lxml>=4.1.0,<5.0',
-    'cssselect>=1.0.3,<2.0'
+    'tornado>=5.1.1',
+    'lxml>=4.1.0',
+    'cssselect>=1.0.3'
 ]
 
-with open(join(dirname(__file__), 'requirements_test.txt'), 'r', encoding='utf-8') as f:
+with open(join(dirname(__file__), 'requirements/test.txt'), 'r', encoding='utf-8') as f:
     tests_require = [l.strip() for l in f]
 
 

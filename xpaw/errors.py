@@ -1,7 +1,5 @@
 # coding=utf-8
 
-import asyncio
-
 
 class NotEnabled(Exception):
     """
@@ -19,9 +17,6 @@ class UsageError(Exception):
         super().__init__(*args, **kwargs)
 
 
-TimeoutError = asyncio.TimeoutError
-
-
 class ClientError(Exception):
     """
     Downloader client error.
@@ -34,7 +29,7 @@ class IgnoreRequest(Exception):
     """
 
 
-class HttpError(IgnoreRequest):
+class HttpError(Exception):
     """
     HTTP status is not 2xx.
     """
@@ -42,6 +37,10 @@ class HttpError(IgnoreRequest):
     def __init__(self, *args, response=None, **kwargs):
         self.response = response
         super().__init__(*args, **kwargs)
+
+
+class RequestTimeout(Exception):
+    pass
 
 
 class IgnoreItem(Exception):

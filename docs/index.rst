@@ -1,8 +1,3 @@
-.. xpaw documentation master file, created by
-   sphinx-quickstart on Thu Mar 16 11:08:48 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 =========================
 Welcome to xpaw |version|
 =========================
@@ -10,8 +5,8 @@ Welcome to xpaw |version|
 Key Features
 ============
 
-- Provides a web scraping framework used to crawl web pages.
-- Provides data extraction tools used to extract structured data from web pages.
+- A web scraping framework used to crawl web pages
+- Data extraction tools used to extract structured data from web pages
 
 Installation
 ============
@@ -25,12 +20,6 @@ Installation
     $ pip install xpaw
 
 如果安装过程中遇到lxml安装失败的情况，可参考 `lxml installation <http://lxml.de/installation.html>`_ 。
-
-可以使用如下命令升级xpaw:
-
-.. code-block:: bash
-
-    $ pip install -U xpaw
 
 Spider Example
 ==============
@@ -65,11 +54,11 @@ Spider Example
 Requirements
 ============
 
-- `aiohttp`_
+- `tornado`_
 - `lxml`_
 - `cssselect`_
 
-.. _aiohttp: https://pypi.python.org/pypi/aiohttp
+.. _tornado: https://pypi.python.org/pypi/tornado
 .. _lxml: https://pypi.python.org/pypi/lxml
 .. _cssselect: https://pypi.python.org/pypi/cssselect
 

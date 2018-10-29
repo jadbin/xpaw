@@ -6,10 +6,20 @@ Changelog
 0.11.0 (2018-??-??)
 -------------------
 
-- 新增HttpErrorMiddleware，默认情况下非2xx的HttpResponse将视为请求失败并抛出 ``HttpError`` 异常进入错误处理流程，可通过设置 ``allow_all_http_status=True`` 表示接受所有状态码的HttpResponse
-- HttpRequest ``meta`` 添加 ``dont_retry`` 字段，表示不重试该请求。
-- RetryMiddleware不再raise IgnoreRequest，即因达到重试次数上限而导致请求失败时不再封装为IgnoreRequest，将保留原有的HttpResponse或异常。
+- 默认情况下非2xx的HttpResponse将视为请求失败并抛出 ``HttpError`` 异常进入错误处理流程
+- HttpRequest ``meta`` 添加 ``dont_retry`` 字段，表示不重试该请求
+- RetryMiddleware不再raise IgnoreRequest，即因达到重试次数上限而导致请求失败时不再封装为IgnoreRequest，将保留原有的HttpResponse或异常
 - 命令行参数 ``--cookie-jar-enabled`` 更名为 ``--enable-cookie-jar`` ，配置项 ``cookie_jar_enabled`` 保持不变
+- HttpRequest ``proxy`` , ``timeout`` , ``verify_ssl`` , ``allow_redirects`` , ``auth`` ,  ``proxy_auth`` 由在 ``meta`` 中配置改为直接作为HttpRequest的属性
+- Selector之前在遇到异常时会返回空数组，现在改为直接抛出异常
+- 修改了 ``proxy`` 的配置格式
+- 移除ImitatingProxyMiddleware
+- 移除 ``speed_limit_enabled`` 配置项， ``speed_limit_rate`` 和 ``speed_limit_burst`` 默认值设为 ``None`` ，当 ``speed_limit_rate`` 和 ``speed_limit_burst`` 均不为 ``None`` 时启动
+- 移除 config.py 中的 ``downloader_timeout`` , ``verify_ssl`` , ``allow_redirects`` 配置项
+- 移除对aiohttp的依赖，改由tornado实现HTTP请求
+- 移除 ``xpaw.FormData`` , ``xpaw.URL``
+- 移除 ``xpaw.MultiDict`` , ``xpaw.CIMultiDict`` , 改由 ``xpaw.HttpHeaders`` 替代承载headers的功能
+- 为了和Python内置错误区分开，请求超时错误TimeoutError更名为RequestTimeout
 
 0.10.3 (2018-09-01)
 -------------------
@@ -23,12 +33,12 @@ Changelog
 -------------------
 
 - Field添加 ``type`` 参数，表示该字段的类型，在获取该字段的值时会进行类型转换
-- 添加 ``allow_redirects`` 配置项，控制是否允许重定向，默认为 ``True`` 。
-- HttpRequest ``meta`` 添加 ``verify_ssl`` 和 ``allow_redirects`` 字段，用于精确控制单次请求的相关行为。
+- 添加 ``allow_redirects`` 配置项，控制是否允许重定向，默认为 ``True``
+- HttpRequest ``meta`` 添加 ``verify_ssl`` 和 ``allow_redirects`` 字段，用于精确控制单次请求的相关行为
 - 添加 ``StopCluster`` 异常，用于在spider在回调函数中停止cluster
 - 添加 ``request_ignored`` 事件
 - ``user_agent`` 默认值设置为 ``:desktop``
-- 运行spider之后不会再移除主程序已经设置的signal handler。
+- 运行spider之后不会再移除主程序已经设置的signal handler
 
 
 0.10.1 (2018-07-18)
@@ -54,7 +64,7 @@ Changelog
 - 配置项 ``dupe_filter_cls`` 更名为 ``dupe_filter``
 - cluster的 ``stats_center`` 更名为 ``stats_collector`` ，配置项 ``stats_center_cls`` 更名为 ``stats_collector``
 - 调整了中间件加载顺序权值
-- HttpRequest对 ``auth`` 、 ``cookie_jar`` 、 ``proxy`` 、 ``proxy_auth`` 的配置移至 ``meta`` 属性中。
+- HttpRequest对 ``auth`` , ``cookie_jar`` , ``proxy`` , ``proxy_auth`` 的配置移至 ``meta`` 属性中
 - SetDupeFilter更名为HashDupeFilter
 - 修改aiohttp的版本限制为>=3.3.2
 
@@ -78,7 +88,7 @@ Changelog
 - 修复了HttpRequest的fingerprint计算时没有考虑端口号的bug
 - 移除ResponseNotMatchMiddleware
 - 移除ProxyAgentMiddle，原有功能并入ProxyMiddleware
-- 修改了RetryMiddleware、ProxyMiddleware、DepthMiddleware的参数配置方式
+- 修改了RetryMiddleware,ProxyMiddleware,DepthMiddleware的参数配置方式
 - ForwardedForMiddleware更名为ImitatingProxyMiddleware，用于设置HTTP请求头的 ``X-Forwarded-For`` 和 ``Via`` 字段
 - 系统配置 ``downloader_verify_ssl`` 更名为 ``verify_ssl`` ， ``downloader_cookie_jar_enabled`` 更名为 ``cookie_jar_enabled``
 - 更新了downloader和spider相关的错误处理流程
@@ -90,18 +100,18 @@ Changelog
 
 - spider的 ``start_requests`` 和 ``parse`` 函数支持async类型和python 3.6中的async generator类型
 - spider中间件的handle_*函数支持async类型
-- 添加事件驱动相关的eventbus和events模块，支持事件的订阅、发送，可通过 ``cluster.event_bus`` 获取event bus组件
+- 添加事件驱动相关的eventbus和events模块，支持事件的订阅/发送，可通过 ``cluster.event_bus`` 获取event bus组件
 - 捕获SIGINT和SIGTERM信号并做出相应处理
 - 添加extension模块，支持用户自定义拓展
-- 添加statscenter模块，用于收集、管理系统产生的各项统计量，可通过 ``cluster.stats_center`` 获取stats center组件；
+- 添加statscenter模块，用于收集,管理系统产生的各项统计量，可通过 ``cluster.stats_center`` 获取stats center组件；
   系统配置添加 ``stats_center_cls`` 项，用于替换默认的stats center的实现
 - SetDupeFilter添加 ``clear`` 函数
 - 系统配置添加 ``downloader_verify_ssl`` 项，用于开启或关闭SSL证书认证
-- HttpRequest的 ``body`` 参数支持 ``bytes`` 、 ``str`` 、 ``FormData`` 、 ``dict`` 等形式
+- HttpRequest的 ``body`` 参数支持 ``bytes`` , ``str`` , ``FormData`` , ``dict`` 等形式
 - HttpRequest添加 ``params`` , ``auth`` , ``proxy_auth`` , ``priority`` 等属性
 - 添加深度优先队列LifoQueue，以及优先级队列PriorityQueue，默认 ``queue_cls`` 更改为 ``xpaw.queue.PriorityQueue``
 - 支持设定HTTP请求的优先级并按优先级进行爬取
-- 添加item、pipeline模块，支持spider在处理response时返回BaseItem的实例或dict，并交由用户自定义的item pipelines进行处理
+- 添加item,pipeline模块，支持spider在处理response时返回BaseItem的实例或dict，并交由用户自定义的item pipelines进行处理
 - 实例化中间件的classmethod ``from_config`` 更改为 ``from_cluster`` ，现在 ``config`` 参数可以通过 ``cluster.config`` 获取
 - queue组件的 ``push`` , ``pop`` 函数，以及dupefilter组件的 ``is_duplicated`` 函数改为async类型
 - 移除queue组件和dupefilter组件的基类，RequestDequeue更名为FifoQueue
@@ -174,11 +184,11 @@ Changelog
 - 添加SpeedLimitMiddleware，用于爬虫限速
 - 添加ProxyMiddleware，用于为请求添加指定代理
 - 移除MongoDedupeMiddleware及对pymongo的依赖
-- 修改ProxyAgentMiddleware、RetryMiddleware在配置文件中的参数格式
+- 修改ProxyAgentMiddleware,RetryMiddleware在配置文件中的参数格式
 - DepthMiddleware更名为MaxDepthMiddleware
 
 
 0.6.0 (2017-03-16)
 ------------------
 
-开始投入试用的第一个版本
+- First release

@@ -1,17 +1,13 @@
 # coding=utf-8
 
-import pytest
-
 from xpaw.config import Config
 from xpaw.spidermws import *
-from xpaw.http import HttpRequest, HttpResponse
+from xpaw.http import HttpRequest
 from xpaw.item import Item
-from xpaw.errors import HttpError
 
 
 class Cluster:
-    def __init__(self, loop=None, **kwargs):
-        self.loop = loop
+    def __init__(self, **kwargs):
         self.config = Config(kwargs)
 
 
@@ -21,7 +17,7 @@ class TestDepthMiddleware:
             def __init__(self, depth=None):
                 self.meta = {}
                 if depth is not None:
-                    self.meta["depth"] = depth
+                    self.meta['depth'] = depth
 
         mw = DepthMiddleware.from_cluster(Cluster(max_depth=1))
         req = HttpRequest("http://python.org/", "GET")
@@ -39,20 +35,3 @@ class TestDepthMiddleware:
         res = [i for i in mw.handle_start_requests([req])]
         for r in res:
             assert r.meta.get('depth') == 0
-
-
-class TestHttpErrorMiddleware:
-    def test_handle_input(self):
-        mw = HttpErrorMiddleware()
-        resp_200 = HttpResponse('', 200)
-        resp_500 = HttpResponse('', 500)
-        assert mw.handle_input(resp_200) is None
-        with pytest.raises(HttpError):
-            mw.handle_input(resp_500)
-
-    def test_allow_all_http_status(self):
-        mw = HttpErrorMiddleware.from_cluster(Cluster(allow_all_http_status=True))
-        resp_200 = HttpResponse('', 200)
-        assert mw.handle_input(resp_200) is None
-        resp_500 = HttpResponse('', 500)
-        assert mw.handle_input(resp_500) is None

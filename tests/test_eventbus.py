@@ -28,6 +28,7 @@ class FooClass:
     def method1(self):
         self.count1 += 1
 
+    @pytest.mark.asyncio
     async def method2(self):
         self.count2 += 1
 
@@ -52,6 +53,7 @@ def test_raise_value_error():
     eventbus.subscribe(FooClass().method, event1)
 
 
+@pytest.mark.asyncio
 async def test_subscribe():
     eventbus = EventBus()
     obj = FooClass()
@@ -63,6 +65,7 @@ async def test_subscribe():
     assert obj.count1 == 1 and obj.count2 == 1
 
 
+@pytest.mark.asyncio
 async def test_subscribe_multi_times():
     eventbus = EventBus()
     obj = FooClass()
@@ -72,6 +75,7 @@ async def test_subscribe_multi_times():
     assert obj.count1 == 1
 
 
+@pytest.mark.asyncio
 async def test_unsubscribe():
     eventbus = EventBus()
     obj = FooClass()
@@ -83,6 +87,7 @@ async def test_unsubscribe():
     assert obj.count1 == 1
 
 
+@pytest.mark.asyncio
 async def test_unsubscribe_multi_times():
     eventbus = EventBus()
     obj = FooClass()
@@ -91,6 +96,7 @@ async def test_unsubscribe_multi_times():
     eventbus.unsubscribe(obj.method1, event1)
 
 
+@pytest.mark.asyncio
 async def test_send_with_parameters():
     eventbus = EventBus()
     obj = FooClass()
@@ -99,6 +105,7 @@ async def test_send_with_parameters():
     assert obj.value == -1
 
 
+@pytest.mark.asyncio
 async def test_send_unknown_event():
     eventbus = EventBus()
     obj = FooClass()
@@ -108,6 +115,7 @@ async def test_send_unknown_event():
     assert obj.count1 == 0
 
 
+@pytest.mark.asyncio
 async def test_unknown_unsubscribe():
     eventbus = EventBus()
     obj = FooClass()
@@ -119,6 +127,7 @@ async def test_unknown_unsubscribe():
     assert obj.count1 == 1
 
 
+@pytest.mark.asyncio
 async def test_raise_error_in_callback():
     eventbus = EventBus()
     obj = FooClass()
@@ -126,6 +135,7 @@ async def test_raise_error_in_callback():
     await eventbus.send(event1)
 
 
+@pytest.mark.asyncio
 async def test_del_weak_ref():
     eventbus = EventBus()
     obj1 = FooClass()

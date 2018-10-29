@@ -1,13 +1,13 @@
 # coding=utf-8
 
-from .http import FormData, URL, MultiDict, CIMultiDict, HttpRequest, HttpResponse
+from .http import HttpRequest, HttpResponse
 from .downloader import Downloader
 from .spider import Spider, every
 from .selector import Selector
 from .item import Item, Field
 from .run import run_spider, run_crawler, make_requests
 
-__all__ = ['FormData', 'URL', 'MultiDict', 'CIMultiDict', 'HttpRequest', 'HttpResponse',
+__all__ = ['HttpRequest', 'HttpResponse',
            'Downloader',
            'Spider', 'every',
            'Selector',

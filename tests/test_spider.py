@@ -50,6 +50,7 @@ class FooAsyncSpiderMw(FooSpidermw):
     def from_cluster(cls, cluster):
         return cls(cluster.config['data'])
 
+    @pytest.mark.asyncio
     async def handle_start_requests(self, result):
         res = []
         for r in result:
@@ -57,9 +58,11 @@ class FooAsyncSpiderMw(FooSpidermw):
             res.append(r)
         return res
 
+    @pytest.mark.asyncio
     async def handle_input(self, response):
         self.d['async_handle_input'] = response
 
+    @pytest.mark.asyncio
     async def handle_output(self, response, result):
         res = []
         for r in result:
@@ -67,6 +70,7 @@ class FooAsyncSpiderMw(FooSpidermw):
             res.append(r)
         return res
 
+    @pytest.mark.asyncio
     async def handle_error(self, response, error):
         self.d['async_handle_error'] = (response, error)
 
@@ -77,12 +81,13 @@ class Cluster:
         self.config = Config(kwargs)
 
 
+@pytest.mark.asyncio
 async def test_spider_middleware_manager_handlers():
     data = {}
     cluster = Cluster(spider_middlewares=[lambda d=data: FooSpidermw(d),
                                           DummySpidermw,
                                           FooAsyncSpiderMw],
-                      spider_middlewares_base=None,
+                      default_spider_middlewares=None,
                       data=data)
     spidermw = SpiderMiddlewareManager.from_cluster(cluster)
     response_obj = object()
@@ -106,7 +111,7 @@ async def test_spider_middleware_manager_handlers():
 
     data2 = {}
     cluster2 = Cluster(spider_middlewares={lambda d=data2: FooSpidermw(d): 0},
-                       spider_middlewares_base=None,
+                       default_spider_middlewares=None,
                        data=data2)
     spidermw2 = SpiderMiddlewareManager.from_cluster(cluster2)
     response_obj2 = object()
@@ -116,7 +121,7 @@ async def test_spider_middleware_manager_handlers():
     assert 'open' in data2 and 'close' in data2
     assert data2['handle_input'] is response_obj2
 
-    cluster3 = Cluster(spider_middlewares=None, spider_middlewares_base=None, data={})
+    cluster3 = Cluster(spider_middlewares=None, default_spider_middlewares=None, data={})
     SpiderMiddlewareManager.from_cluster(cluster3)
 
 
@@ -134,9 +139,10 @@ class FooSpider(Spider):
         self.data['close'] = ''
 
 
-async def test_spider(loop):
+@pytest.mark.asyncio
+async def test_spider():
     data = {}
-    cluster = Cluster(data=data, loop=loop)
+    cluster = Cluster(data=data)
     spider = FooSpider.from_cluster(cluster)
     await cluster.event_bus.send(events.cluster_start)
     with pytest.raises(NotImplementedError):

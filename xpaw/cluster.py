@@ -8,7 +8,7 @@ import inspect
 
 from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
-from .errors import IgnoreRequest, IgnoreItem, StopCluster, TimeoutError, ClientError
+from .errors import IgnoreRequest, IgnoreItem, StopCluster, ClientError, RequestTimeout, HttpError
 from .downloader import DownloaderMiddlewareManager
 from .spider import Spider, SpiderMiddlewareManager
 from .eventbus import EventBus
@@ -22,17 +22,13 @@ log = logging.getLogger(__name__)
 
 
 class LocalCluster:
-    def __init__(self, config, loop=None):
+    def __init__(self, config):
         self.config = config
-        self.loop = loop or asyncio.get_event_loop()
         self.event_bus = EventBus()
         self.stats_collector = self._new_object_from_cluster(self.config.get('stats_collector'), self)
         self.queue = self._new_object_from_cluster(self.config.get('queue'), self)
         self.dupe_filter = self._new_object_from_cluster(self.config.get('dupe_filter'), self)
-        self.downloader = Downloader(timeout=self.config.getfloat('downloader_timeout'),
-                                     verify_ssl=self.config.getbool('verify_ssl'),
-                                     allow_redirects=self.config.getbool('allow_redirects'),
-                                     loop=self.loop)
+        self.downloader = Downloader(self.config.getint('downloader_clients'))
         self.spider = self._new_object_from_cluster(self.config.get('spider'), self)
         assert isinstance(self.spider, Spider), 'spider must inherit from the Spider class'
         log.info('Spider: %s', str(self.spider))
@@ -57,19 +53,19 @@ class LocalCluster:
             return
         self._is_running = True
         await self._run()
-        self._run_lock = asyncio.Future(loop=self.loop)
+        self._run_lock = asyncio.Future()
         await self._run_lock
         self._run_lock = None
 
     async def _run(self):
         await self.event_bus.send(events.cluster_start)
-        self._supervisor_future = asyncio.ensure_future(self._supervisor(), loop=self.loop)
-        self._start_future = asyncio.ensure_future(self._generate_start_requests(), loop=self.loop)
-        downloader_clients = self.config.getint("downloader_clients")
+        self._supervisor_future = asyncio.ensure_future(self._supervisor())
+        self._start_future = asyncio.ensure_future(self._generate_start_requests())
+        downloader_clients = self.downloader.max_clients
         log.info("The maximum number of simultaneous clients: %s", downloader_clients)
         self._job_futures = []
         for i in range(downloader_clients):
-            f = asyncio.ensure_future(self._download(i), loop=self.loop)
+            f = asyncio.ensure_future(self._download(i))
             self._job_futures.append(f)
         self._job_futures_done = set()
         self._req_in_job = [None] * downloader_clients
@@ -79,7 +75,7 @@ class LocalCluster:
         if not self._is_running:
             return
         self._is_running = False
-        asyncio.ensure_future(self._shutdown(), loop=self.loop)
+        asyncio.ensure_future(self._shutdown())
 
     async def _shutdown(self):
         log.info("Shutdown now")
@@ -106,15 +102,14 @@ class LocalCluster:
             self._req_in_job = None
         await self.event_bus.send(events.cluster_shutdown)
         # wait cancelled futures
-        await asyncio.wait(cancelled_futures, loop=self.loop)
+        await asyncio.wait(cancelled_futures)
         log.info('Cluster is unloaded')
         if self._run_lock:
             self._run_lock.set_result(True)
 
     async def _supervisor(self):
-        timeout = self.config.getfloat("downloader_timeout")
         while True:
-            await asyncio.sleep(timeout, loop=self.loop)
+            await asyncio.sleep(5)
             for i in range(len(self._job_futures)):
                 f = self._job_futures[i]
                 if f.done():
@@ -156,7 +151,7 @@ class LocalCluster:
                     break
                 t = time.time() - t
                 if t < tick:
-                    await asyncio.sleep(tick - t, loop=self.loop)
+                    await asyncio.sleep(tick - t)
         except CancelledError:
             raise
         except Exception:
@@ -172,11 +167,11 @@ class LocalCluster:
             except CancelledError:
                 raise
             except Exception as e:
+                if not isinstance(e, (IgnoreRequest, RequestTimeout, ClientError, HttpError)):
+                    log.warning("Failed to request %s", req, exc_info=True)
                 if isinstance(e, IgnoreRequest):
                     await self.event_bus.send(events.request_ignored, request=req, error=e)
                 await self.spider.request_error(req, e)
-                if not isinstance(e, (IgnoreRequest, TimeoutError, ClientError)):
-                    log.warning("Failed to request %s", req, exc_info=True)
             else:
                 await self._handle_response(resp)
             self._req_in_job[coro_id] = None
@@ -241,5 +236,5 @@ class LocalCluster:
     @staticmethod
     def _log_objects(objects):
         if objects:
-            return ''.join(['\n\t' + str(i) for i in objects])
+            return ''.join(['\n\t({}/{}) {}'.format(i + 1, len(objects), o) for i, o in enumerate(objects)])
         return ''

@@ -14,8 +14,8 @@ xpaw
 Key Features
 ============
 
-- Provides a web scraping framework used to crawl web pages.
-- Provides data extraction tools used to extract structured data from web pages.
+- A web scraping framework used to crawl web pages
+- Data extraction tools used to extract structured data from web pages
 
 Spider Example
 ==============
@@ -56,10 +56,10 @@ Requirements
 ============
 
 - Python >= 3.5.3
-- `aiohttp`_
+- `tornado`_
 - `lxml`_
 - `cssselect`_
 
-.. _aiohttp: https://pypi.python.org/pypi/aiohttp
+.. _tornado: https://pypi.python.org/pypi/tornado
 .. _lxml: https://pypi.python.org/pypi/lxml
 .. _cssselect: https://pypi.python.org/pypi/cssselect

@@ -9,8 +9,7 @@ from importlib import import_module
 import string
 from os.path import isfile, exists
 import inspect
-
-from .http import URL
+from urllib.parse import urlsplit, parse_qsl, urlencode
 
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
@@ -46,7 +45,7 @@ def configure_logger(name, config):
 
 def redirect_logger(name, logger, override=True):
     log = logging.getLogger(name)
-    if log.handlers is not None and not override:
+    if log.handlers and not override:
         return
     log.handlers = logger.handlers
     log.setLevel(logger.level)
@@ -55,18 +54,21 @@ def redirect_logger(name, logger, override=True):
 def request_fingerprint(request):
     sha1 = hashlib.sha1()
     sha1.update(to_bytes(request.method))
-    if isinstance(request.url, str):
-        url = URL(request.url)
-    else:
-        url = request.url
-    queries = []
-    for k, v in url.query.items():
-        queries.append('{}={}'.format(k, v))
-    if request.params:
-        for k, v in request.params.items():
-            queries.append('{}={}'.format(k, v))
+    res = urlsplit(request.url)
+
+    queries = parse_qsl(res.query)
+    if request.params is not None:
+        if isinstance(request.params, dict):
+            queries.extend(request.params.items())
+        elif isinstance(request.params, (tuple, list)):
+            queries.extend(request.params)
     queries.sort()
-    sha1.update(to_bytes('{}://{}{}:{}?{}'.format(url.scheme, url.host, url.path, url.port, '&'.join(queries))))
+    final_query = urlencode(queries)
+    sha1.update(to_bytes('{}://{}{}:{}?{}'.format(res.scheme,
+                                                  '' if res.hostname is None else res.hostname,
+                                                  res.path,
+                                                  80 if res.port is None else res.port,
+                                                  final_query)))
     sha1.update(request.body or b'')
     return sha1.hexdigest()
 
@@ -178,15 +180,12 @@ def request_to_dict(request):
     if inspect.ismethod(errback):
         errback = errback.__name__
     meta = dict(request.meta)
-    if 'cookie_jar' in meta:
-        del meta['cookie_jar']
     d = {
         'url': request.url,
         'method': request.method,
         'body': request.body,
         'params': request.params,
         'headers': request.headers,
-        'cookies': request.cookies,
         'meta': meta,
         'priority': request.priority,
         'dont_filter': request.dont_filter,

@@ -54,6 +54,7 @@ class Cluster:
         self.config = Config(kwargs)
 
 
+@pytest.mark.asyncio
 async def test_middleware_manager_handlers(monkeypatch):
     @classmethod
     def middleware_list_from_config(cls, config):
@@ -84,11 +85,11 @@ def test_priority_list_from_config():
 
 def test_make_component_list():
     cls = MiddlewareManager._make_component_list
-    d = cls('foo', Cluster(foo=['a', 'c'], foo_base={'b': 3, 'd': 100}).config)
+    d = cls('foo', Cluster(foo=['a', 'c'], default_foo={'b': 3, 'd': 100}).config)
     assert d == ['a', 'c', 'b', 'd']
-    d2 = cls('foo', Cluster(foo=['a', 'b', 'c'], foo_base={'b': 3, 'd': 100}).config)
+    d2 = cls('foo', Cluster(foo=['a', 'b', 'c'], default_foo={'b': 3, 'd': 100}).config)
     assert d2 == ['a', 'b', 'c', 'd']
-    d3 = cls('foo', Cluster(foo={'a': 9, 'c': 1}, foo_base={'d': 3, 'b': 4}).config)
+    d3 = cls('foo', Cluster(foo={'a': 9, 'c': 1}, default_foo={'d': 3, 'b': 4}).config)
     assert d3 == ['c', 'd', 'b', 'a']
-    d4 = cls('foo', Cluster(foo={'a': 9, 'c': 1, 'b': 4}, foo_base={'d': 3, 'b': 2}).config)
+    d4 = cls('foo', Cluster(foo={'a': 9, 'c': 1, 'b': 4}, default_foo={'d': 3, 'b': 2}).config)
     assert d4 == ['c', 'd', 'b', 'a']

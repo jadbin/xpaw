@@ -66,7 +66,7 @@ class MiddlewareManager:
 
     @classmethod
     def _make_component_list(cls, name, config):
-        c_base = cls._priority_list_from_config(name + '_base', config)
+        c_base = cls._priority_list_from_config('default_' + name, config)
         c = cls._priority_list_from_config(name, config)
         c_base.update(c)
         res = []

@@ -2,7 +2,6 @@
 
 import time
 import logging
-import asyncio
 from asyncio import Semaphore
 from collections import deque
 from heapq import heappush, heappop
@@ -16,18 +15,17 @@ log = logging.getLogger(__name__)
 
 
 class FifoQueue:
-    def __init__(self, dump_dir=None, loop=None):
+    def __init__(self, dump_dir=None):
         self._queue = deque()
         self._dump_dir = dump_dir
-        self._loop = loop or asyncio.get_event_loop()
-        self._semaphore = Semaphore(0, loop=self._loop)
+        self._semaphore = Semaphore(0)
 
     def __len__(self):
         return len(self._queue)
 
     @classmethod
     def from_cluster(cls, cluster):
-        queue = cls(dump_dir=utils.get_dump_dir(cluster.config), loop=cluster.loop)
+        queue = cls(dump_dir=utils.get_dump_dir(cluster.config))
         cluster.event_bus.subscribe(queue.open, events.cluster_start)
         cluster.event_bus.subscribe(queue.close, events.cluster_shutdown)
         return queue
@@ -78,18 +76,17 @@ class LifoQueue(FifoQueue):
 
 
 class PriorityQueue:
-    def __init__(self, dump_dir=None, loop=None):
+    def __init__(self, dump_dir=None):
         self._queue = []
         self._dump_dir = dump_dir
-        self._loop = loop or asyncio.get_event_loop()
-        self._semaphore = Semaphore(0, loop=self._loop)
+        self._semaphore = Semaphore(0)
 
     def __len__(self):
         return len(self._queue)
 
     @classmethod
     def from_cluster(cls, cluster):
-        queue = cls(dump_dir=utils.get_dump_dir(cluster.config), loop=cluster.loop)
+        queue = cls(dump_dir=utils.get_dump_dir(cluster.config))
         cluster.event_bus.subscribe(queue.open, events.cluster_start)
         cluster.event_bus.subscribe(queue.close, events.cluster_shutdown)
         return queue

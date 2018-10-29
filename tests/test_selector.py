@@ -1,7 +1,6 @@
 # coding=utf-8
 
 import pytest
-from aiohttp.helpers import parse_mimetype
 
 from xpaw.selector import Selector
 
@@ -53,22 +52,6 @@ class TestXPathSelector:
         assert len(minor) == 1 and minor[0].text == 'minor'
         minor = s.xpath("//p[contains(@class, 'minor')]")
         assert len(minor) == 1 and minor[0].text == 'minor'
-
-    def test_encoding_detection(self):
-        html = "<html lang=en><head>" \
-               "<title>测试</title>" \
-               "<meta charset=gbk>" \
-               "<meta http-equiv=Content-Type content='text/html; charset=gbk' />" \
-               "</head></html>"
-        body = html.encode("gbk")
-        with pytest.raises(UnicodeDecodeError):
-            Selector(body.decode("utf-8"))
-        s = Selector(body.decode("ascii", errors="ignore"))
-        assert s.xpath("//meta/@charset")[0].text == "gbk"
-        content_type = s.xpath("//meta[@http-equiv='Content-Type']/@content")[0].text
-        assert content_type == "text/html; charset=gbk"
-        mimetype = parse_mimetype(content_type)
-        assert mimetype.type == "text" and mimetype.subtype == "html" and mimetype.parameters.get("charset") == "gbk"
 
     def test_wrong_arguments(self):
         html = b"<html></html>"

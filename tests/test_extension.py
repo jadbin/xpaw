@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import pytest
 
 from xpaw.extension import ExtensionManager
 from xpaw.config import Config
@@ -30,25 +31,17 @@ class Cluster:
         self.config = Config(kwargs)
 
 
+@pytest.mark.asyncio
 async def test_extension_manager():
     data = {}
     cluster = Cluster(extensions=[lambda d=data: FooExtension(d),
                                   DummyExtension],
-                      extensions_base=None,
+                      default_extensions=None,
                       data=data)
-    extension = ExtensionManager.from_cluster(cluster)
+    extensions = ExtensionManager.from_cluster(cluster)
     await cluster.event_bus.send(events.cluster_start)
     await cluster.event_bus.send(events.cluster_shutdown)
     assert 'open' in data and 'close' in data
 
-    data2 = {}
-    cluster2 = Cluster(extensions={lambda d=data2: FooExtension(d): 0},
-                       extensions_base=None,
-                       data=data2)
-    extension2 = ExtensionManager.from_cluster(cluster2)
-    await cluster2.event_bus.send(events.cluster_start)
-    await cluster2.event_bus.send(events.cluster_shutdown)
-    assert 'open' in data2 and 'close' in data2
-
-    cluster3 = Cluster(extensions=None, extensions_base=None, data={})
+    cluster3 = Cluster(extensions=None, default_extensions=None, data={})
     ExtensionManager.from_cluster(cluster3)

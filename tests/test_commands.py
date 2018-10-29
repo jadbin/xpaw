@@ -3,7 +3,6 @@
 import pytest
 from os.path import isfile, isdir, join
 from os import remove
-import time
 
 from xpaw.cli import main
 from xpaw import __version__
@@ -41,7 +40,7 @@ def test_init(tmpdir, capsys):
     assert isfile(join(proj_dir, proj_name, 'items.py'))
     assert isfile(join(proj_dir, proj_name, 'pipelines.py'))
     assert isfile(join(proj_dir, proj_name, 'spider.py'))
-    main(argv=['xpaw', 'crawl', proj_dir, '-s', 'downloader_timeout=0.01', '-l', 'WARNING'])
+    main(argv=['xpaw', 'crawl', proj_dir, '-l', 'WARNING'])
     _, _ = capsys.readouterr()
     remove(join(proj_dir, 'config.py'))
 
@@ -57,7 +56,7 @@ def test_crawl_project(tmpdir, capsys):
     proj_name = 'test_crawl_project'
     proj_dir = join(str(tmpdir), proj_name)
     main(argv=['xpaw', 'init', proj_dir])
-    main(argv=['xpaw', 'crawl', proj_dir, '--downloader-timeout=0.01'])
+    main(argv=['xpaw', 'crawl', proj_dir])
     _, _ = capsys.readouterr()
 
 
@@ -72,12 +71,7 @@ def test_crawl_spider(tmpdir, capsys):
     proj_name = 'test_crawl_spider'
     proj_dir = join(str(tmpdir), proj_name)
     main(argv=['xpaw', 'init', proj_dir])
-    with open(join(proj_dir, 'config.py'), 'w') as f:
-        f.write('downloader_timeout = 0.01')
-    t = time.time()
-    main(argv=['xpaw', 'crawl', join(proj_dir, proj_name, 'spider.py'),
-               '-c', join(proj_dir, 'config.py')])
-    assert time.time() - t < 1
+    main(argv=['xpaw', 'crawl', join(proj_dir, proj_name, 'spider.py')])
     _, _ = capsys.readouterr()
 
 
@@ -87,7 +81,7 @@ def test_crawl_spider_no_config_file(tmpdir, capsys):
     main(argv=['xpaw', 'init', proj_dir])
     with pytest.raises(ValueError):
         main(argv=['xpaw', 'crawl', join(proj_dir, proj_name, 'spider.py'),
-                   '-c', 'no_such_config.py', '--downloader-timeout=0.01'])
+                   '-c', 'no_such_config.py'])
     _, _ = capsys.readouterr()
 
 

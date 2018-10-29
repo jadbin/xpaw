@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from xpaw import Spider, HttpRequest, run_spider
-from xpaw.errors import HttpError, TimeoutError, ClientError
+from xpaw.errors import HttpError, ClientError, RequestTimeout
 
 
 class ErrorHandlingSpider(Spider):
@@ -9,7 +9,7 @@ class ErrorHandlingSpider(Spider):
         "http://www.python.org/",  # 200 OK
         "http://www.httpbin.org/status/404",  # 404 Not Found
         "http://www.httpbin.org/status/500",  # 500 Service Not Available
-        "http://www.example.com:8080/",  # TimeoutError
+        "http://www.example.com:8080/",  # RequestTimeout
         "http://foo.example.com/",  # ClientError
     ]
 
@@ -24,8 +24,8 @@ class ErrorHandlingSpider(Spider):
         if isinstance(error, HttpError):
             response = error.response
             self.logger.error('HttpError on %s: HTTP status=%s', request.url, response.status)
-        elif isinstance(error, TimeoutError):
-            self.logger.error('TimeoutError on %s', request.url)
+        elif isinstance(error, RequestTimeout):
+            self.logger.error('RequestTimeout on %s', request.url)
         elif isinstance(error, ClientError):
             self.logger.error('ClientError on %s: %s', request.url, error)
 

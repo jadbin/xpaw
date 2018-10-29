@@ -18,7 +18,7 @@ Make Requests
 
 返回结果是一个 ``list`` ，和发起的请求一一对应，可能是 :class:`~xpaw.http.HttpResponse` 或 ``Exception`` 。
 因此可以先通过 ``isinstance`` 判断是否是正常返回的结果 :class:`~xpaw.http.HttpResponse` 。
-其次，如果是 ``Exception`` ，则表示请求出现了错误，例如常见的有 :class:`~xpaw.errors.TimeoutError` (请求超时), :class:`~xpaw.errors.HttpError` (非2xx的HTTP状态码)。
+其次，如果是 ``Exception`` ，则表示请求出现了错误，例如常见的有 :class:`~xpaw.errors.RequestTimeout` (请求超时), :class:`~xpaw.errors.HttpError` (非2xx的HTTP状态码)。
 
 使用 :func:`~xpaw.run.make_requests` 可以实现请求的并发执行，并提供了错误重试等诸多可选功能。
 

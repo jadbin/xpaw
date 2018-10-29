@@ -1,327 +1,111 @@
 # coding=utf-8
 
 import json
-import random
 
-from aiohttp import web
-from aiohttp.helpers import BasicAuth
-from aiohttp import FormData
+import pytest
 
-from xpaw.http import HttpRequest, MultiDict
+from xpaw.http import HttpRequest
 from xpaw.downloader import Downloader, DownloaderMiddlewareManager
 from xpaw.eventbus import EventBus
 from xpaw.config import Config
 from xpaw import events
+from xpaw.errors import HttpError
 
 
-async def test_cookies(loop):
-    downloader = Downloader(timeout=60, loop=loop)
-    seed = str(random.randint(0, 2147483647))
-    req = HttpRequest("http://httpbin.org/cookies", cookies={"seed": seed})
-    resp = await downloader.download(req)
-    assert resp.status == 200
-    cookies = json.loads(resp.text)["cookies"]
-    assert len(cookies) == 1 and cookies.get("seed") == seed
-
-
-async def make_auth_server(aiohttp_server, login=None, password=None):
-    async def process(request):
-        auth_str = request.headers.get('Authorization')
-        if auth_str is None:
-            if login is not None:
-                return web.Response(status=401)
-        else:
-            auth = BasicAuth.decode(auth_str)
-            if login != auth.login or password != auth.password:
-                return web.Response(status=401)
-        return web.Response(status=200)
-
-    app = web.Application()
-    app.router.add_route("GET", "/{tail:.*}", process)
-    server = await aiohttp_server(app)
-    return server
-
-
-async def test_basic_auth(aiohttp_server, loop):
-    downloader = Downloader(loop=loop)
-    server = await make_auth_server(aiohttp_server, login='login', password='pass')
+@pytest.mark.asyncio
+async def test_basic_auth():
+    downloader = Downloader()
 
     async def no_auth():
-        req = HttpRequest("http://{}:{}/basic-auth/login/pass".format(server.host, server.port))
-        resp = await downloader.download(req)
-        assert resp.status == 401
-
-    async def str_auth():
-        req = HttpRequest("http://{}:{}/basic-auth/login/pass".format(server.host, server.port))
-        req.meta['auth'] = 'login:pass'
-        resp = await downloader.download(req)
-        assert resp.status == 200
+        req = HttpRequest("http://httpbin.org/basic-auth/user/passwd")
+        with pytest.raises(HttpError) as e:
+            await downloader.download(req)
+        assert e.value.response.status == 401
 
     async def tuple_auth():
-        req = HttpRequest("http://{}:{}/basic-auth/login/pass".format(server.host, server.port))
-        req.meta['auth'] = ('login', 'pass')
+        req = HttpRequest("http://httpbin.org/basic-auth/user/passwd")
+        req.auth = ('user', 'passwd')
         resp = await downloader.download(req)
-        assert resp.status == 200
-
-    async def basic_auth():
-        req = HttpRequest("http://{}:{}/basic-auth/login/pass".format(server.host, server.port))
-        req.meta['auth'] = BasicAuth('login', 'pass')
-        resp = await downloader.download(req)
-        assert resp.status == 200
-
-    async def url_basic_auth():
-        resp = await downloader.download(
-            HttpRequest("http://login:pass@{}:{}/basic-auth/login/pass".format(server.host, server.port)))
         assert resp.status == 200
 
     await no_auth()
-    await str_auth()
     await tuple_auth()
-    await basic_auth()
-    await url_basic_auth()
 
 
-async def make_params_server(aiohttp_server):
-    async def process(request):
-        d = {}
-        for i in set(request.rel_url.query.keys()):
-            v = request.rel_url.query.getall(i)
-            if len(v) == 1:
-                d[i] = v[0]
-            else:
-                d[i] = v
-        return web.json_response(d, status=200)
-
-    app = web.Application()
-    app.router.add_route("GET", "/{tail:.*}", process)
-    server = await aiohttp_server(app)
-    return server
-
-
-async def test_params(aiohttp_server, loop):
-    server = await make_params_server(aiohttp_server)
-    downloader = Downloader(loop=loop)
-    args = {'key': 'value', 'none': '', 'list': ['item1', 'item2']}
+@pytest.mark.asyncio
+async def test_params():
+    downloader = Downloader()
 
     async def query_params():
-        url = "http://{}:{}/?key=value&none=&list=item1&list=item2".format(server.host, server.port)
+        url = "http://httpbin.org/anything?key=value&none="
         resp = await downloader.download(HttpRequest(url))
-        assert args == json.loads(resp.text)
+        assert json.loads(resp.text)['args'] == {'key': 'value', 'none': ''}
 
     async def dict_params():
-        resp = await downloader.download(HttpRequest("http://{}:{}/".format(server.host, server.port),
-                                                     params={'key': 'value', 'none': '', 'list': ['item1', 'item2']}))
-        assert args == json.loads(resp.text)
+        resp = await downloader.download(HttpRequest("http://httpbin.org/get",
+                                                     params={'key': 'value', 'none': ''}))
+        assert json.loads(resp.text)['args'] == {'key': 'value', 'none': ''}
 
-    async def multi_dict_params():
-        params = MultiDict()
-        params.add('key', 'value')
-        params.add('none', '')
-        params.add('list', 'item1')
-        params.add('list', 'item2')
-        resp = await downloader.download(HttpRequest("http://{}:{}/".format(server.host, server.port),
-                                                     params=params))
-        assert args == json.loads(resp.text)
+    async def list_params():
+        resp = await downloader.download(HttpRequest("http://httpbin.org/get",
+                                                     params=[('list', '1'), ('list', '2')]))
+        assert json.loads(resp.text)['args'] == {'list': ['1', '2']}
 
     await query_params()
     await dict_params()
-    await multi_dict_params()
+    await list_params()
 
 
-async def make_proxy_auth_server(aiohttp_server, login=None, password=None):
-    async def process(request):
-        auth_str = request.headers.get('Proxy-Authorization')
-        if auth_str is None:
-            if login is not None:
-                return web.Response(status=401)
-        else:
-            auth = BasicAuth.decode(auth_str)
-            if login != auth.login or password != auth.password:
-                return web.Response(status=401)
-        return web.Response(body=request.raw_path, status=200)
-
-    app = web.Application()
-    app.router.add_route("GET", "/{tail:.*}", process)
-    server = await aiohttp_server(app)
-    return server
-
-
-async def test_proxy(aiohttp_server, loop):
-    server = await make_proxy_auth_server(aiohttp_server)
-    downloader = Downloader(loop=loop)
-    seed = str(random.randint(0, 2147483647))
-    req = HttpRequest('http://example.com/?seed={}'.format(seed))
-    req.meta['proxy'] = '{}:{}'.format(server.host, server.port)
-    resp = await downloader.download(req)
-    assert resp.text == req.url
-
-
-async def test_proxy_auth(aiohttp_server, loop):
-    downloader = Downloader(loop=loop)
-    server = await make_proxy_auth_server(aiohttp_server, login='login', password='pass')
-
-    async def no_auth():
-        req = HttpRequest("http://example.com/basic-auth/login/pass")
-        req.meta['proxy'] = 'http://{}:{}'.format(server.host, server.port)
-        resp = await downloader.download(req)
-        assert resp.status == 401
-
-    async def str_auth():
-        req = HttpRequest("http://example.com/basic-auth/login/pass")
-        req.meta['proxy'] = 'http://{}:{}'.format(server.host, server.port)
-        req.meta['proxy_auth'] = 'login:pass'
-        resp = await downloader.download(req)
-        assert resp.status == 200
-
-    async def tuple_auth():
-        req = HttpRequest("http://example.com/basic-auth/login/pass")
-        req.meta['proxy'] = 'http://{}:{}'.format(server.host, server.port)
-        req.meta['proxy_auth'] = ('login', 'pass')
-        resp = await downloader.download(req)
-        assert resp.status == 200
-
-    async def basic_auth():
-        req = HttpRequest("http://example.com/basic-auth/login/pass")
-        req.meta['proxy'] = 'http://{}:{}'.format(server.host, server.port)
-        req.meta['proxy_auth'] = BasicAuth('login', 'pass')
-        resp = await downloader.download(req)
-        assert resp.status == 200
-
-    async def url_basic_auth():
-        req = HttpRequest("http://example.com/basic-auth/login/pass")
-        req.meta['proxy'] = 'http://login:pass@{}:{}'.format(server.host, server.port)
-        resp = await downloader.download(req)
-        assert resp.status == 200
-
-    await no_auth()
-    await str_auth()
-    await tuple_auth()
-    await basic_auth()
-    await url_basic_auth()
-
-
-async def make_headers_server(aiohttp_server):
-    async def process(request):
-        return web.json_response({'headers': dict(request.headers)})
-
-    app = web.Application()
-    app.router.add_route("GET", "/{tail:.*}", process)
-    server = await aiohttp_server(app)
-    return server
-
-
-async def test_headers(aiohttp_server, loop):
-    server = await make_headers_server(aiohttp_server)
-    downloader = Downloader(loop=loop)
-    headers = {'User-Agent': 'xpaw', 'X-My-Header': 'my-header'}
-    resp = await downloader.download(HttpRequest("http://{}:{}".format(server.host, server.port),
+@pytest.mark.asyncio
+async def test_headers():
+    downloader = Downloader()
+    headers = {'User-Agent': 'xpaw'}
+    resp = await downloader.download(HttpRequest("http://httpbin.org/get",
                                                  headers=headers))
     assert resp.status == 200
-    data = json.loads(resp.body.decode('utf-8'))['headers']
+    data = json.loads(resp.text)['headers']
     assert 'User-Agent' in data and data['User-Agent'] == 'xpaw'
-    assert 'X-My-Header' in data and data['X-My-Header'] == 'my-header'
 
 
-async def make_post_server(aiohttp_server):
-    async def process(request):
-        data = await request.read()
-        return web.Response(body=data, status=200)
-
-    async def process_json(request):
-        data = await request.json()
-        return web.json_response(data, status=200)
-
-    async def process_form(request):
-        data = await request.post()
-        d = {}
-        for i in set(data.keys()):
-            v = data.getall(i)
-            if len(v) == 1:
-                d[i] = v[0]
-            else:
-                d[i] = v
-        return web.json_response(d, status=200)
-
-    app = web.Application()
-    app.router.add_route("POST", "/", process)
-    app.router.add_route("POST", "/json", process_json)
-    app.router.add_route("POST", "/form", process_form)
-    server = await aiohttp_server(app)
-    return server
-
-
-async def test_body(aiohttp_server, loop):
-    server = await make_post_server(aiohttp_server)
-    downloader = Downloader(loop=loop)
-
-    async def post_json():
-        json_data = {'key': 'value', 'none': None, 'list': ['item1', 'item2'], 'object': {'name': 'object'}}
-        resp = await downloader.download(HttpRequest('http://{}:{}/json'.format(server.host, server.port),
-                                                     'POST', body=json_data))
-        assert resp.status == 200
-        data = json.loads(resp.body.decode())
-        assert data == json_data
-
-    async def post_form():
-        form_data = {'key': 'value', 'none': '', 'list': ['item1', 'item2']}
-        resp = await downloader.download(HttpRequest('http://{}:{}/form'.format(server.host, server.port),
-                                                     'POST', body=FormData(form_data)))
-        assert resp.status == 200
-        data = json.loads(resp.body.decode())
-        assert data == form_data
+@pytest.mark.asyncio
+async def test_body():
+    downloader = Downloader()
 
     async def post_str():
         str_data = 'str data: 字符串数据'
-        resp = await downloader.download(HttpRequest('http://{}:{}/'.format(server.host, server.port),
-                                                     'POST', body=str_data))
+        resp = await downloader.download(HttpRequest('http://httpbin.org/post',
+                                                     'POST', body=str_data,
+                                                     headers={'Content-Type': 'text/plain'}))
         assert resp.status == 200
-        body = resp.body.decode()
+        body = json.loads(resp.text)['data']
         assert body == str_data
 
     async def post_bytes():
         bytes_data = 'bytes data: 字节数据'
-        resp = await downloader.download(HttpRequest('http://{}:{}/'.format(server.host, server.port),
-                                                     'POST', body=bytes_data.encode()))
+        resp = await downloader.download(HttpRequest('http://httpbin.org/post',
+                                                     'POST', body=bytes_data.encode(),
+                                                     headers={'Content-Type': 'text/plain'}))
         assert resp.status == 200
-        body = resp.body.decode()
+        body = json.loads(resp.text)['data']
         assert body == bytes_data
 
-    await post_json()
-    await post_form()
     await post_str()
     await post_bytes()
 
 
-async def make_redirect_server(aiohttp_server):
-    async def process(request):
-        return web.Response(headers={'Location': 'http://python.org/'}, status=302)
+@pytest.mark.asyncio
+async def test_allow_redirects():
+    downloader = Downloader()
 
-    app = web.Application()
-    app.router.add_route("GET", "/{tail:.*}", process)
-    server = await aiohttp_server(app)
-    return server
+    resp = await downloader.download(HttpRequest('http://httpbin.org/redirect-to',
+                                                 params={'url': 'http://python.org'}))
+    assert resp.status // 100 == 2 and 'python.org' in resp.url
 
-
-async def test_allow_redirects(aiohttp_server, loop):
-    server = await make_redirect_server(aiohttp_server)
-    downloader = Downloader(loop=loop, allow_redirects=True)
-    downloader2 = Downloader(loop=loop, allow_redirects=False)
-
-    resp = await downloader.download(HttpRequest('http://{}:{}/'.format(server.host, server.port)))
-    assert resp.status // 100 == 2 and 'python.org' in str(resp.url)
-
-    resp = await downloader2.download(HttpRequest('http://{}:{}/'.format(server.host, server.port)))
-    assert resp.status // 100 == 3
-
-    req = HttpRequest('http://{}:{}/'.format(server.host, server.port))
-    req.meta['allow_redirects'] = False
-    resp = await downloader.download(req)
-    assert resp.status // 100 == 3
-
-    req = HttpRequest('http://{}:{}/'.format(server.host, server.port))
-    req.meta['allow_redirects'] = True
-    resp = await downloader2.download(req)
-    assert resp.status // 100 == 2 and 'python.org' in str(resp.url)
+    with pytest.raises(HttpError) as e:
+        await downloader.download(HttpRequest('http://httpbin.org/redirect-to',
+                                              params={'url': 'http://python.org'},
+                                              allow_redirects=False))
+    assert e.value.response.status // 100 == 3
 
 
 class FooDownloadermw:
@@ -371,12 +155,13 @@ class Cluster:
         self.config = Config(kwargs)
 
 
+@pytest.mark.asyncio
 async def test_downloader_middleware_manager_handlers():
     data = {}
     cluster = Cluster(downloader_middlewares=[lambda d=data: FooDownloadermw(d),
                                               DummyDownloadermw,
                                               FooAsyncDownloaderMw],
-                      downloader_middlewares_base=None,
+                      default_downloader_middlewares=None,
                       data=data)
     downloadermw = DownloaderMiddlewareManager.from_cluster(cluster)
     request_obj = object()
@@ -397,7 +182,7 @@ async def test_downloader_middleware_manager_handlers():
 
     data2 = {}
     cluster2 = Cluster(downloader_middlewares={lambda d=data2: FooDownloadermw(d): 0},
-                       downloader_middlewares_base=None,
+                       default_downloader_middlewares=None,
                        data=data2)
     downloadermw2 = DownloaderMiddlewareManager.from_cluster(cluster2)
     request_obj2 = object()
@@ -407,5 +192,5 @@ async def test_downloader_middleware_manager_handlers():
     assert 'open' in data2 and 'close' in data2
     assert data2['handle_request'] is request_obj2
 
-    cluster3 = Cluster(downloader_middlewares=None, downloader_middlewares_base=None, data={})
+    cluster3 = Cluster(downloader_middlewares=None, default_downloader_middlewares=None, data={})
     DownloaderMiddlewareManager.from_cluster(cluster3)

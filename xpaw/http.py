@@ -3,19 +3,13 @@
 import re
 import cgi
 
-import aiohttp
-import yarl
-import multidict
-
-FormData = aiohttp.FormData
-URL = yarl.URL
-MultiDict = multidict.MultiDict
-CIMultiDict = multidict.CIMultiDict
+from tornado.httputil import HTTPHeaders as HttpHeaders
 
 
 class HttpRequest:
-    def __init__(self, url, method="GET", body=None, params=None, headers=None, cookies=None,
-                 meta=None, priority=None, dont_filter=False, callback=None, errback=None):
+    def __init__(self, url, method="GET", body=None, params=None, headers=None, proxy=None,
+                 timeout=20, verify_ssl=False, allow_redirects=True, auth=None, proxy_auth=None,
+                 priority=None, dont_filter=False, callback=None, errback=None, meta=None):
         """
         Construct an HTTP request.
         """
@@ -24,12 +18,17 @@ class HttpRequest:
         self.body = body
         self.params = params
         self.headers = headers or {}
-        self.cookies = cookies or {}
-        self._meta = dict(meta) if meta else {}
+        self.proxy = proxy
+        self.timeout = timeout
+        self.verify_ssl = verify_ssl
+        self.allow_redirects = allow_redirects
+        self.auth = auth
+        self.proxy_auth = proxy_auth
         self.priority = priority
         self.dont_filter = dont_filter
         self.callback = callback
         self.errback = errback
+        self._meta = dict(meta) if meta else {}
 
     def __str__(self):
         return '<{}, {}>'.format(self.method, self.url)
@@ -44,14 +43,15 @@ class HttpRequest:
         return self.replace()
 
     def replace(self, **kwargs):
-        for i in ["url", "method", "body", "params", "headers", "cookies",
-                  "meta", "priority", "dont_filter", "callback", "errback"]:
+        for i in ["url", "method", "body", "params", "headers", "proxy",
+                  "timeout", "verify_ssl", "allow_redirects", "auth", "proxy_auth",
+                  "priority", "dont_filter", "callback", "errback", "meta"]:
             kwargs.setdefault(i, getattr(self, i))
         return type(self)(**kwargs)
 
 
 class HttpResponse:
-    def __init__(self, url, status, body=None, headers=None, cookies=None,
+    def __init__(self, url, status, body=None, headers=None,
                  request=None):
         """
         Construct an HTTP response.
@@ -60,7 +60,6 @@ class HttpResponse:
         self.status = int(status)
         self.body = body
         self.headers = headers or {}
-        self.cookies = cookies or {}
         self.request = request
 
     def __str__(self):
@@ -100,7 +99,7 @@ class HttpResponse:
         return self.replace()
 
     def replace(self, **kwargs):
-        for i in ["url", "status", "body", "headers", "cookies", "request"]:
+        for i in ["url", "status", "body", "headers", "request"]:
             kwargs.setdefault(i, getattr(self, i))
         return type(self)(**kwargs)
 

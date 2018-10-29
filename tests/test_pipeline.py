@@ -1,5 +1,7 @@
 # coding=utf-8
 
+import pytest
+
 from xpaw.pipeline import ItemPipelineManager
 from xpaw.config import Config
 from xpaw.eventbus import EventBus
@@ -31,6 +33,7 @@ class FooAsyncItemPipeline(FooItemPipeline):
     def from_cluster(cls, cluster):
         return cls(cluster.config['data'])
 
+    @pytest.mark.asyncio
     async def handle_item(self, item):
         self.d['async_handle_item'] = item
 
@@ -41,12 +44,13 @@ class Cluster:
         self.config = Config(kwargs)
 
 
+@pytest.mark.asyncio
 async def test_item_pipeline_manager():
     data = {}
     cluster = Cluster(item_pipelines=[lambda d=data: FooItemPipeline(d),
                                       DummyItemPipeline,
                                       FooAsyncItemPipeline],
-                      item_pipelines_base=None,
+                      default_item_pipelines=None,
                       data=data)
     pipeline = ItemPipelineManager.from_cluster(cluster)
     obj = object()
@@ -56,17 +60,5 @@ async def test_item_pipeline_manager():
     assert 'open' in data and 'close' in data
     assert data['handle_item'] is obj and data['async_handle_item'] is obj
 
-    data2 = {}
-    cluster2 = Cluster(item_pipelines={lambda d=data2: FooItemPipeline(d): 0},
-                       item_pipelines_base=None,
-                       data=data2)
-    pipeline2 = ItemPipelineManager.from_cluster(cluster2)
-    obj2 = object()
-    await cluster2.event_bus.send(events.cluster_start)
-    await pipeline2.handle_item(obj2)
-    await cluster2.event_bus.send(events.cluster_shutdown)
-    assert 'open' in data2 and 'close' in data2
-    assert data2['handle_item'] is obj2
-
-    cluster3 = Cluster(item_pipelines=None, item_pipelines_base=None, data={})
+    cluster3 = Cluster(item_pipelines=None, default_item_pipelines=None, data={})
     ItemPipelineManager.from_cluster(cluster3)

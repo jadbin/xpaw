@@ -24,7 +24,7 @@ def run_any_dupe_filter(f):
     assert f.is_duplicated(r_get_port_81) is False
     assert f.is_duplicated(r_get) is True
     assert f.is_duplicated(r_get_dont_filter) is False
-    assert f.is_duplicated(r_get_dir) is True
+    assert f.is_duplicated(r_get_dir) is False
     assert f.is_duplicated(r_get_post) is False
     assert f.is_duplicated(r_post) is False
     assert f.is_duplicated(r_post_dir) is False

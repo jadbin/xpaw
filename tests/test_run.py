@@ -15,7 +15,7 @@ def test_run_crawler(tmpdir):
     proj_name = 'test_run_crawler'
     proj_dir = join(str(tmpdir), proj_name)
     main(argv=['xpaw', 'init', proj_dir])
-    run_crawler(proj_dir, downloader_timeout=0.01, log_level='DEBUG')
+    run_crawler(proj_dir, log_level='DEBUG')
 
 
 def test_run_crawler_bad_config(tmpdir, capsys):
@@ -44,14 +44,14 @@ class DummySpider(Spider):
 
 
 def test_run_spider():
-    run_spider(DummySpider, downloader_timeout=0.1, log_level='DEBUG')
+    run_spider(DummySpider, log_level='DEBUG')
 
 
 def test_make_requests():
     requests = [None, 'http://localhost:80',
                 'http://python.org/', HttpRequest('http://python.org'),
                 'http://httpbin.org/status/404']
-    results = make_requests(requests)
+    results = make_requests(requests, log_level='DEBUG')
     assert len(results) == len(requests)
     assert results[0] is None
     assert isinstance(results[1], ClientError)

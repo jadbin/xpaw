@@ -17,7 +17,7 @@ Built-in Errors
 
     在downloader发起请求过程中抛出的异常，例如服务器无法访问等。
 
-.. class:: xpaw.errors.TimeoutError
+.. class:: xpaw.errors.RequestTimeout
 
     请求超时。
 

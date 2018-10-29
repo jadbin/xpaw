@@ -47,9 +47,9 @@ log_level
 ^^^^^^^^^
 
 - ``-l, --log-level``
-- Default: ``INFO``
+- Default: ``info``
 
-日志级别，包括 ``DEBUG`` , ``INFO`` , ``WARNING`` , ``ERROR`` , ``CRITICAL`` ，以及对应的小写形式。
+日志级别。
 
 .. _log_file:
 
@@ -73,44 +73,6 @@ downloader_clients
 - Default: ``100``
 
 下载时的并发量。
-
-.. _downloader_timeout:
-
-downloader_timeout
-^^^^^^^^^^^^^^^^^^
-
-- ``--downloader-timeout``
-- Default: ``20``
-
-下载的超时时间 (单位：秒)。
-
-.. _verify_ssl:
-
-verify_ssl
-^^^^^^^^^^
-
-- Default: ``False``
-
-是否验证ssl证书。
-
-.. _allow_redirects:
-
-allow_redirects
-^^^^^^^^^^^^^^^
-
-- Default: ``True``
-
-是否允许重定向。
-
-.. _cookie_jar_enabled:
-
-cookie_jar_enabled
-^^^^^^^^^^^^^^^^^^
-
-- ``--enable-cookie-jar``
-- Default: ``False``
-
-是否启用cookies。
 
 .. _default_headers:
 
@@ -158,15 +120,6 @@ random_user_agent
 
 当 :ref:`user_agent` 为命令模式时，随机生成符合其约束的User-Agent；当 :ref:`user_agent` 为普通字符串时，则会覆盖其设置。
 
-.. _imitating_proxy_enabled:
-
-imitating_proxy_enabled
-^^^^^^^^^^^^^^^^^^^^^^^
-
-- Default: ``False``
-
-模拟代理，设置HTTP请求头的Via和X-Forwarded-For字段。
-
 .. _proxy:
 
 proxy
@@ -202,7 +155,8 @@ max_retry_times
 retry_http_status
 ^^^^^^^^^^^^^^^^^
 
-- Default: ``(500, 502, 503, 504, 408, 429)``
+- Default: ``None``
+- Type: ``list`` , ``tuple``
 
 进行重试的HTTP状态码。
 
@@ -213,21 +167,13 @@ retry_http_status
 Speed Limit
 -----------
 
-.. _speed_limit_enabled:
-
-speed_limit_enabled
-^^^^^^^^^^^^^^^^^^^
-
-- Default: ``False``
-
-是否开启限速。
-
 .. _speed_limit_rate:
 
 speed_limit_rate
 ^^^^^^^^^^^^^^^^
 
 - Default: ``1``
+- Type: ``float`` , ``int``
 
 下载速率，单位：请求/秒。
 
@@ -237,6 +183,7 @@ speed_limit_burst
 ^^^^^^^^^^^^^^^^^
 
 - Default: ``1``
+- Type: ``int``
 
 下载时最大并发量。
 
@@ -249,18 +196,9 @@ max_depth
 ^^^^^^^^^
 
 - Default: ``None``
+- Type: ``int``
 
 爬虫的爬取的最大深度， ``None`` 表示没有限制。
-
-.. _allow_all_http_status:
-
-allow_all_http_status
-^^^^^^^^^^^^^^^^^^^^^
-
-- Default: ``False``
-
-允许处理所有HTTP status的 :class:`~xpaw.http.HttpResponse` 。
-默认情况下非2xx的 :class:`~xpaw.http.HttpResponse` 会被认为是请求失败。
 
 Components
 ----------

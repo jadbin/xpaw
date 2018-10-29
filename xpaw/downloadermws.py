@@ -3,30 +3,25 @@
 import random
 import logging
 import asyncio
-from os.path import join, isfile
-import pickle
+from urllib.parse import urlsplit
 
-import aiohttp
-
-from .errors import ClientError, NotEnabled, TimeoutError
-from . import __version__
-from . import utils
-from .http import URL
+from .errors import ClientError, NotEnabled, RequestTimeout, HttpError
 
 log = logging.getLogger(__name__)
 
 
 class RetryMiddleware:
-    RETRY_ERRORS = (ClientError, TimeoutError)
+    RETRY_ERRORS = (ClientError, RequestTimeout)
+    RETRY_HTTP_STATUS = (500, 502, 503, 504, 408, 429)
 
     def __init__(self, max_retry_times, retry_http_status=None):
         self._max_retry_times = max_retry_times
-        self._http_status = retry_http_status or []
+        self._retry_http_status = retry_http_status or self.RETRY_HTTP_STATUS
 
     def __repr__(self):
         cls_name = self.__class__.__name__
         return '{}(max_retry_times={}, retry_http_status={})' \
-            .format(cls_name, repr(self._max_retry_times), repr(self._http_status))
+            .format(cls_name, repr(self._max_retry_times), repr(self._retry_http_status))
 
     @classmethod
     def from_cluster(cls, cluster):
@@ -39,7 +34,7 @@ class RetryMiddleware:
     def handle_response(self, request, response):
         if request.meta.get('dont_retry', False):
             return None
-        for p in self._http_status:
+        for p in self._retry_http_status:
             if self.match_status(p, response.status):
                 return self.retry(request, "HTTP status={}".format(response.status))
 
@@ -70,13 +65,17 @@ class RetryMiddleware:
             return None
         if isinstance(error, self.RETRY_ERRORS):
             return self.retry(request, error)
+        if isinstance(error, HttpError):
+            for p in self._retry_http_status:
+                if self.match_status(p, error.response.status):
+                    return self.retry(request, "HTTP status={}".format(error.response.status))
 
     def retry(self, request, reason):
-        retry_times = request.meta.get("retry_times", 0) + 1
+        retry_times = request.meta.get('retry_times', 0) + 1
         if retry_times <= self._max_retry_times:
             log.debug('Retry %s (failed %s times): %s', request, retry_times, reason)
             retry_req = request.copy()
-            retry_req.meta["retry_times"] = retry_times
+            retry_req.meta['retry_times'] = retry_times
             retry_req.dont_filter = True
             return retry_req
         else:
@@ -103,74 +102,9 @@ class DefaultHeadersMiddleware:
             request.headers.setdefault(h, self._headers[h])
 
 
-class ImitatingProxyMiddleware:
-    def __repr__(self):
-        cls_name = self.__class__.__name__
-        return '{}()'.format(cls_name)
-
-    @classmethod
-    def from_cluster(cls, cluster):
-        if not cluster.config.getbool('imitating_proxy_enabled'):
-            raise NotEnabled
-        return cls()
-
-    def handle_request(self, request):
-        ip = '{}.{}.{}.{}'.format(random.randint(1, 126), random.randint(1, 254),
-                                  random.randint(1, 254), random.randint(1, 254))
-        request.headers.setdefault('X-Forwarded-For', ip)
-        request.headers.setdefault('Via', '{} xpaw'.format(__version__))
-
-
-class CookiesMiddleware:
-    def __init__(self, dump_dir=None, loop=None):
-        self._dump_dir = dump_dir
-        self._loop = loop or asyncio.get_event_loop()
-        self._cookie_jars = {}
-
-    def __repr__(self):
-        cls_name = self.__class__.__name__
-        return '{}()'.format(cls_name)
-
-    @classmethod
-    def from_cluster(cls, cluster):
-        config = cluster.config
-        if not config.getbool('cookie_jar_enabled'):
-            raise NotEnabled
-        return cls(dump_dir=utils.get_dump_dir(config), loop=cluster.loop)
-
-    def handle_request(self, request):
-        if 'cookie_jar' not in request.meta:
-            cookie_jar_key = request.meta.get('cookie_jar_key')
-            if cookie_jar_key is None or isinstance(cookie_jar_key, (int, str)):
-                cookie_jar = self._cookie_jars.get(cookie_jar_key)
-                if cookie_jar is None:
-                    cookie_jar = aiohttp.CookieJar(loop=self._loop)
-                    self._cookie_jars[cookie_jar_key] = cookie_jar
-                request.meta['cookie_jar'] = cookie_jar
-
-    def open(self):
-        if self._dump_dir:
-            file = join(self._dump_dir, 'cookie_jar')
-            if isfile(file):
-                with open(file, 'rb') as f:
-                    jars = pickle.load(f)
-                    for key in jars:
-                        cookie_jar = aiohttp.CookieJar(loop=self._loop)
-                        cookie_jar._cookies = jars[key]
-                        self._cookie_jars[key] = cookie_jar
-
-    def close(self):
-        if self._dump_dir:
-            jars = {}
-            for key in self._cookie_jars:
-                jars[key] = self._cookie_jars[key]._cookies
-            with open(join(self._dump_dir, 'cookie_jar'), 'wb') as f:
-                pickle.dump(jars, f)
-
-
 class ProxyMiddleware:
     def __init__(self, proxy):
-        self._proxies = {'http': [], 'https': []}
+        self._proxies = {'http': None, 'https': None}
         self._set_proxy(proxy)
 
     def __repr__(self):
@@ -185,28 +119,17 @@ class ProxyMiddleware:
         return cls(proxy=proxy)
 
     def handle_request(self, request):
-        if 'proxy' not in request.meta:
-            if isinstance(request.url, str):
-                url = URL(request.url)
-            else:
-                url = request.url
-            proxy = self.get_proxy(url.scheme)
-            if proxy:
-                request.meta['proxy'] = proxy
-
-    def get_proxy(self, scheme):
-        if scheme not in self._proxies:
-            return
-        if len(self._proxies[scheme]) > 0:
-            return random.choice(self._proxies[scheme])
+        if request.proxy is None:
+            s = urlsplit(request.url)
+            scheme = s.scheme or 'http'
+            request.proxy = self._proxies.get(scheme)
 
     def _set_proxy(self, proxy):
-        if isinstance(proxy, (str, list, tuple)):
-            self._append_proxy(proxy, 'http')
-            self._append_proxy(proxy, 'https')
+        if isinstance(proxy, str):
+            self._proxies['http'] = proxy
+            self._proxies['https'] = proxy
         elif isinstance(proxy, dict):
-            self._append_proxy(proxy.get('http'), 'http')
-            self._append_proxy(proxy.get('https'), 'https')
+            self._proxies.update(proxy)
 
     def _append_proxy(self, proxy, scheme):
         if isinstance(proxy, str):
@@ -217,7 +140,7 @@ class ProxyMiddleware:
 
 
 class SpeedLimitMiddleware:
-    def __init__(self, speed_limit_rate, speed_limit_burst, loop=None):
+    def __init__(self, speed_limit_rate, speed_limit_burst):
         self._rate = speed_limit_rate
         self._burst = speed_limit_burst
         if self._rate <= 0:
@@ -226,8 +149,7 @@ class SpeedLimitMiddleware:
             raise ValueError('burst must be greater than 0')
         self._interval = 1.0 / self._rate
         self._bucket = self._burst
-        self._loop = loop or asyncio.get_event_loop()
-        self._semaphore = asyncio.Semaphore(self._burst, loop=loop)
+        self._semaphore = asyncio.Semaphore(self._burst)
         self._update_future = None
 
     def __repr__(self):
@@ -237,11 +159,11 @@ class SpeedLimitMiddleware:
     @classmethod
     def from_cluster(cls, cluster):
         config = cluster.config
-        if not config.getbool('speed_limit_enabled'):
+        if config['speed_limit_rate'] is None or config['speed_limit_burst'] is None:
             raise NotEnabled
         speed_limit_rate = config.getfloat('speed_limit_rate')
         speed_limit_burst = config.getint('speed_limit_burst')
-        return cls(speed_limit_rate=speed_limit_rate, speed_limit_burst=speed_limit_burst, loop=cluster.loop)
+        return cls(speed_limit_rate=speed_limit_rate, speed_limit_burst=speed_limit_burst)
 
     async def handle_request(self, request):
         await self._semaphore.acquire()
@@ -249,13 +171,13 @@ class SpeedLimitMiddleware:
 
     async def _update_value(self):
         while True:
-            await asyncio.sleep(self._interval, loop=self._loop)
+            await asyncio.sleep(self._interval)
             if self._bucket + 1 <= self._burst:
                 self._bucket += 1
                 self._semaphore.release()
 
     def open(self):
-        self._update_future = asyncio.ensure_future(self._update_value(), loop=self._loop)
+        self._update_future = asyncio.ensure_future(self._update_value())
 
     def close(self):
         if self._update_future:

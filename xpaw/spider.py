@@ -8,7 +8,6 @@ from .middleware import MiddlewareManager
 from . import events
 from .utils import iterable_to_list
 from .http import HttpRequest
-from .errors import IgnoreRequest
 
 log = logging.getLogger(__name__)
 
