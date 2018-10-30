@@ -188,17 +188,15 @@ class UserAgentMiddleware:
     DEVICE_TYPE = {'desktop', 'mobile'}
     BROWSER_TYPE = {'chrome'}
 
-    def __init__(self, user_agent, random_user_agent=False):
-        self._random = random_user_agent
+    def __init__(self, user_agent=None, random_user_agent=False):
         self._device_type = 'desktop'
         self._browser = 'chrome'
-        self._user_agent = None
-        if user_agent:
-            self._configure_user_agent(user_agent)
+        self._user_agent = self._make_user_agent(user_agent)
+        self._is_random = random_user_agent
 
     def __repr__(self):
         cls_name = self.__class__.__name__
-        return '{}(user_agent={}, random_user_agent={})'.format(cls_name, repr(self._user_agent), repr(self._random))
+        return '{}(user_agent={}, random_user_agent={})'.format(cls_name, repr(self._user_agent), repr(self._is_random))
 
     @classmethod
     def from_cluster(cls, cluster):
@@ -210,25 +208,24 @@ class UserAgentMiddleware:
         return cls(user_agent=user_agent, random_user_agent=random_user_agent)
 
     def handle_request(self, request):
-        if self._random:
+        if self._is_random:
             user_agent = self._gen_user_agent(self._device_type, self._browser)
         else:
             user_agent = self._user_agent
         request.headers.setdefault('User-Agent', user_agent)
 
-    def _configure_user_agent(self, ua):
-        if not ua.startswith(':'):
-            self._user_agent = ua
-            return
-        s = ua[1:].split(',')
-        for i in s:
-            if i in self.DEVICE_TYPE:
-                self._device_type = i
-            elif i in self.BROWSER_TYPE:
-                self._browser = i
-            else:
-                raise ValueError('Unknown user agent description: {}'.format(i))
-        self._user_agent = self._gen_user_agent(self._device_type, self._browser)
+    def _make_user_agent(self, ua):
+        if ua:
+            if not ua.startswith(':'):
+                return ua
+            for i in ua[1:].split(','):
+                if i in self.DEVICE_TYPE:
+                    self._device_type = i
+                elif i in self.BROWSER_TYPE:
+                    self._browser = i
+                else:
+                    raise ValueError('Unknown user agent description: {}'.format(i))
+        return self._gen_user_agent(self._device_type, self._browser)
 
     @staticmethod
     def _gen_user_agent(device, browser):
