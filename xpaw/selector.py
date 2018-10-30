@@ -17,11 +17,9 @@ _text_type_config = {
 
 
 def _get_text_type(text_type):
-    if text_type is None:
-        return 'html'
     if text_type in _text_type_config:
         return text_type
-    raise ValueError('Invalid document type: {}'.format(text_type))
+    raise ValueError('Invalid text type: {}'.format(text_type))
 
 
 def create_root_node(text, parser_cls):
@@ -29,7 +27,7 @@ def create_root_node(text, parser_cls):
 
 
 class Selector:
-    def __init__(self, text=None, root=None, text_type=None):
+    def __init__(self, text=None, root=None, text_type='html'):
         self.type = _get_text_type(text_type)
         c = _text_type_config[self.type]
         self._parser_cls = c['parser_cls']
@@ -39,7 +37,7 @@ class Selector:
             if not isinstance(text, str):
                 raise TypeError("'text' argument must be str")
             root = create_root_node(text, parser_cls=self._parser_cls)
-        elif root is None:
+        if root is None:
             raise ValueError("Needs either text or root argument")
         self.root = root
 
