@@ -10,7 +10,7 @@ from tornado.ioloop import IOLoop
 
 from .config import BaseConfig, Config
 from .cluster import LocalCluster
-from .utils import configure_logger, redirect_logger, daemonize, load_config, iter_settings
+from .utils import configure_logger, configure_tornado_logger, daemonize, load_config, iter_settings
 from .spider import RequestsSpider
 
 log = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def run_spider(spider, **kwargs):
 def run_cluster(proj_dir=None, base_config=None):
     config = load_job_config(proj_dir=proj_dir, base_config=base_config)
     logger = configure_logger('xpaw', config)
-    redirect_logger('tornado', logger, override=False)
+    configure_tornado_logger(logger.handlers)
 
     if config.getbool('daemon'):
         daemonize()

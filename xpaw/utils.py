@@ -45,12 +45,12 @@ def configure_logger(name, config):
     return logger
 
 
-def redirect_logger(name, logger, override=True):
-    log = logging.getLogger(name)
-    if log.handlers and not override:
+def configure_tornado_logger(handlers):
+    log = logging.getLogger('tornado')
+    if log.handlers:
         return
-    log.handlers = logger.handlers
-    log.setLevel(logger.level)
+    log.handlers = handlers
+    log.setLevel('WARNING')
 
 
 def request_fingerprint(request):
