@@ -115,7 +115,7 @@ def cmp(a, b):
     return (a > b) - (a < b)
 
 
-def be_daemon():
+def daemonize():
     if os.fork():
         os._exit(0)
     os.setsid()
@@ -186,3 +186,31 @@ def request_to_dict(request):
 def request_from_dict(d):
     req_cls = load_object(d.pop('_class'))
     return req_cls(**d)
+
+
+def get_encoding_from_content_type(content_type):
+    if content_type:
+        content_type, params = cgi.parse_header(content_type)
+        if "charset" in params:
+            return params["charset"]
+
+
+_charset_flag = re.compile(r"""<meta.*?charset=["']*(.+?)["'>]""", flags=re.I)
+_pragma_flag = re.compile(r"""<meta.*?content=["']*;?charset=(.+?)["'>]""", flags=re.I)
+_xml_flag = re.compile(r"""^<\?xml.*?encoding=["']*(.+?)["'>]""")
+
+
+def get_encoding_from_content(content):
+    if isinstance(content, bytes):
+        content = content.decode("ascii", errors="ignore")
+    elif not isinstance(content, str):
+        raise ValueError("content should be bytes or str")
+    s = _charset_flag.search(content)
+    if s:
+        return s.group(1).strip()
+    s = _pragma_flag.search(content)
+    if s:
+        return s.group(1).strip()
+    s = _xml_flag.search(content)
+    if s:
+        return s.group(1).strip()

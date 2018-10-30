@@ -8,7 +8,7 @@ from heapq import heappush, heappop
 from os.path import join, isfile
 import pickle
 
-from . import utils
+from .utils import get_dump_dir, request_to_dict, request_from_dict, cmp
 from . import events
 
 log = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class FifoQueue:
 
     @classmethod
     def from_cluster(cls, cluster):
-        queue = cls(dump_dir=utils.get_dump_dir(cluster.config))
+        queue = cls(dump_dir=get_dump_dir(cluster.config))
         cluster.event_bus.subscribe(queue.open, events.cluster_start)
         cluster.event_bus.subscribe(queue.close, events.cluster_shutdown)
         return queue
@@ -45,7 +45,7 @@ class FifoQueue:
                 with open(file, 'rb') as f:
                     arr = pickle.load(f)
                 for a in arr:
-                    r = utils.request_from_dict(a)
+                    r = request_from_dict(a)
                     await self.push(r)
 
     async def close(self):
@@ -53,7 +53,7 @@ class FifoQueue:
             reqs = []
             while len(self) > 0:
                 r = await self.pop()
-                reqs.append(utils.request_to_dict(r))
+                reqs.append(request_to_dict(r))
             with open(join(self._dump_dir, 'queue'), 'wb') as f:
                 pickle.dump(reqs, f)
 
@@ -71,7 +71,7 @@ class LifoQueue(FifoQueue):
                     arr = pickle.load(f)
                 arr.reverse()
                 for a in arr:
-                    r = utils.request_from_dict(a)
+                    r = request_from_dict(a)
                     await self.push(r)
 
 
@@ -86,7 +86,7 @@ class PriorityQueue:
 
     @classmethod
     def from_cluster(cls, cluster):
-        queue = cls(dump_dir=utils.get_dump_dir(cluster.config))
+        queue = cls(dump_dir=get_dump_dir(cluster.config))
         cluster.event_bus.subscribe(queue.open, events.cluster_start)
         cluster.event_bus.subscribe(queue.close, events.cluster_shutdown)
         return queue
@@ -107,7 +107,7 @@ class PriorityQueue:
                 with open(file, 'rb') as f:
                     arr = pickle.load(f)
                 for a in arr:
-                    r = utils.request_from_dict(a)
+                    r = request_from_dict(a)
                     await self.push(r)
 
     async def close(self):
@@ -115,7 +115,7 @@ class PriorityQueue:
             reqs = []
             while len(self) > 0:
                 r = await self.pop()
-                reqs.append(utils.request_to_dict(r))
+                reqs.append(request_to_dict(r))
             with open(join(self._dump_dir, 'queue'), 'wb') as f:
                 pickle.dump(reqs, f)
 
@@ -127,7 +127,7 @@ class _PriorityQueueItem:
         self.now = time.time()
 
     def __cmp__(self, other):
-        return utils.cmp((-self.priority, self.now), (-other.priority, other.now))
+        return cmp((-self.priority, self.now), (-other.priority, other.now))
 
     def __lt__(self, other):
         return self.__cmp__(other) < 0

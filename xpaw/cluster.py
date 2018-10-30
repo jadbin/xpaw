@@ -16,7 +16,7 @@ from . import events
 from .extension import ExtensionManager
 from .item import BaseItem
 from .pipeline import ItemPipelineManager
-from . import utils
+from .utils import load_object
 
 log = logging.getLogger(__name__)
 
@@ -222,7 +222,7 @@ class LocalCluster:
 
     @staticmethod
     def _new_object_from_cluster(cls_path, cluster):
-        obj_cls = utils.load_object(cls_path)
+        obj_cls = load_object(cls_path)
         if hasattr(obj_cls, "from_cluster"):
             obj = obj_cls.from_cluster(cluster)
         else:

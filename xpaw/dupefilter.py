@@ -3,7 +3,7 @@
 import logging
 from os.path import join, isfile
 
-from . import utils
+from .utils import get_dump_dir, request_fingerprint
 from . import events
 
 log = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class HashDupeFilter:
     @classmethod
     def from_cluster(cls, cluster):
         config = cluster.config
-        dupe_filter = cls(dump_dir=utils.get_dump_dir(config))
+        dupe_filter = cls(dump_dir=get_dump_dir(config))
         cluster.event_bus.subscribe(dupe_filter.open, events.cluster_start)
         cluster.event_bus.subscribe(dupe_filter.close, events.cluster_shutdown)
         return dupe_filter
@@ -25,7 +25,7 @@ class HashDupeFilter:
     def is_duplicated(self, request):
         if request.dont_filter:
             return False
-        h = utils.request_fingerprint(request)
+        h = request_fingerprint(request)
         if h in self._hash:
             log.debug("%s is duplicated", request)
             return True

@@ -10,7 +10,7 @@ from tornado.ioloop import IOLoop
 
 from .config import BaseConfig, Config
 from .cluster import LocalCluster
-from . import utils
+from .utils import configure_logger, redirect_logger, daemonize, load_config, iter_settings
 from .spider import RequestsSpider
 
 log = logging.getLogger(__name__)
@@ -29,11 +29,11 @@ def run_spider(spider, **kwargs):
 
 def run_cluster(proj_dir=None, base_config=None):
     config = load_job_config(proj_dir=proj_dir, base_config=base_config)
-    logger = utils.configure_logger('xpaw', config)
-    utils.redirect_logger('tornado', logger, override=False)
+    logger = configure_logger('xpaw', config)
+    redirect_logger('tornado', logger, override=False)
 
     if config.getbool('daemon'):
-        utils.be_daemon()
+        daemonize()
     pid_file = config.get('pid_file')
     _write_pid_file(pid_file)
     try:
@@ -67,8 +67,8 @@ def load_job_config(proj_dir=None, base_config=None):
     if proj_dir is not None:
         config_file = join(proj_dir, 'config.py')
         if isfile(config_file):
-            c = utils.load_config(config_file)
-            for k, v in utils.iter_settings(c):
+            c = load_config(config_file)
+            for k, v in iter_settings(c):
                 job_config[k] = v
     job_config.update(base_config)
     return job_config

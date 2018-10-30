@@ -10,11 +10,10 @@ import inspect
 
 from .errors import UsageError
 from . import config
-from .utils import string_camelcase, render_template_file
+from .utils import string_camelcase, render_template_file, load_config, iter_settings
 from . import __version__
 from .run import run_cluster
 from .spider import Spider
-from . import utils
 
 log = logging.getLogger(__name__)
 
@@ -113,8 +112,8 @@ class CrawlCommand(Command):
     def process_arguments(self, args):
         args.path = args.path[0]
         if args.config is not None:
-            c = utils.load_config(args.config)
-            for k, v in utils.iter_settings(c):
+            c = load_config(args.config)
+            for k, v in iter_settings(c):
                 self.config[k] = v
         super().process_arguments(args)
         try:

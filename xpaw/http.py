@@ -1,9 +1,8 @@
 # coding=utf-8
 
-import re
-import cgi
-
 from tornado.httputil import HTTPHeaders as HttpHeaders
+
+from .utils import get_encoding_from_content, get_encoding_from_content_type
 
 
 class HttpRequest:
@@ -71,7 +70,7 @@ class HttpResponse:
     def encoding(self):
         if hasattr(self, "_encoding"):
             return self._encoding
-        encoding = get_encoding_from_header(self.headers.get("Content-Type"))
+        encoding = get_encoding_from_content_type(self.headers.get("Content-Type"))
         if not encoding and self.body:
             encoding = get_encoding_from_content(self.body)
         self._encoding = encoding or "utf-8"
@@ -102,31 +101,3 @@ class HttpResponse:
         for i in ["url", "status", "body", "headers", "request"]:
             kwargs.setdefault(i, getattr(self, i))
         return type(self)(**kwargs)
-
-
-def get_encoding_from_header(content_type):
-    if content_type:
-        content_type, params = cgi.parse_header(content_type)
-        if "charset" in params:
-            return params["charset"]
-
-
-_charset_flag = re.compile(r"""<meta.*?charset=["']*(.+?)["'>]""", flags=re.I)
-_pragma_flag = re.compile(r"""<meta.*?content=["']*;?charset=(.+?)["'>]""", flags=re.I)
-_xml_flag = re.compile(r"""^<\?xml.*?encoding=["']*(.+?)["'>]""")
-
-
-def get_encoding_from_content(content):
-    if isinstance(content, bytes):
-        content = content.decode("ascii", errors="ignore")
-    elif not isinstance(content, str):
-        raise ValueError("content should be bytes or str")
-    s = _charset_flag.search(content)
-    if s:
-        return s.group(1).strip()
-    s = _pragma_flag.search(content)
-    if s:
-        return s.group(1).strip()
-    s = _xml_flag.search(content)
-    if s:
-        return s.group(1).strip()
