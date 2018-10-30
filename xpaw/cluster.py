@@ -171,6 +171,10 @@ class LocalCluster:
                     log.warning("Failed to request %s", req, exc_info=True)
                 if isinstance(e, IgnoreRequest):
                     await self.event_bus.send(events.request_ignored, request=req, error=e)
+                elif isinstance(e, (RequestTimeout, ClientError, HttpError)):
+                    log.debug('Failed to make %s: %s', req, e)
+                else:
+                    log.warning("Failed to make %s", req, exc_info=True)
                 await self.spider.request_error(req, e)
             else:
                 await self._handle_response(resp)
@@ -194,7 +198,7 @@ class LocalCluster:
                     self.stop()
                 elif isinstance(e, IgnoreRequest):
                     await self.event_bus.send(events.request_ignored, request=resp.request, error=e)
-                if not isinstance(e, (StopCluster, IgnoreRequest)):
+                else:
                     log.warning("Failed to parse %s", resp, exc_info=True)
             else:
                 for r in result:
@@ -211,7 +215,7 @@ class LocalCluster:
             except Exception as e:
                 if isinstance(e, IgnoreItem):
                     await self.event_bus.send(events.item_ignored, item=result, error=e)
-                if not isinstance(e, IgnoreItem):
+                else:
                     log.warning("Failed to handle %s", result, exc_info=True)
             else:
                 await self.event_bus.send(events.item_scraped, item=result)

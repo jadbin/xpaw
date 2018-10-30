@@ -31,10 +31,10 @@ class Downloader:
             resp = await self._http_client.fetch(req)
         except HTTPClientError as e:
             if e.code == 599:
-                log.debug('%s is timeout', request)
-                raise RequestTimeout
+                raise RequestTimeout('request is timeout')
             elif e.response is not None:
-                raise HttpError(response=self._make_response(e.response))
+                raise HttpError('{} {}'.format(e.response.code, e.message),
+                                response=self._make_response(e.response))
             raise
         response = self._make_response(resp)
         log.debug("HTTP response: %s", response)
@@ -125,7 +125,6 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 except (CancelledError, RequestTimeout, HttpError):
                     raise
                 except Exception as e:
-                    log.debug("%s is error: %s", request, e)
                     raise ClientError(e)
                 res = response
         except CancelledError:
