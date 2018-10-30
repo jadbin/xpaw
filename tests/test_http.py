@@ -7,7 +7,7 @@ def test_copy_http_request():
     req = HttpRequest('http://example.com/', params={'key': 'value'}, meta={'depth': 0})
     copy_req = req.copy()
     assert copy_req.url == req.url
-    assert 'key' in copy_req.params and copy_req.params['key'] == 'value'
+    assert 'key' in copy_req.params and copy_req.params['key'] == ['value']
     assert 'depth' in copy_req.meta and copy_req.meta['depth'] == 0
     req.meta['depth'] = 1
     assert req.meta['depth'] == 1 and copy_req.meta['depth'] == 0

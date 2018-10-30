@@ -11,6 +11,8 @@ from os.path import isfile, exists
 import inspect
 from urllib.parse import urlsplit, parse_qsl, urlencode
 
+from tornado.httputil import url_concat
+
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
 
@@ -55,13 +57,7 @@ def request_fingerprint(request):
     sha1 = hashlib.sha1()
     sha1.update(to_bytes(request.method))
     res = urlsplit(request.url)
-
     queries = parse_qsl(res.query)
-    if request.params is not None:
-        if isinstance(request.params, dict):
-            queries.extend(request.params.items())
-        elif isinstance(request.params, (tuple, list)):
-            queries.extend(request.params)
     queries.sort()
     final_query = urlencode(queries)
     sha1.update(to_bytes('{}://{}{}:{}?{}'.format(res.scheme,
@@ -171,7 +167,6 @@ def request_to_dict(request):
         'url': request.url,
         'method': request.method,
         'body': request.body,
-        'params': request.params,
         'headers': request.headers,
         'meta': meta,
         'priority': request.priority,
@@ -214,3 +209,21 @@ def get_encoding_from_content(content):
     s = _xml_flag.search(content)
     if s:
         return s.group(1).strip()
+
+
+def make_url(url, params=None):
+    res = urlsplit(url)
+    if res.scheme == '':
+        url = 'http://{}'.format(url)
+    args = []
+    if isinstance(params, dict):
+        for k, v in params.items():
+            if isinstance(v, (tuple, list)):
+                for i in v:
+                    args.append((k, i))
+            else:
+                args.append((k, v))
+    elif isinstance(params, (tuple, list)):
+        for k, v in params:
+            args.append((k, v))
+    return url_concat(url, args)

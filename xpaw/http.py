@@ -1,8 +1,10 @@
 # coding=utf-8
 
+from urllib.parse import urlsplit, parse_qs
+
 from tornado.httputil import HTTPHeaders as HttpHeaders
 
-from .utils import get_encoding_from_content, get_encoding_from_content_type
+from .utils import get_encoding_from_content, get_encoding_from_content_type, make_url
 
 
 class HttpRequest:
@@ -12,10 +14,9 @@ class HttpRequest:
         """
         Construct an HTTP request.
         """
-        self.url = url
+        self.url = make_url(url, params=params)
         self.method = method
         self.body = body
-        self.params = params
         self.headers = headers or {}
         self.proxy = proxy
         self.timeout = timeout
@@ -35,6 +36,10 @@ class HttpRequest:
     __repr__ = __str__
 
     @property
+    def params(self):
+        return parse_qs(urlsplit(self.url).query)
+
+    @property
     def meta(self):
         return self._meta
 
@@ -42,7 +47,7 @@ class HttpRequest:
         return self.replace()
 
     def replace(self, **kwargs):
-        for i in ["url", "method", "body", "params", "headers", "proxy",
+        for i in ["url", "method", "body", "headers", "proxy",
                   "timeout", "verify_ssl", "allow_redirects", "auth", "proxy_auth",
                   "priority", "dont_filter", "callback", "errback", "meta"]:
             kwargs.setdefault(i, getattr(self, i))

@@ -3,10 +3,8 @@
 import logging
 import inspect
 from asyncio import CancelledError
-from urllib.parse import urlsplit
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPClientError
-from tornado.httputil import url_concat
 
 from .middleware import MiddlewareManager
 from .http import HttpRequest, HttpResponse, HttpHeaders
@@ -42,7 +40,6 @@ class Downloader:
 
     @classmethod
     def _make_request(cls, request):
-        url = url_concat(cls._make_request_url(request.url), request.params)
         kwargs = {'method': request.method,
                   'headers': cls._make_request_headers(request.headers),
                   'body': request.body,
@@ -54,14 +51,14 @@ class Downloader:
             kwargs['auth_username'] = auth_username
             kwargs['auth_password'] = auth_password
         if request.proxy is not None:
-            proxy = urlsplit(cls._make_request_url(request.proxy))
-            kwargs['proxy_host'] = proxy.hostname
-            kwargs['proxy_port'] = proxy.port
+            proxy_host, proxy_port = request.proxy.split(':')
+            kwargs['proxy_host'] = proxy_host
+            kwargs['proxy_port'] = proxy_port
         if request.proxy_auth is not None:
             proxy_username, proxy_password = request.proxy_auth
             kwargs['proxy_username'] = proxy_username
             kwargs['proxy_password'] = proxy_password
-        return HTTPRequest(url, **kwargs)
+        return HTTPRequest(request.url, **kwargs)
 
     @staticmethod
     def _make_response(resp):
@@ -84,14 +81,6 @@ class Downloader:
             for k, v in headers:
                 res.add(k, v)
         return res
-
-    @staticmethod
-    def _make_request_url(url):
-        if isinstance(url, str):
-            res = urlsplit(url)
-            if res.scheme == '':
-                url = 'http://{}'.format(url)
-        return url
 
 
 class DownloaderMiddlewareManager(MiddlewareManager):
