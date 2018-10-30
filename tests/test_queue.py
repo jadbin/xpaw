@@ -116,6 +116,6 @@ async def test_priority_queue_dump(tmpdir):
     q2 = PriorityQueue.from_cluster(Cluster(dump_dir=str(tmpdir)))
     await q2.open()
     with async_timeout.timeout(0.1):
-        assert (await q2.pop()).url == '3'
-        assert (await q2.pop()).url == '2'
-        assert (await q2.pop()).url == '1'
+        assert (await q2.pop()).url == 'http://3'
+        assert (await q2.pop()).url == 'http://2'
+        assert (await q2.pop()).url == 'http://1'
