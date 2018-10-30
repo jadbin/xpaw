@@ -10,6 +10,7 @@ import string
 from os.path import isfile, exists
 import inspect
 from urllib.parse import urlsplit, parse_qsl, urlencode
+import cgi
 
 from tornado.httputil import url_concat
 
