@@ -6,6 +6,13 @@ from asyncio import CancelledError
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPClientError
 
+try:
+    import pycurl
+    
+    AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
+except ImportError:
+    pass
+
 from .middleware import MiddlewareManager
 from .http import HttpRequest, HttpResponse, HttpHeaders
 from .errors import ClientError, RequestTimeout, HttpError
@@ -53,7 +60,7 @@ class Downloader:
         if request.proxy is not None:
             proxy_host, proxy_port = request.proxy.split(':')
             kwargs['proxy_host'] = proxy_host
-            kwargs['proxy_port'] = proxy_port
+            kwargs['proxy_port'] = int(proxy_port)
         if request.proxy_auth is not None:
             proxy_username, proxy_password = request.proxy_auth
             kwargs['proxy_username'] = proxy_username
