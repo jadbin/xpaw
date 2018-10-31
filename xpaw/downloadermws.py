@@ -6,6 +6,7 @@ import asyncio
 from urllib.parse import urlsplit
 
 from .errors import ClientError, NotEnabled, RequestTimeout, HttpError
+from . import __version__
 
 log = logging.getLogger(__name__)
 
@@ -187,9 +188,10 @@ class UserAgentMiddleware:
         'chrome': {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
             'Accept-Encoding': 'gzip, deflate',
-            'Accept-Language': 'zh-CN,zh;q=0.8',
-            'Cache-Control': 'max-age=0',
+            'Accept-Language': 'zh,en;q=0.9',
+            'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
+            'Pragma': 'no-cache',
             'Upgrade-Insecure-Requests': '1'
         }
     }
@@ -209,8 +211,6 @@ class UserAgentMiddleware:
         config = cluster.config
         user_agent = config.get('user_agent')
         random_user_agent = config.getbool('random_user_agent')
-        if not user_agent and not random_user_agent:
-            raise NotEnabled
         return cls(user_agent=user_agent, random_user_agent=random_user_agent)
 
     def handle_request(self, request):
@@ -222,9 +222,7 @@ class UserAgentMiddleware:
         self._set_browser_default_headers(request)
 
     def _make_user_agent(self, ua):
-        if ua:
-            if not ua.startswith(':'):
-                return ua
+        if ua and ua.startswith(':'):
             for i in ua[1:].split(','):
                 if i in self.DEVICE_TYPE:
                     self._device_type = i
@@ -236,7 +234,10 @@ class UserAgentMiddleware:
                 self._browser = 'chrome'
             if self._device_type is None:
                 self._device_type = 'desktop'
-        return self._gen_user_agent(self._device_type, self._browser)
+            ua = self._gen_user_agent(self._device_type, self._browser)
+        if not ua:
+            ua = 'xpaw/{}'.format(__version__)
+        return ua
 
     @staticmethod
     def _gen_user_agent(device, browser):

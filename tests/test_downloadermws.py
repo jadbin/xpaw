@@ -18,11 +18,10 @@ class Cluster:
 class TestDefaultHeadersMiddleware:
     def test_handle_request(self):
         default_headers = {"User-Agent": "xpaw", "Connection": "keep-alive"}
-        req_headers = {"User-Agent": "xpaw-test", "Connection": "keep-alive"}
         mw = DefaultHeadersMiddleware.from_cluster(Cluster(default_headers=default_headers))
-        req = HttpRequest("http://example.com", headers={"User-Agent": "xpaw-test"})
+        req = HttpRequest("http://example.com", headers={"Connection": "close"})
         mw.handle_request(req)
-        assert req_headers == req.headers
+        assert req.headers == {"User-Agent": "xpaw", "Connection": "close"}
 
     def test_not_enabled(self):
         with pytest.raises(NotEnabled):
@@ -167,10 +166,6 @@ class TestSpeedLimitMiddleware:
 
 
 class TestUserAgentMiddleware:
-    def test_not_enabled(self):
-        with pytest.raises(NotEnabled):
-            UserAgentMiddleware.from_cluster(Cluster(user_agent=None))
-
     def test_static_user_agent(self):
         user_agent = 'test user agent'
         mw = UserAgentMiddleware.from_cluster(Cluster(user_agent=user_agent))
