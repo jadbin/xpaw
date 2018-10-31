@@ -7,7 +7,6 @@ Changelog
 -------------------
 
 - 默认情况下非2xx的HttpResponse将视为请求失败并抛出 ``HttpError`` 异常进入错误处理流程
-- HttpRequest ``meta`` 添加 ``dont_retry`` 字段，表示不重试该请求
 - RetryMiddleware不再raise IgnoreRequest，即因达到重试次数上限而导致请求失败时不再封装为IgnoreRequest，将保留原有的HttpResponse或异常
 - 命令行参数 ``--cookie-jar-enabled`` 更名为 ``--enable-cookie-jar`` ，配置项 ``cookie_jar_enabled`` 保持不变
 - HttpRequest ``proxy`` , ``timeout`` , ``verify_ssl`` , ``allow_redirects`` , ``auth`` ,  ``proxy_auth`` 由在 ``meta`` 中配置改为直接作为HttpRequest的属性

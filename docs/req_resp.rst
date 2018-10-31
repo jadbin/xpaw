@@ -132,8 +132,6 @@ Request Meta Keys
 
 - ``retry_times`` : 请求重试的次数。
 
-- ``dont_retry`` : 禁止重试请求。
-
 Response API
 ------------
 
