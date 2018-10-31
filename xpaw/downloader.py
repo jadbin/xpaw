@@ -3,12 +3,13 @@
 import logging
 import inspect
 from asyncio import CancelledError
+from urllib.parse import urlsplit
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPClientError
 
 try:
     import pycurl
-    
+
     AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
 except ImportError:
     pass
@@ -58,9 +59,21 @@ class Downloader:
             kwargs['auth_username'] = auth_username
             kwargs['auth_password'] = auth_password
         if request.proxy is not None:
-            proxy_host, proxy_port = request.proxy.split(':')
-            kwargs['proxy_host'] = proxy_host
-            kwargs['proxy_port'] = int(proxy_port)
+            s = urlsplit(request.proxy)
+            if s.scheme:
+                if s.scheme in ('http', 'socks4', 'socks5'):
+                    proxy_host, proxy_port = s.hostname, s.port
+                else:
+                    raise ValueError('Unsupported proxy scheme: {}'.format(s.scheme))
+                if s.scheme == 'socks5':
+                    kwargs['prepare_curl_callback'] = prepare_curl_socks5
+                elif s.scheme == 'socks4':
+                    kwargs['prepare_curl_callback'] = prepare_curl_socks4
+            else:
+                proxy_host, proxy_port = request.proxy.split(':')
+            if proxy_host is not None:
+                kwargs['proxy_host'] = proxy_host
+                kwargs['proxy_port'] = int(proxy_port)
         if request.proxy_auth is not None:
             proxy_username, proxy_password = request.proxy_auth
             kwargs['proxy_username'] = proxy_username
@@ -88,6 +101,14 @@ class Downloader:
             for k, v in headers:
                 res.add(k, v)
         return res
+
+
+def prepare_curl_socks5(curl):
+    curl.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_SOCKS5)
+
+
+def prepare_curl_socks4(curl):
+    curl.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_SOCKS4)
 
 
 class DownloaderMiddlewareManager(MiddlewareManager):
