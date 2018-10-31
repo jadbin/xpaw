@@ -79,16 +79,8 @@ downloader_clients
 default_headers
 ^^^^^^^^^^^^^^^
 
-- Default::
-
-    {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate',
-        'Accept-Language': 'zh-CN,zh;q=0.8',
-        'Cache-Control': 'max-age=0',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
-    }
+- Default: None
+- Type: ``dict``
 
 默认添加的HTTP请求的header。
 

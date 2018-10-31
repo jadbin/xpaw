@@ -207,14 +207,6 @@ class DownloaderClients(Setting):
 
 class DefaultHeaders(Setting):
     name = 'default_headers'
-    default = {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate',
-        'Accept-Language': 'zh-CN,zh;q=0.8',
-        'Cache-Control': 'max-age=0',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
-    }
 
 
 class UserAgent(Setting):
@@ -264,7 +256,7 @@ class MaxDepth(Setting):
     short_desc = 'maximum depth of spider'
 
 
-class StatsCenter(Setting):
+class StatsCollector(Setting):
     name = 'stats_collector'
     default = 'xpaw.stats.StatsCollector'
 

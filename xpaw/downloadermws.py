@@ -98,8 +98,8 @@ class DefaultHeadersMiddleware:
         return cls(default_headers=default_headers)
 
     def handle_request(self, request):
-        for h in self._headers:
-            request.headers.setdefault(h, self._headers[h])
+        for k, v in self._headers.items():
+            request.headers.setdefault(k, v)
 
 
 class ProxyMiddleware:
@@ -187,10 +187,20 @@ class SpeedLimitMiddleware:
 class UserAgentMiddleware:
     DEVICE_TYPE = {'desktop', 'mobile'}
     BROWSER_TYPE = {'chrome'}
+    BROWSER_DEFAULT_HEADERS = {
+        'chrome': {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate',
+            'Accept-Language': 'zh-CN,zh;q=0.8',
+            'Cache-Control': 'max-age=0',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+        }
+    }
 
     def __init__(self, user_agent=None, random_user_agent=False):
-        self._device_type = 'desktop'
-        self._browser = 'chrome'
+        self._device_type = None
+        self._browser = None
         self._user_agent = self._make_user_agent(user_agent)
         self._is_random = random_user_agent
 
@@ -212,7 +222,8 @@ class UserAgentMiddleware:
             user_agent = self._gen_user_agent(self._device_type, self._browser)
         else:
             user_agent = self._user_agent
-        request.headers.setdefault('User-Agent', user_agent)
+        request.headers['User-Agent'] = user_agent
+        self._set_browser_default_headers(request)
 
     def _make_user_agent(self, ua):
         if ua:
@@ -225,6 +236,10 @@ class UserAgentMiddleware:
                     self._browser = i
                 else:
                     raise ValueError('Unknown user agent description: {}'.format(i))
+            if self._browser is None:
+                self._browser = 'chrome'
+            if self._device_type is None:
+                self._device_type = 'desktop'
         return self._gen_user_agent(self._device_type, self._browser)
 
     @staticmethod
@@ -242,3 +257,8 @@ class UserAgentMiddleware:
                 mobile = '15E{:03d}'.format(random.randint(0, 999))
                 return ('Mozilla/5.0 ({}) AppleWebKit/{} (KHTML, like Gecko) '
                         'CriOS/{} Mobile/{} Safari/{}').format(os, webkit, chrome_version, mobile, webkit)
+
+    def _set_browser_default_headers(self, request):
+        if self._browser in self.BROWSER_DEFAULT_HEADERS:
+            for k, v in self.BROWSER_DEFAULT_HEADERS[self._browser].items():
+                request.headers.setdefault(k, v)
