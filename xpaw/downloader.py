@@ -71,9 +71,8 @@ class Downloader:
                     kwargs['prepare_curl_callback'] = prepare_curl_socks4
             else:
                 proxy_host, proxy_port = request.proxy.split(':')
-            if proxy_host is not None:
-                kwargs['proxy_host'] = proxy_host
-                kwargs['proxy_port'] = int(proxy_port)
+            kwargs['proxy_host'] = proxy_host
+            kwargs['proxy_port'] = int(proxy_port)
         if request.proxy_auth is not None:
             proxy_username, proxy_password = request.proxy_auth
             kwargs['proxy_username'] = proxy_username
