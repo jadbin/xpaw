@@ -40,9 +40,9 @@ class LocalCluster:
         log.info('Item pipelines: %s', self._log_objects(self.item_pipeline.components))
         self.extension = ExtensionManager.from_cluster(self)
         log.info('Extensions: %s', self._log_objects(self.extension.components))
-        self._job_futures = None
-        self._job_futures_done = None
-        self._req_in_job = None
+        self._workers = None
+        self._workers_done = None
+        self._req_in_worker = None
         self._start_future = None
         self._supervisor_future = None
         self._is_running = False
@@ -63,12 +63,12 @@ class LocalCluster:
         self._start_future = asyncio.ensure_future(self._generate_start_requests())
         downloader_clients = self.downloader.max_clients
         log.info("The maximum number of simultaneous clients: %s", downloader_clients)
-        self._job_futures = []
+        self._workers = []
         for i in range(downloader_clients):
             f = asyncio.ensure_future(self._download(i))
-            self._job_futures.append(f)
-        self._job_futures_done = set()
-        self._req_in_job = [None] * downloader_clients
+            self._workers.append(f)
+        self._workers_done = set()
+        self._req_in_worker = [None] * downloader_clients
         log.info('Cluster is loaded')
 
     def stop(self):
@@ -80,12 +80,12 @@ class LocalCluster:
     async def _shutdown(self):
         log.info("Shutdown now")
         cancelled_futures = []
-        if self._job_futures:
-            for f in self._job_futures:
+        if self._workers:
+            for f in self._workers:
                 f.cancel()
                 cancelled_futures.append(f)
-            self._job_futures = None
-            self._job_futures_done = None
+            self._workers = None
+            self._workers_done = None
         if self._start_future:
             self._start_future.cancel()
             cancelled_futures.append(self._start_future)
@@ -95,11 +95,11 @@ class LocalCluster:
             cancelled_futures.append(self._supervisor_future)
             self._supervisor_future = None
         # put back the unfinished requests
-        if self._req_in_job:
-            for r in self._req_in_job:
+        if self._req_in_worker:
+            for r in self._req_in_worker:
                 if r:
                     await self.queue.push(r)
-            self._req_in_job = None
+            self._req_in_worker = None
         await self.event_bus.send(events.cluster_shutdown)
         # wait cancelled futures
         await asyncio.wait(cancelled_futures)
@@ -110,14 +110,14 @@ class LocalCluster:
     async def _supervisor(self):
         while True:
             await asyncio.sleep(5)
-            for i in range(len(self._job_futures)):
-                f = self._job_futures[i]
+            for i in range(len(self._workers)):
+                f = self._workers[i]
                 if f.done():
-                    if i not in self._job_futures_done:
-                        self._job_futures_done.add(i)
+                    if i not in self._workers_done:
+                        self._workers_done.add(i)
                         reason = "This future is cancelled" if f.cancelled() else str(f.exception())
                         log.error("Worker[%s] is shutdown: %s", i, reason)
-                        self._req_in_job[i] = None
+                        self._req_in_worker[i] = None
             if self._all_done():
                 break
         self.stop()
@@ -125,12 +125,12 @@ class LocalCluster:
     def _all_done(self):
         if self._start_future.done() and len(self.queue) <= 0:
             no_active = True
-            for i in range(len(self._job_futures)):
-                if self._req_in_job[i]:
+            for i in range(len(self._workers)):
+                if self._req_in_worker[i]:
                     no_active = False
                     break
             return no_active
-        elif len(self._job_futures_done) == len(self._job_futures):
+        elif len(self._workers_done) == len(self._workers):
             log.error('No alive worker')
             return True
         return False
@@ -161,7 +161,7 @@ class LocalCluster:
         while True:
             req = await self.queue.pop()
             log.debug("%s -> worker[%s]", req, coro_id)
-            self._req_in_job[coro_id] = req
+            self._req_in_worker[coro_id] = req
             try:
                 resp = await self.downloadermw.download(self.downloader, req)
             except CancelledError:
@@ -178,7 +178,7 @@ class LocalCluster:
                 await self.spider.request_error(req, e)
             else:
                 await self._handle_response(resp)
-            self._req_in_job[coro_id] = None
+            self._req_in_worker[coro_id] = None
             # check if it's all done
             if self._all_done():
                 self.stop()
