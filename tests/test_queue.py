@@ -6,14 +6,14 @@ import pytest
 import async_timeout
 
 from xpaw.queue import FifoQueue, LifoQueue, PriorityQueue
-from xpaw.config import Config
+from xpaw.config import Config, DEFAULT_CONFIG
 from xpaw.eventbus import EventBus
 from xpaw.http import HttpRequest
 
 
 class Cluster:
     def __init__(self, **kwargs):
-        self.config = Config(kwargs)
+        self.config = Config(DEFAULT_CONFIG, **kwargs)
         self.event_bus = EventBus()
 
 

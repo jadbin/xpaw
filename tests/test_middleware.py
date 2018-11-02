@@ -3,7 +3,7 @@
 import pytest
 
 from xpaw.eventbus import EventBus
-from xpaw.config import Config
+from xpaw.config import Config, DEFAULT_CONFIG
 from xpaw.middleware import MiddlewareManager
 from xpaw.errors import NotEnabled
 
@@ -51,7 +51,7 @@ class FooDisabledMiddleware:
 class Cluster:
     def __init__(self, **kwargs):
         self.event_bus = EventBus()
-        self.config = Config(kwargs)
+        self.config = Config(DEFAULT_CONFIG, **kwargs)
 
 
 @pytest.mark.asyncio

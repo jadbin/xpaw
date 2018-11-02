@@ -8,7 +8,7 @@ import inspect
 
 from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
-from .errors import IgnoreRequest, IgnoreItem, StopCluster, ClientError, RequestTimeout, HttpError
+from .errors import IgnoreRequest, IgnoreItem, StopCluster, ClientError, HttpError
 from .downloader import DownloaderMiddlewareManager
 from .spider import Spider, SpiderMiddlewareManager
 from .eventbus import EventBus
@@ -167,11 +167,11 @@ class LocalCluster:
             except CancelledError:
                 raise
             except Exception as e:
-                if not isinstance(e, (IgnoreRequest, RequestTimeout, ClientError, HttpError)):
+                if not isinstance(e, (IgnoreRequest, ClientError, HttpError)):
                     log.warning("Failed to request %s", req, exc_info=True)
                 if isinstance(e, IgnoreRequest):
                     await self.event_bus.send(events.request_ignored, request=req, error=e)
-                elif isinstance(e, (RequestTimeout, ClientError, HttpError)):
+                elif isinstance(e, (ClientError, HttpError)):
                     log.debug('Failed to make %s: %s', req, e)
                 else:
                     log.warning("Failed to make %s", req, exc_info=True)

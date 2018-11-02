@@ -2,7 +2,7 @@
 
 import pytest
 
-from xpaw.config import Config
+from xpaw.config import Config, DEFAULT_CONFIG
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
 from xpaw.errors import ClientError, NotEnabled
@@ -11,7 +11,7 @@ from xpaw.eventbus import EventBus
 
 class Cluster:
     def __init__(self, **kwargs):
-        self.config = Config(kwargs)
+        self.config = Config(DEFAULT_CONFIG, **kwargs)
         self.event_bus = EventBus()
 
 
@@ -90,7 +90,7 @@ class TestRetryMiddleware:
         req = HttpRequest("http://example.com")
         err = ValueError()
         assert mw.handle_error(req, err) is None
-        for err in [ClientError(), RequestTimeout()]:
+        for err in [ClientError()]:
             retry_req = mw.handle_error(req, err)
             assert isinstance(retry_req, HttpRequest) and str(retry_req.url) == str(req.url)
 

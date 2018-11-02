@@ -16,7 +16,7 @@ except ImportError:
 
 from .middleware import MiddlewareManager
 from .http import HttpRequest, HttpResponse, HttpHeaders
-from .errors import ClientError, RequestTimeout, HttpError
+from .errors import ClientError, HttpError
 
 log = logging.getLogger(__name__)
 
@@ -35,13 +35,15 @@ class Downloader:
         req = self._make_request(request)
         try:
             resp = await self._http_client.fetch(req)
+        except CancelledError:
+            raise
         except HTTPClientError as e:
-            if e.code == 599:
-                raise RequestTimeout('request is timeout')
-            elif e.response is not None:
+            if e.response is not None and e.response.code != 599:
                 raise HttpError('{} {}'.format(e.response.code, e.message),
                                 response=self._make_response(e.response))
-            raise
+            raise ClientError(e.message)
+        except Exception as e:
+            raise ClientError(e)
         response = self._make_response(resp)
         log.debug("HTTP response: %s", response)
         return response
@@ -136,13 +138,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             if isinstance(res, HttpRequest):
                 return res
             if res is None:
-                try:
-                    response = await downloader.fetch(request)
-                except (CancelledError, RequestTimeout, HttpError):
-                    raise
-                except Exception as e:
-                    raise ClientError(e)
-                res = response
+                res = await downloader.fetch(request)
         except CancelledError:
             raise
         except Exception as e:

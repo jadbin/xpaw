@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from xpaw.config import Config
+from xpaw.config import Config, DEFAULT_CONFIG
 from xpaw.spidermws import *
 from xpaw.http import HttpRequest
 from xpaw.item import Item
@@ -8,7 +8,7 @@ from xpaw.item import Item
 
 class Cluster:
     def __init__(self, **kwargs):
-        self.config = Config(kwargs)
+        self.config = Config(DEFAULT_CONFIG, **kwargs)
 
 
 class TestDepthMiddleware:

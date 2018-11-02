@@ -9,7 +9,7 @@ import sys
 import inspect
 
 from .errors import UsageError
-from . import config
+from .config import make_settings
 from .utils import string_camelcase, render_template_file, load_config, iter_settings
 from . import __version__
 from .run import run_cluster
@@ -20,21 +20,7 @@ log = logging.getLogger(__name__)
 
 class Command:
     def __init__(self):
-        self.config = config.BaseConfig()
         self.exitcode = 0
-        self.settings = self._make_settings()
-
-    def _import_settings(self):
-        pass
-
-    def _make_settings(self):
-        settings = []
-        classes = self._import_settings()
-        if classes is not None:
-            for cls in classes:
-                if issubclass(cls, config.Setting):
-                    settings.append(cls())
-        return settings
 
     @property
     def name(self):
@@ -53,14 +39,10 @@ class Command:
         return self.short_desc
 
     def add_arguments(self, parser):
-        for s in self.settings:
-            s.add_argument(parser)
+        pass
 
     def process_arguments(self, args):
-        for s in self.settings:
-            v = getattr(args, s.name)
-            if v is not None:
-                self.config[s.name] = v
+        pass
 
     def run(self, args):
         raise NotImplementedError
@@ -82,6 +64,11 @@ def _import_spider(file):
 
 
 class CrawlCommand(Command):
+    def __init__(self):
+        super().__init__()
+        self.settings = make_settings()
+        self.config = {}
+
     @property
     def syntax(self):
         return "[options] <PATH>"
@@ -94,18 +81,12 @@ class CrawlCommand(Command):
     def short_desc(self):
         return "Start to crawl web pages"
 
-    def _import_settings(self):
-        return (config.Daemon, config.PidFile,
-                config.LogLevel, config.LogFile,
-                config.DumpDir,
-                config.DownloaderClients,
-                config.MaxDepth)
-
     def add_arguments(self, parser):
         parser.add_argument("path", metavar="PATH", nargs=1, help="project directory or spider file")
         parser.add_argument('-c', '--config', dest='config', metavar='FILE',
                             help='configuration file (default: None)')
-        super().add_arguments(parser)
+        for s in self.settings:
+            s.add_argument(parser)
         parser.add_argument("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE",
                             help="set/override setting (can be repeated)")
 
@@ -115,11 +96,14 @@ class CrawlCommand(Command):
             c = load_config(args.config)
             for k, v in iter_settings(c):
                 self.config[k] = v
-        super().process_arguments(args)
         try:
             self.config.update(dict(x.split("=", 1) for x in args.set))
         except ValueError:
             raise UsageError("Invalid -s value, use -s NAME=VALUE")
+        for s in self.settings:
+            v = getattr(args, s.name)
+            if v is not None:
+                self.config[s.name] = v
 
     def run(self, args):
         if isfile(args.path):

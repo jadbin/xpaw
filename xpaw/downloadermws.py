@@ -5,14 +5,14 @@ import logging
 import asyncio
 from urllib.parse import urlsplit
 
-from .errors import ClientError, NotEnabled, RequestTimeout, HttpError
+from .errors import ClientError, NotEnabled, HttpError
 from . import __version__
 
 log = logging.getLogger(__name__)
 
 
 class RetryMiddleware:
-    RETRY_ERRORS = (ClientError, RequestTimeout)
+    RETRY_ERRORS = (ClientError,)
     RETRY_HTTP_STATUS = (500, 502, 503, 504, 408, 429)
 
     def __init__(self, max_retry_times, retry_http_status=None):

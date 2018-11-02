@@ -127,8 +127,8 @@ class HandlerSpider(Spider):
         self.server_address = self.config.get('server_address')
 
     def start_requests(self):
-        yield HttpRequest("http://localhost:80", errback=self.error_back)
-        yield HttpRequest("http://localhost:80", dont_filter=True, errback=self.async_error_back)
+        yield HttpRequest("http://localhost:8080", errback=self.error_back)
+        yield HttpRequest("http://localhost:8080", dont_filter=True, errback=self.async_error_back)
         yield HttpRequest("http://{}/error".format(self.server_address), errback=self.handle_request_error)
         yield HttpRequest("http://{}/".format(self.server_address), dont_filter=True)
         yield HttpRequest("http://{}/".format(self.server_address), dont_filter=True, callback=self.generator_parse)

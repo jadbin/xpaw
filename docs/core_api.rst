@@ -64,22 +64,9 @@ Cluster API
 Config API
 ----------
 
-.. class:: xpaw.config.Config(values=None)
+.. class:: xpaw.config.Config(__values=None, **kwargs)
 
-    管理爬虫配置的类，继承了 :class:`~xpaw.config.BaseConfig` ，并设置了爬虫相关的默认配置项。
-
-    爬虫相关的默认配置项参见 :ref:`settings` 。
-
-    :param values: 需要更新的配置项
-    :type values: dict or :class:`~xpaw.config.BaseConfig`
-
-
-.. class:: xpaw.config.BaseConfig(values=None)
-
-    管理配置的类，参数 ``values`` 可以为 ``dict`` 或 :class:`~xpaw.config.BaseConfig` ，在实例化时会保存 ``values`` 中的配置。
-
-    :param values: 需要更新的配置项
-    :type values: dict or :class:`~xpaw.config.BaseConfig`
+    管理爬虫配置的类。
 
     .. method:: get(name, default=None)
 
@@ -117,7 +104,7 @@ Config API
         更新参数
 
         :param values: 新的参数
-        :type values: dict or :class:`~xpaw.config.BaseConfig`
+        :type values: dict or :class:`~xpaw.config.Config`
 
     .. method:: delete(name):
 

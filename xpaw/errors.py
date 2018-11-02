@@ -39,10 +39,6 @@ class HttpError(Exception):
         super().__init__(*args, **kwargs)
 
 
-class RequestTimeout(Exception):
-    pass
-
-
 class IgnoreItem(Exception):
     """
     Ignore this item.

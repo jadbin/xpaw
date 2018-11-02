@@ -2,21 +2,20 @@
 
 import copy
 from collections import MutableMapping
-import inspect
 
 
-class BaseConfig(MutableMapping):
+class Config(MutableMapping):
     def __init__(self, __values=None, **kwargs):
-        self.attributes = {}
+        self.attrs = {}
         self.update(__values, **kwargs)
 
     def __getitem__(self, name):
         if name not in self:
             return None
-        return self.attributes[name]
+        return self.attrs[name]
 
     def __contains__(self, name):
-        return name in self.attributes
+        return name in self.attrs
 
     def get(self, name, default=None):
         return self[name] if self[name] is not None else default
@@ -38,7 +37,7 @@ class BaseConfig(MutableMapping):
         return getlist(v)
 
     def __setitem__(self, name, value):
-        self.attributes[name] = value
+        self.attrs[name] = value
 
     def set(self, name, value):
         self[name] = value
@@ -49,7 +48,7 @@ class BaseConfig(MutableMapping):
 
     def update(self, __values=None, **kwargs):
         if __values is not None:
-            if isinstance(__values, BaseConfig):
+            if isinstance(__values, Config):
                 for name in __values:
                     self[name] = __values[name]
             else:
@@ -59,19 +58,19 @@ class BaseConfig(MutableMapping):
             self[k] = v
 
     def delete(self, name):
-        del self.attributes[name]
+        del self.attrs[name]
 
     def __delitem__(self, name):
-        del self.attributes[name]
+        del self.attrs[name]
 
     def copy(self):
         return copy.deepcopy(self)
 
     def __iter__(self):
-        return iter(self.attributes)
+        return iter(self.attrs)
 
     def __len__(self):
-        return len(self.attributes)
+        return len(self.attrs)
 
 
 def getbool(v):
@@ -111,15 +110,29 @@ def getlist(v):
     return list(v)
 
 
-class Config(BaseConfig):
-    def __init__(self, __values=None, **kwargs):
-        super().__init__()
-        for v in KNOWN_SETTINGS.values():
-            self[v.name] = v.value
-        self.update(__values, **kwargs)
+KNOWN_SETTINGS = []
 
 
-class Setting:
+def make_settings():
+    settings = []
+    for s in KNOWN_SETTINGS:
+        setting = s()
+        if setting.cli is not None:
+            settings.append(setting)
+    return settings
+
+
+class SettingMeta(type):
+    def __new__(mcs, name, bases, attrs):
+        parents = [b for b in bases if isinstance(b, SettingMeta)]
+        if not parents:
+            return type.__new__(mcs, name, bases, attrs)
+        new_class = type.__new__(mcs, name, bases, attrs)
+        KNOWN_SETTINGS.append(new_class)
+        return new_class
+
+
+class Setting(metaclass=SettingMeta):
     name = None
     cli = None
     metavar = None
@@ -145,7 +158,6 @@ class Setting:
             kwargs['type'] = self.type
         if self.nargs is not None:
             kwargs['nargs'] = self.nargs
-
         parser.add_argument(*args, **kwargs)
 
 
@@ -313,8 +325,4 @@ class Extensions(Setting):
     name = 'extensions'
 
 
-KNOWN_SETTINGS = {}
-
-for _v in list(vars().values()):
-    if inspect.isclass(_v) and issubclass(_v, Setting) and _v.name is not None:
-        KNOWN_SETTINGS[_v.name] = _v()
+DEFAULT_CONFIG = {s.name: s.default for s in KNOWN_SETTINGS}

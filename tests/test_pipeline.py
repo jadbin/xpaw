@@ -3,7 +3,7 @@
 import pytest
 
 from xpaw.pipeline import ItemPipelineManager
-from xpaw.config import Config
+from xpaw.config import Config, DEFAULT_CONFIG
 from xpaw.eventbus import EventBus
 from xpaw import events
 
@@ -41,7 +41,7 @@ class FooAsyncItemPipeline(FooItemPipeline):
 class Cluster:
     def __init__(self, **kwargs):
         self.event_bus = EventBus()
-        self.config = Config(kwargs)
+        self.config = Config(DEFAULT_CONFIG, **kwargs)
 
 
 @pytest.mark.asyncio

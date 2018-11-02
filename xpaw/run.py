@@ -8,7 +8,7 @@ import signal
 
 from tornado.ioloop import IOLoop
 
-from .config import BaseConfig, Config
+from .config import Config, DEFAULT_CONFIG
 from .cluster import LocalCluster
 from .utils import configure_logger, configure_tornado_logger, daemonize, load_config, iter_settings
 from .spider import RequestsSpider
@@ -17,20 +17,19 @@ log = logging.getLogger(__name__)
 
 
 def run_crawler(proj_dir, **kwargs):
-    config = BaseConfig(kwargs)
-    run_cluster(proj_dir=proj_dir, config=config)
+    run_cluster(proj_dir=proj_dir, config=kwargs)
 
 
 def run_spider(spider, **kwargs):
-    config = BaseConfig(kwargs)
-    config['spider'] = spider
-    run_cluster(config=config)
+    kwargs['spider'] = spider
+    run_cluster(config=kwargs)
 
 
 def run_cluster(proj_dir=None, config=None):
-    proj_config = load_project_config(proj_dir)
-    proj_config.update(config)
-    config = proj_config
+    _c = Config(DEFAULT_CONFIG)
+    _c.update(load_project_config(proj_dir))
+    _c.update(config)
+    config = _c
 
     logger = configure_logger('xpaw', config)
     configure_tornado_logger(logger.handlers)

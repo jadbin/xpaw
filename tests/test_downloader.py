@@ -7,7 +7,7 @@ import pytest
 from xpaw.http import HttpRequest
 from xpaw.downloader import Downloader, DownloaderMiddlewareManager
 from xpaw.eventbus import EventBus
-from xpaw.config import Config
+from xpaw.config import Config, DEFAULT_CONFIG
 from xpaw import events
 from xpaw.errors import HttpError
 
@@ -152,7 +152,7 @@ class FooAsyncDownloaderMw(FooDownloadermw):
 class Cluster:
     def __init__(self, **kwargs):
         self.event_bus = EventBus()
-        self.config = Config(kwargs)
+        self.config = Config(DEFAULT_CONFIG, **kwargs)
 
 
 @pytest.mark.asyncio

@@ -4,7 +4,7 @@ import pytest
 
 from xpaw.spider import SpiderMiddlewareManager, Spider, every
 from xpaw.eventbus import EventBus
-from xpaw.config import Config
+from xpaw.config import Config, DEFAULT_CONFIG
 from xpaw import events
 
 
@@ -78,7 +78,7 @@ class FooAsyncSpiderMw(FooSpidermw):
 class Cluster:
     def __init__(self, **kwargs):
         self.event_bus = EventBus()
-        self.config = Config(kwargs)
+        self.config = Config(DEFAULT_CONFIG, **kwargs)
 
 
 @pytest.mark.asyncio

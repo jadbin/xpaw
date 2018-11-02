@@ -18,7 +18,7 @@ Changelog
 - 移除对aiohttp的依赖，改由tornado实现HTTP请求
 - 移除 ``xpaw.FormData`` , ``xpaw.URL``
 - 移除 ``xpaw.MultiDict`` , ``xpaw.CIMultiDict`` , 改由 ``xpaw.HttpHeaders`` 替代承载headers的功能
-- 为了和Python内置错误区分开，请求超时错误TimeoutError更名为RequestTimeout
+- 移除请求超时错误TimeoutError，统一由ClientError表示downloader抛出的异常
 - ``default_headers`` 默认为 ``None`` , 浏览器默认的HTTP header改由UserAgentMiddleware根据设定的浏览器类型进行设置
 
 0.10.3 (2018-09-01)
