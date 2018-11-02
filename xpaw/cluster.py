@@ -163,7 +163,7 @@ class LocalCluster:
             log.debug("%s -> worker[%s]", req, coro_id)
             self._req_in_worker[coro_id] = req
             try:
-                resp = await self.downloadermw.download(self.downloader, req)
+                resp = await self.downloadermw.fetch(self.downloader, req)
             except CancelledError:
                 raise
             except Exception as e:

@@ -30,7 +30,7 @@ class Downloader:
     def max_clients(self):
         return self._max_clients
 
-    async def download(self, request):
+    async def fetch(self, request):
         log.debug("HTTP request: %s", request)
         req = self._make_request(request)
         try:
@@ -130,14 +130,14 @@ class DownloaderMiddlewareManager(MiddlewareManager):
     def _middleware_list_from_config(cls, config):
         return cls._make_component_list('downloader_middlewares', config)
 
-    async def download(self, downloader, request):
+    async def fetch(self, downloader, request):
         try:
             res = await self._handle_request(request)
             if isinstance(res, HttpRequest):
                 return res
             if res is None:
                 try:
-                    response = await downloader.download(request)
+                    response = await downloader.fetch(request)
                 except (CancelledError, RequestTimeout, HttpError):
                     raise
                 except Exception as e:

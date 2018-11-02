@@ -19,13 +19,13 @@ async def test_basic_auth():
     async def no_auth():
         req = HttpRequest("http://httpbin.org/basic-auth/user/passwd")
         with pytest.raises(HttpError) as e:
-            await downloader.download(req)
+            await downloader.fetch(req)
         assert e.value.response.status == 401
 
     async def tuple_auth():
         req = HttpRequest("http://httpbin.org/basic-auth/user/passwd")
         req.auth = ('user', 'passwd')
-        resp = await downloader.download(req)
+        resp = await downloader.fetch(req)
         assert resp.status == 200
 
     await no_auth()
@@ -38,16 +38,16 @@ async def test_params():
 
     async def query_params():
         url = "http://httpbin.org/anything?key=value&none="
-        resp = await downloader.download(HttpRequest(url))
+        resp = await downloader.fetch(HttpRequest(url))
         assert json.loads(resp.text)['args'] == {'key': 'value', 'none': ''}
 
     async def dict_params():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/get",
+        resp = await downloader.fetch(HttpRequest("http://httpbin.org/get",
                                                      params={'key': 'value', 'none': ''}))
         assert json.loads(resp.text)['args'] == {'key': 'value', 'none': ''}
 
     async def list_params():
-        resp = await downloader.download(HttpRequest("http://httpbin.org/get",
+        resp = await downloader.fetch(HttpRequest("http://httpbin.org/get",
                                                      params=[('list', '1'), ('list', '2')]))
         assert json.loads(resp.text)['args'] == {'list': ['1', '2']}
 
@@ -60,7 +60,7 @@ async def test_params():
 async def test_headers():
     downloader = Downloader()
     headers = {'User-Agent': 'xpaw'}
-    resp = await downloader.download(HttpRequest("http://httpbin.org/get",
+    resp = await downloader.fetch(HttpRequest("http://httpbin.org/get",
                                                  headers=headers))
     assert resp.status == 200
     data = json.loads(resp.text)['headers']
@@ -73,7 +73,7 @@ async def test_body():
 
     async def post_str():
         str_data = 'str data: 字符串数据'
-        resp = await downloader.download(HttpRequest('http://httpbin.org/post',
+        resp = await downloader.fetch(HttpRequest('http://httpbin.org/post',
                                                      'POST', body=str_data,
                                                      headers={'Content-Type': 'text/plain'}))
         assert resp.status == 200
@@ -82,7 +82,7 @@ async def test_body():
 
     async def post_bytes():
         bytes_data = 'bytes data: 字节数据'
-        resp = await downloader.download(HttpRequest('http://httpbin.org/post',
+        resp = await downloader.fetch(HttpRequest('http://httpbin.org/post',
                                                      'POST', body=bytes_data.encode(),
                                                      headers={'Content-Type': 'text/plain'}))
         assert resp.status == 200
@@ -97,12 +97,12 @@ async def test_body():
 async def test_allow_redirects():
     downloader = Downloader()
 
-    resp = await downloader.download(HttpRequest('http://httpbin.org/redirect-to',
+    resp = await downloader.fetch(HttpRequest('http://httpbin.org/redirect-to',
                                                  params={'url': 'http://python.org'}))
     assert resp.status // 100 == 2 and 'python.org' in resp.url
 
     with pytest.raises(HttpError) as e:
-        await downloader.download(HttpRequest('http://httpbin.org/redirect-to',
+        await downloader.fetch(HttpRequest('http://httpbin.org/redirect-to',
                                               params={'url': 'http://python.org'},
                                               allow_redirects=False))
     assert e.value.response.status // 100 == 3
