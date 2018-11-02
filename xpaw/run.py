@@ -18,20 +18,22 @@ log = logging.getLogger(__name__)
 
 def run_crawler(proj_dir, **kwargs):
     config = BaseConfig(kwargs)
-    run_cluster(proj_dir=proj_dir, base_config=config)
+    run_cluster(proj_dir=proj_dir, config=config)
 
 
 def run_spider(spider, **kwargs):
     config = BaseConfig(kwargs)
     config['spider'] = spider
-    run_cluster(base_config=config)
+    run_cluster(config=config)
 
 
-def run_cluster(proj_dir=None, base_config=None):
-    config = load_job_config(proj_dir=proj_dir, base_config=base_config)
+def run_cluster(proj_dir=None, config=None):
+    proj_config = load_project_config(proj_dir)
+    proj_config.update(config)
+    config = proj_config
+
     logger = configure_logger('xpaw', config)
     configure_tornado_logger(logger.handlers)
-
     if config.getbool('daemon'):
         daemonize()
     pid_file = config.get('pid_file')
@@ -59,19 +61,18 @@ def make_requests(requests, **kwargs):
     return results
 
 
-def load_job_config(proj_dir=None, base_config=None):
+def load_project_config(proj_dir):
     if proj_dir is not None and proj_dir not in sys.path:
         # add project path
         sys.path.append(proj_dir)
-    job_config = Config()
+    config = Config()
     if proj_dir is not None:
         config_file = join(proj_dir, 'config.py')
         if isfile(config_file):
             c = load_config(config_file)
             for k, v in iter_settings(c):
-                job_config[k] = v
-    job_config.update(base_config)
-    return job_config
+                config[k] = v
+    return config
 
 
 def _write_pid_file(pid_file):

@@ -125,9 +125,9 @@ class CrawlCommand(Command):
         if isfile(args.path):
             spider = _import_spider(args.path)
             self.config['spider'] = spider
-            run_cluster(proj_dir=None, base_config=self.config)
+            run_cluster(proj_dir=None, config=self.config)
         elif isdir(args.path):
-            run_cluster(proj_dir=args.path, base_config=self.config)
+            run_cluster(proj_dir=args.path, config=self.config)
         else:
             raise UsageError('Cannot find {}'.format(args.path))
 
