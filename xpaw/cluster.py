@@ -151,7 +151,10 @@ class LocalCluster:
                 res = await self.spidermw.start_requests(self.spider)
                 for r in res:
                     if isinstance(r, HttpRequest):
-                        await self.schedule(r)
+                        try:
+                            await self.schedule(r)
+                        except Exception as e:
+                            log.warning('Failed to schedule %s: %s', r, e)
                 if tick <= 0:
                     break
                 t = time.time() - t
