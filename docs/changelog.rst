@@ -21,6 +21,16 @@ Changelog
 - 移除请求超时错误TimeoutError，统一由ClientError表示downloader抛出的异常
 - ``default_headers`` 默认为 ``None`` , 浏览器默认的HTTP header改由UserAgentMiddleware根据设定的浏览器类型进行设置
 
+
+0.10.4 (2018-11-06)
+-------------------
+
+Bug fixes
+~~~~~~~~~
+
+- 在生成初始请求过程中，捕获单个请求抛出的异常并记录日志
+
+
 0.10.3 (2018-09-01)
 -------------------
 

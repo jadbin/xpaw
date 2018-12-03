@@ -136,26 +136,27 @@ class LocalCluster:
         return False
 
     async def _generate_start_requests(self):
-        try:
-            if hasattr(self.spider.start_requests, "cron_job"):
-                tick = self.spider.start_requests.cron_tick
-            else:
-                tick = 0
-            while True:
-                t = time.time()
+        if hasattr(self.spider.start_requests, "cron_job"):
+            tick = self.spider.start_requests.cron_tick
+        else:
+            tick = 0
+        while True:
+            t = time.time()
+            try:
                 res = await self.spidermw.start_requests(self.spider)
+            except CancelledError:
+                raise
+            except Exception:
+                log.warning("Failed to get start requests", exc_info=True)
+            else:
                 for r in res:
                     if isinstance(r, HttpRequest):
                         await self.schedule(r)
-                if tick <= 0:
-                    break
-                t = time.time() - t
-                if t < tick:
-                    await asyncio.sleep(tick - t)
-        except CancelledError:
-            raise
-        except Exception:
-            log.warning("Failed to generate start requests", exc_info=True)
+            if tick <= 0:
+                break
+            t = time.time() - t
+            if t < tick:
+                await asyncio.sleep(tick - t)
 
     async def _download(self, coro_id):
         while True:
@@ -230,12 +231,15 @@ class LocalCluster:
         return obj
 
     async def schedule(self, request):
-        res = self.dupe_filter.is_duplicated(request)
-        if inspect.iscoroutine(res):
-            res = await res
-        if not res:
-            await self.event_bus.send(events.request_scheduled, request=request)
-            await self.queue.push(request)
+        try:
+            res = self.dupe_filter.is_duplicated(request)
+            if inspect.iscoroutine(res):
+                res = await res
+            if not res:
+                await self.event_bus.send(events.request_scheduled, request=request)
+                await self.queue.push(request)
+        except Exception:
+            log.warning('Failed to schedule %s', request, exc_info=True)
 
     @staticmethod
     def _log_objects(objects):
