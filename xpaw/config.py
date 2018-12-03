@@ -205,7 +205,12 @@ class LogFormat(Setting):
 
 class LogDateformat(Setting):
     name = 'log_dateformat'
-    default = '%Y-%m-%d %H:%M:%S'
+    default = '[%Y-%m-%d %H:%M:%S %z]'
+
+
+class Downloader(Setting):
+    name = 'downloader'
+    default = 'xpaw.downloader.Downloader'
 
 
 class DownloaderClients(Setting):

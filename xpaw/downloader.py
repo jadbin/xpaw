@@ -5,18 +5,15 @@ import inspect
 from asyncio import CancelledError
 from urllib.parse import urlsplit
 
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPClientError
+from tornado.httpclient import HTTPRequest, HTTPClientError
+from tornado.curl_httpclient import CurlAsyncHTTPClient
 
-try:
-    import pycurl
-
-    AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
-except ImportError:
-    pass
+import pycurl
 
 from .middleware import MiddlewareManager
 from .http import HttpRequest, HttpResponse, HttpHeaders
 from .errors import ClientError, HttpError
+from . import events
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +21,14 @@ log = logging.getLogger(__name__)
 class Downloader:
     def __init__(self, max_clients=10):
         self._max_clients = max_clients
-        self._http_client = AsyncHTTPClient(max_clients=max_clients)
+        self._http_client = CurlAsyncHTTPClient(max_clients=max_clients, force_instance=True)
+
+    @classmethod
+    def from_cluster(cls, cluster):
+        config = cluster.config
+        downloader = cls(max_clients=config.getint('downloader_clients'))
+        cluster.event_bus.subscribe(downloader.close, events.cluster_shutdown)
+        return downloader
 
     @property
     def max_clients(self):
@@ -53,7 +57,8 @@ class Downloader:
         kwargs = {'method': request.method,
                   'headers': cls._make_request_headers(request.headers),
                   'body': request.body,
-                  'request_timeout': request.timeout,
+                  'connect_timeout': request.timeout,  # FIXME
+                  'request_timeout': request.timeout,  # FIXME
                   'follow_redirects': request.allow_redirects,
                   'validate_cert': request.verify_ssl}
         if request.auth is not None:
@@ -102,6 +107,9 @@ class Downloader:
             for k, v in headers:
                 res.add(k, v)
         return res
+
+    def close(self):
+        self._http_client.close()
 
 
 def prepare_curl_socks5(curl):

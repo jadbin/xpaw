@@ -6,7 +6,6 @@ from asyncio import CancelledError
 import time
 import inspect
 
-from .downloader import Downloader
 from .http import HttpRequest, HttpResponse
 from .errors import IgnoreRequest, IgnoreItem, StopCluster, ClientError, HttpError
 from .downloader import DownloaderMiddlewareManager
@@ -25,11 +24,11 @@ class LocalCluster:
     def __init__(self, config):
         self.config = config
         self.event_bus = EventBus()
-        self.stats_collector = self._new_object_from_cluster(self.config.get('stats_collector'), self)
-        self.queue = self._new_object_from_cluster(self.config.get('queue'), self)
-        self.dupe_filter = self._new_object_from_cluster(self.config.get('dupe_filter'), self)
-        self.downloader = Downloader(self.config.getint('downloader_clients'))
-        self.spider = self._new_object_from_cluster(self.config.get('spider'), self)
+        self.stats_collector = self._new_object_from_cluster(self.config.get('stats_collector'))
+        self.queue = self._new_object_from_cluster(self.config.get('queue'))
+        self.dupe_filter = self._new_object_from_cluster(self.config.get('dupe_filter'))
+        self.downloader = self._new_object_from_cluster(self.config.get('downloader'))
+        self.spider = self._new_object_from_cluster(self.config.get('spider'))
         assert isinstance(self.spider, Spider), 'spider must inherit from the Spider class'
         log.info('Spider: %s', str(self.spider))
         self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
@@ -52,12 +51,12 @@ class LocalCluster:
         if self._is_running:
             return
         self._is_running = True
-        await self._run()
+        await self._init()
         self._run_lock = asyncio.Future()
         await self._run_lock
         self._run_lock = None
 
-    async def _run(self):
+    async def _init(self):
         await self.event_bus.send(events.cluster_start)
         self._supervisor_future = asyncio.ensure_future(self._supervisor())
         self._start_future = asyncio.ensure_future(self._generate_start_requests())
@@ -221,11 +220,10 @@ class LocalCluster:
             else:
                 await self.event_bus.send(events.item_scraped, item=result)
 
-    @staticmethod
-    def _new_object_from_cluster(cls_path, cluster):
+    def _new_object_from_cluster(self, cls_path):
         obj_cls = load_object(cls_path)
         if hasattr(obj_cls, "from_cluster"):
-            obj = obj_cls.from_cluster(cluster)
+            obj = obj_cls.from_cluster(self)
         else:
             obj = obj_cls()
         return obj
