@@ -5,7 +5,7 @@ from os.path import join
 import pytest
 
 from xpaw.spider import Spider
-from xpaw.cli import main
+from xpaw.cmdline import main
 from xpaw.run import run_crawler, run_spider, make_requests
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.errors import ClientError, HttpError

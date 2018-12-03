@@ -4,7 +4,7 @@ import pytest
 from os.path import isfile, isdir, join
 from os import remove
 
-from xpaw.cli import main
+from xpaw.cmdline import main
 from xpaw import __version__
 
 

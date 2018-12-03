@@ -9,7 +9,7 @@ class NotEnabled(Exception):
 
 class UsageError(Exception):
     """
-    CLI usage error.
+    Command usage error.
     """
 
     def __init__(self, *args, print_help=False, **kwargs):

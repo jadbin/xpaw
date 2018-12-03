@@ -51,7 +51,7 @@ def main():
         packages=find_packages(exclude=("tests",)),
         include_package_data=True,
         entry_points={
-            "console_scripts": ["xpaw = xpaw.cli:main"]
+            "console_scripts": ["xpaw = xpaw.cmdline:main"]
         },
         python_requires='>=3.5.3',
         install_requires=install_requires,
