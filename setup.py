@@ -26,6 +26,7 @@ class PyTest(TestCommand):
 
 install_requires = [
     'tornado>=5.1.1',
+    'pycurl>=7.43.0',
     'lxml>=4.1.0',
     'cssselect>=1.0.3'
 ]
