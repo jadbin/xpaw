@@ -222,10 +222,13 @@ class LocalCluster:
 
     def _new_object_from_cluster(self, cls_path):
         obj_cls = load_object(cls_path)
-        if hasattr(obj_cls, "from_cluster"):
-            obj = obj_cls.from_cluster(self)
+        if inspect.isclass(obj_cls):
+            if hasattr(obj_cls, "from_cluster"):
+                obj = obj_cls.from_cluster(self)
+            else:
+                obj = obj_cls()
         else:
-            obj = obj_cls()
+            obj = obj_cls
         return obj
 
     async def schedule(self, request):
