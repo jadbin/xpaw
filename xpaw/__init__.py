@@ -6,13 +6,14 @@ from .spider import Spider
 from .selector import Selector
 from .item import Item, Field
 from .run import run_spider, run_spider_project, make_requests
-from .handler import every
+from .decorator import every
 
 __all__ = ['HttpRequest', 'HttpResponse',
            'Downloader',
-           'Spider', 'every',
+           'Spider',
            'Selector',
            'Item', 'Field',
-           'run_spider', 'run_spider_project', 'make_requests']
+           'run_spider', 'run_spider_project', 'make_requests',
+           'every']
 
 __version__ = '0.10.3'
