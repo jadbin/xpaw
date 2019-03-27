@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from xpaw.spidermws import *
+from xpaw.spider_middlewares import *
 from xpaw.http import HttpRequest
 from xpaw.item import Item
 from .crawler import Crawler

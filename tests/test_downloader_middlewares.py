@@ -3,7 +3,7 @@
 import pytest
 
 from xpaw.http import HttpRequest, HttpResponse
-from xpaw.downloadermws import *
+from xpaw.downloader_middlewares import *
 from xpaw.errors import ClientError, NotEnabled
 from .crawler import Crawler
 
