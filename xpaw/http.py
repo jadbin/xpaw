@@ -2,9 +2,11 @@
 
 from urllib.parse import urlsplit, parse_qs
 
-from tornado.httputil import HTTPHeaders as HttpHeaders
+from tornado.httputil import HTTPHeaders
 
 from .utils import get_encoding_from_content, get_encoding_from_content_type, make_url
+
+HttpHeaders = HTTPHeaders
 
 
 class HttpRequest:

@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from .http import HttpRequest, HttpResponse
+from .http import HttpRequest, HttpResponse, HttpHeaders
 from .downloader import Downloader
 from .spider import Spider
 from .selector import Selector
@@ -8,7 +8,7 @@ from .item import Item, Field
 from .run import run_spider, run_spider_project, make_requests
 from .decorator import every
 
-__all__ = ['HttpRequest', 'HttpResponse',
+__all__ = ['HttpRequest', 'HttpResponse', 'HttpHeaders',
            'Downloader',
            'Spider',
            'Selector',
