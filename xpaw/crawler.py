@@ -7,7 +7,7 @@ import time
 import inspect
 
 from .http import HttpRequest, HttpResponse
-from .errors import IgnoreRequest, IgnoreItem, StopCluster, ClientError, HttpError
+from .errors import IgnoreRequest, IgnoreItem, StopCrawler, ClientError, HttpError
 from .downloader import DownloaderMiddlewareManager
 from .spider import Spider, SpiderMiddlewareManager
 from .eventbus import EventBus
@@ -20,24 +20,24 @@ from .utils import load_object
 log = logging.getLogger(__name__)
 
 
-class LocalCluster:
+class Crawler:
     def __init__(self, config):
         self.config = config
         self.event_bus = EventBus()
-        self.stats_collector = self._new_object_from_cluster(self.config.get('stats_collector'))
-        self.queue = self._new_object_from_cluster(self.config.get('queue'))
-        self.dupe_filter = self._new_object_from_cluster(self.config.get('dupe_filter'))
-        self.downloader = self._new_object_from_cluster(self.config.get('downloader'))
-        self.spider = self._new_object_from_cluster(self.config.get('spider'))
+        self.stats_collector = self._new_object_from_crawler(self.config.get('stats_collector'))
+        self.queue = self._new_object_from_crawler(self.config.get('queue'))
+        self.dupe_filter = self._new_object_from_crawler(self.config.get('dupe_filter'))
+        self.downloader = self._new_object_from_crawler(self.config.get('downloader'))
+        self.spider = self._new_object_from_crawler(self.config.get('spider'))
         assert isinstance(self.spider, Spider), 'spider must inherit from the Spider class'
         log.info('Spider: %s', str(self.spider))
-        self.downloadermw = DownloaderMiddlewareManager.from_cluster(self)
+        self.downloadermw = DownloaderMiddlewareManager.from_crawler(self)
         log.info('Downloader middlewares: %s', self._log_objects(self.downloadermw.components))
-        self.spidermw = SpiderMiddlewareManager.from_cluster(self)
+        self.spidermw = SpiderMiddlewareManager.from_crawler(self)
         log.info('Spider middlewares: %s', self._log_objects(self.spidermw.components))
-        self.item_pipeline = ItemPipelineManager.from_cluster(self)
+        self.item_pipeline = ItemPipelineManager.from_crawler(self)
         log.info('Item pipelines: %s', self._log_objects(self.item_pipeline.components))
-        self.extension = ExtensionManager.from_cluster(self)
+        self.extension = ExtensionManager.from_crawler(self)
         log.info('Extensions: %s', self._log_objects(self.extension.components))
         self._workers = None
         self._workers_done = None
@@ -57,7 +57,7 @@ class LocalCluster:
         self._run_lock = None
 
     async def _init(self):
-        await self.event_bus.send(events.cluster_start)
+        await self.event_bus.send(events.crawler_start)
         self._supervisor_future = asyncio.ensure_future(self._supervisor())
         self._start_future = asyncio.ensure_future(self._generate_start_requests())
         downloader_clients = self.downloader.max_clients
@@ -68,7 +68,7 @@ class LocalCluster:
             self._workers.append(f)
         self._workers_done = set()
         self._req_in_worker = [None] * downloader_clients
-        log.info('Cluster is loaded')
+        log.info('Crawler is loaded')
 
     def stop(self):
         if not self._is_running:
@@ -99,10 +99,10 @@ class LocalCluster:
                 if r:
                     await self.queue.push(r)
             self._req_in_worker = None
-        await self.event_bus.send(events.cluster_shutdown)
+        await self.event_bus.send(events.crawler_shutdown)
         # wait cancelled futures
         await asyncio.wait(cancelled_futures)
-        log.info('Cluster is unloaded')
+        log.info('Crawler is unloaded')
         if self._run_lock:
             self._run_lock.set_result(True)
 
@@ -193,8 +193,8 @@ class LocalCluster:
             except CancelledError:
                 raise
             except Exception as e:
-                if isinstance(e, StopCluster):
-                    log.info('Request to stop cluster: %s', e)
+                if isinstance(e, StopCrawler):
+                    log.info('Request to stop crawler: %s', e)
                     self.stop()
                 elif isinstance(e, IgnoreRequest):
                     await self.event_bus.send(events.request_ignored, request=resp.request, error=e)
@@ -220,11 +220,11 @@ class LocalCluster:
             else:
                 await self.event_bus.send(events.item_scraped, item=result)
 
-    def _new_object_from_cluster(self, cls_path):
+    def _new_object_from_crawler(self, cls_path):
         obj_cls = load_object(cls_path)
         if inspect.isclass(obj_cls):
-            if hasattr(obj_cls, "from_cluster"):
-                obj = obj_cls.from_cluster(self)
+            if hasattr(obj_cls, "from_crawler"):
+                obj = obj_cls.from_crawler(self)
             else:
                 obj = obj_cls()
         else:

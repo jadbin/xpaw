@@ -12,7 +12,7 @@ from .errors import UsageError
 from .config import make_settings
 from .utils import string_camelcase, render_template_file, load_config, iter_settings
 from . import __version__
-from .run import run_cluster
+from .run import run_crawler
 from .spider import Spider
 
 log = logging.getLogger(__name__)
@@ -109,9 +109,9 @@ class CrawlCommand(Command):
         if isfile(args.path):
             spider = _import_spider(args.path)
             self.config['spider'] = spider
-            run_cluster(proj_dir=None, config=self.config)
+            run_crawler(proj_dir=None, config=self.config)
         elif isdir(args.path):
-            run_cluster(proj_dir=args.path, config=self.config)
+            run_crawler(proj_dir=args.path, config=self.config)
         else:
             raise UsageError('Cannot find {}'.format(args.path))
 

@@ -15,11 +15,11 @@ class HashDupeFilter:
         self._hash = set()
 
     @classmethod
-    def from_cluster(cls, cluster):
-        config = cluster.config
+    def from_crawler(cls, crawler):
+        config = crawler.config
         dupe_filter = cls(dump_dir=get_dump_dir(config))
-        cluster.event_bus.subscribe(dupe_filter.open, events.cluster_start)
-        cluster.event_bus.subscribe(dupe_filter.close, events.cluster_shutdown)
+        crawler.event_bus.subscribe(dupe_filter.open, events.crawler_start)
+        crawler.event_bus.subscribe(dupe_filter.close, events.crawler_shutdown)
         return dupe_filter
 
     def is_duplicated(self, request):

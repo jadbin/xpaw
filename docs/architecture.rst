@@ -10,25 +10,25 @@ Architecture Overview
 Data Flow
 ---------
 
-数据流以cluster为核心，并由cluster进行控制和驱动：
+数据流以crawler为核心，并由crawler进行控制和驱动：
 
 .. image:: _static/data_flow.png
 
-1. cluster从spider中获取初始请求 :class:`~xpaw.http.HttpRequest` 。
-2. cluster将得到 :class:`~xpaw.http.HttpRequest` 放入到queue中。
-3. cluster不停地从queue中获取待处理的 :class:`~xpaw.http.HttpRequest` 。
-4. cluster将 :class:`~xpaw.http.HttpRequest` 交由downloader处理。
-5. downloader完成下载后生成 :class:`~xpaw.http.HttpResponse` 返回给cluster。
-6. cluster将得到的 :class:`~xpaw.http.HttpResponse` 交由spider处理。
+1. crawler从spider中获取初始请求 :class:`~xpaw.http.HttpRequest` 。
+2. crawler将得到 :class:`~xpaw.http.HttpRequest` 放入到queue中。
+3. crawler不停地从queue中获取待处理的 :class:`~xpaw.http.HttpRequest` 。
+4. crawler将 :class:`~xpaw.http.HttpRequest` 交由downloader处理。
+5. downloader完成下载后生成 :class:`~xpaw.http.HttpResponse` 返回给crawler。
+6. crawler将得到的 :class:`~xpaw.http.HttpResponse` 交由spider处理。
 7. spider处理 :class:`~xpaw.http.HttpResponse` 并提取数据 :class:`~xpaw.item.Item` 和新的请求 :class:`~xpaw.http.HttpRequest` 。
-8. cluster将得到的 :class:`~xpaw.item.Item` 交由pipeline处理，将得到的 :class:`~xpaw.http.HttpRequest` 放入到queue中。
+8. crawler将得到的 :class:`~xpaw.item.Item` 交由pipeline处理，将得到的 :class:`~xpaw.http.HttpRequest` 放入到queue中。
 
 爬虫会持续运行直到所有生成的requests都被处理完且不再生成新的requests为止。
 
 Components
 ----------
 
-Cluster
+Crawler
 ^^^^^^^
 
 实现对各个组件的控制和驱动。

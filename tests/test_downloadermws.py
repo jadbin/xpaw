@@ -2,30 +2,23 @@
 
 import pytest
 
-from xpaw.config import Config, DEFAULT_CONFIG
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloadermws import *
 from xpaw.errors import ClientError, NotEnabled
-from xpaw.eventbus import EventBus
-
-
-class Cluster:
-    def __init__(self, **kwargs):
-        self.config = Config(DEFAULT_CONFIG, **kwargs)
-        self.event_bus = EventBus()
+from .crawler import Crawler
 
 
 class TestDefaultHeadersMiddleware:
     def test_handle_request(self):
         default_headers = {"User-Agent": "xpaw", "Connection": "keep-alive"}
-        mw = DefaultHeadersMiddleware.from_cluster(Cluster(default_headers=default_headers))
+        mw = DefaultHeadersMiddleware.from_crawler(Crawler(default_headers=default_headers))
         req = HttpRequest("http://example.com", headers={"Connection": "close"})
         mw.handle_request(req)
         assert req.headers == {"User-Agent": "xpaw", "Connection": "close"}
 
     def test_not_enabled(self):
         with pytest.raises(NotEnabled):
-            DefaultHeadersMiddleware.from_cluster(Cluster(default_headers=None))
+            DefaultHeadersMiddleware.from_crawler(Crawler(default_headers=None))
 
 
 class Random:
@@ -41,14 +34,14 @@ class Random:
 class TestProxyMiddleware:
     def test_proxy_str(self):
         proxy = '127.0.0.1:3128'
-        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy))
+        mw = ProxyMiddleware.from_crawler(Crawler(proxy=proxy))
         req = HttpRequest("http://example.com")
         mw.handle_request(req)
         assert req.proxy == proxy
 
     def test_proxy_dict(self):
         proxy_dict = {'http': '127.0.0.1:3128', 'https': '127.0.0.1:3129'}
-        mw = ProxyMiddleware.from_cluster(Cluster(proxy=proxy_dict))
+        mw = ProxyMiddleware.from_crawler(Crawler(proxy=proxy_dict))
         req_list = []
         for i in ['http://example.com', 'https://example.com']:
             req_list.append(HttpRequest(i))
@@ -60,12 +53,12 @@ class TestProxyMiddleware:
     @pytest.mark.asyncio
     async def test_not_enabled(self):
         with pytest.raises(NotEnabled):
-            ProxyMiddleware.from_cluster(Cluster())
+            ProxyMiddleware.from_crawler(Crawler())
 
 
 class TestRetryMiddleware:
     def test_handle_reponse(self):
-        mw = RetryMiddleware.from_cluster(Cluster(retry_http_status=(500,), max_retry_times=3))
+        mw = RetryMiddleware.from_crawler(Crawler(retry_http_status=(500,), max_retry_times=3))
         req = HttpRequest("http://example.com")
         resp = HttpResponse("http://example.com", 502)
         assert mw.handle_response(req, resp) is None
@@ -86,7 +79,7 @@ class TestRetryMiddleware:
         assert mw.handle_response(req4, resp4) is None
 
     def test_handle_error(self):
-        mw = RetryMiddleware.from_cluster(Cluster())
+        mw = RetryMiddleware.from_crawler(Crawler())
         req = HttpRequest("http://example.com")
         err = ValueError()
         assert mw.handle_error(req, err) is None
@@ -96,7 +89,7 @@ class TestRetryMiddleware:
 
     def test_retry(self):
         max_retry_times = 2
-        mw = RetryMiddleware.from_cluster(Cluster(max_retry_times=max_retry_times,
+        mw = RetryMiddleware.from_crawler(Crawler(max_retry_times=max_retry_times,
                                                   retry_http_status=(500,)))
         req = HttpRequest("http://example.com")
         for i in range(max_retry_times):
@@ -107,7 +100,7 @@ class TestRetryMiddleware:
 
     def test_not_enabled(self):
         with pytest.raises(NotEnabled):
-            RetryMiddleware.from_cluster(Cluster(retry_enabled=False))
+            RetryMiddleware.from_crawler(Crawler(retry_enabled=False))
 
     def test_match_status(self):
         assert RetryMiddleware.match_status("200", 200) is True
@@ -125,16 +118,16 @@ class TestSpeedLimitMiddleware:
     @pytest.mark.asyncio
     async def test_value_error(self):
         with pytest.raises(ValueError):
-            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=0,
+            SpeedLimitMiddleware.from_crawler(Crawler(speed_limit_rate=0,
                                                       speed_limit_burst=1))
         with pytest.raises(ValueError):
-            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=1,
+            SpeedLimitMiddleware.from_crawler(Crawler(speed_limit_rate=1,
                                                       speed_limit_burst=0))
 
     @pytest.mark.asyncio
     async def test_not_enabled(self):
         with pytest.raises(NotEnabled):
-            SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=1))
+            SpeedLimitMiddleware.from_crawler(Crawler(speed_limit_rate=1))
 
     @pytest.mark.asyncio
     async def test_handle_request(self):
@@ -151,7 +144,7 @@ class TestSpeedLimitMiddleware:
                 counter.inc()
 
         counter = Counter()
-        mw = SpeedLimitMiddleware.from_cluster(Cluster(speed_limit_rate=1000,
+        mw = SpeedLimitMiddleware.from_crawler(Crawler(speed_limit_rate=1000,
                                                        speed_limit_burst=5))
         futures = []
         for i in range(100):
@@ -168,28 +161,28 @@ class TestSpeedLimitMiddleware:
 class TestUserAgentMiddleware:
     def test_static_user_agent(self):
         user_agent = 'test user agent'
-        mw = UserAgentMiddleware.from_cluster(Cluster(user_agent=user_agent))
+        mw = UserAgentMiddleware.from_crawler(Crawler(user_agent=user_agent))
         req = HttpRequest('http://example.com')
         mw.handle_request(req)
         assert req.headers.get('User-Agent') == user_agent
 
     def test_gen_user_agent(self):
-        mw = UserAgentMiddleware.from_cluster(Cluster(user_agent=':desktop,chrome'))
+        mw = UserAgentMiddleware.from_crawler(Crawler(user_agent=':desktop,chrome'))
         req = HttpRequest('http://example.com')
         mw.handle_request(req)
         assert 'Chrome' in req.headers.get('User-Agent')
 
-        mw2 = UserAgentMiddleware.from_cluster(Cluster(user_agent=':mobile,chrome'))
+        mw2 = UserAgentMiddleware.from_crawler(Crawler(user_agent=':mobile,chrome'))
         req2 = HttpRequest('http://example.com')
         mw2.handle_request(req2)
         assert 'CriOS' in req2.headers.get('User-Agent') and 'Mobile' in req2.headers.get('User-Agent')
 
     def test_unknown_user_agent_description(self):
         with pytest.raises(ValueError):
-            UserAgentMiddleware.from_cluster(Cluster(user_agent=':unknown'))
+            UserAgentMiddleware.from_crawler(Crawler(user_agent=':unknown'))
 
     def test_random_user_agent(self):
-        mw = UserAgentMiddleware.from_cluster(Cluster(random_user_agent=True))
+        mw = UserAgentMiddleware.from_crawler(Crawler(random_user_agent=True))
         req = HttpRequest('http://example.com')
         req2 = HttpRequest('http://example.com')
         mw.handle_request(req)
@@ -199,7 +192,7 @@ class TestUserAgentMiddleware:
         assert 'Chrome' in req.headers.get('User-Agent')
 
     def test_random_user_agent2(self):
-        mw = UserAgentMiddleware.from_cluster(Cluster(user_agent=':mobile', random_user_agent=True))
+        mw = UserAgentMiddleware.from_crawler(Crawler(user_agent=':mobile', random_user_agent=True))
         for i in range(30):
             req = HttpRequest('http://example.com')
             mw.handle_request(req)

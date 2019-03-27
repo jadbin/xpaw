@@ -22,14 +22,14 @@ class MiddlewareManager:
         raise NotImplementedError
 
     @classmethod
-    def from_cluster(cls, cluster):
-        mw_list = cls._middleware_list_from_config(cluster.config)
+    def from_crawler(cls, crawler):
+        mw_list = cls._middleware_list_from_config(crawler.config)
         mws = []
         for cls_path in mw_list:
             mw_cls = load_object(cls_path)
             try:
-                if hasattr(mw_cls, "from_cluster"):
-                    mw = mw_cls.from_cluster(cluster)
+                if hasattr(mw_cls, "from_crawler"):
+                    mw = mw_cls.from_crawler(crawler)
                 else:
                     mw = mw_cls()
             except NotEnabled:
@@ -37,8 +37,8 @@ class MiddlewareManager:
             else:
                 mws.append(mw)
         mwm = cls(*mws)
-        cluster.event_bus.subscribe(mwm.open, events.cluster_start)
-        cluster.event_bus.subscribe(mwm.close, events.cluster_shutdown)
+        crawler.event_bus.subscribe(mwm.open, events.crawler_start)
+        crawler.event_bus.subscribe(mwm.close, events.crawler_shutdown)
         return mwm
 
     def _add_middleware(self, middleware):

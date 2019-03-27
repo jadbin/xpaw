@@ -1,8 +1,8 @@
 # coding=utf-8
 
 
-cluster_start = object()
-cluster_shutdown = object()
+crawler_start = object()
+crawler_shutdown = object()
 
 request_scheduled = object()
 request_ignored = object()

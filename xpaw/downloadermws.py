@@ -25,8 +25,8 @@ class RetryMiddleware:
             .format(cls_name, repr(self._max_retry_times), repr(self._retry_http_status))
 
     @classmethod
-    def from_cluster(cls, cluster):
-        config = cluster.config
+    def from_crawler(cls, crawler):
+        config = crawler.config
         if not config.getbool('retry_enabled'):
             raise NotEnabled
         return cls(max_retry_times=config.getint('max_retry_times'),
@@ -88,8 +88,8 @@ class DefaultHeadersMiddleware:
         return '{}(default_headers={})'.format(cls_name, repr(self._headers))
 
     @classmethod
-    def from_cluster(cls, cluster):
-        default_headers = cluster.config.get("default_headers")
+    def from_crawler(cls, crawler):
+        default_headers = crawler.config.get("default_headers")
         if default_headers is None:
             raise NotEnabled
         return cls(default_headers=default_headers)
@@ -109,8 +109,8 @@ class ProxyMiddleware:
         return '{}(proxy={})'.format(cls_name, repr(self._proxies))
 
     @classmethod
-    def from_cluster(cls, cluster):
-        proxy = cluster.config.get('proxy')
+    def from_crawler(cls, crawler):
+        proxy = crawler.config.get('proxy')
         if not proxy:
             raise NotEnabled
         return cls(proxy=proxy)
@@ -154,8 +154,8 @@ class SpeedLimitMiddleware:
         return '{}(speed_limit_rate={}, speed_limit_burst={})'.format(cls_name, repr(self._rate), repr(self._burst))
 
     @classmethod
-    def from_cluster(cls, cluster):
-        config = cluster.config
+    def from_crawler(cls, crawler):
+        config = crawler.config
         if config['speed_limit_rate'] is None or config['speed_limit_burst'] is None:
             raise NotEnabled
         speed_limit_rate = config.getfloat('speed_limit_rate')
@@ -207,8 +207,8 @@ class UserAgentMiddleware:
         return '{}(user_agent={}, random_user_agent={})'.format(cls_name, repr(self._user_agent), repr(self._is_random))
 
     @classmethod
-    def from_cluster(cls, cluster):
-        config = cluster.config
+    def from_crawler(cls, crawler):
+        config = crawler.config
         user_agent = config.get('user_agent')
         random_user_agent = config.getbool('random_user_agent')
         return cls(user_agent=user_agent, random_user_agent=random_user_agent)

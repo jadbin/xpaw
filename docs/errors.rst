@@ -29,6 +29,6 @@ Built-in Errors
 
     xpaw相关命令使用方法不正确时抛出的异常。
 
-.. class:: xpaw.errors.CloseCluster
+.. class:: xpaw.errors.CloseCrawler
 
-    在spider的处理 :class:`~xpaw.http.HttpResponse` 的回调函数中可以抛出该异常，主动停止cluster。
+    在spider的处理 :class:`~xpaw.http.HttpResponse` 的回调函数中可以抛出该异常，主动停止crawler。

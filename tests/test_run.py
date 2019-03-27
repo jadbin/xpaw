@@ -6,32 +6,32 @@ import pytest
 
 from xpaw.spider import Spider
 from xpaw.cmdline import main
-from xpaw.run import run_crawler, run_spider, make_requests
+from xpaw.run import run_spider, run_spider_project, make_requests
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.errors import ClientError, HttpError
 
 
-def test_run_crawler(tmpdir):
-    proj_name = 'test_run_crawler'
+def test_run_spider_project(tmpdir):
+    proj_name = 'test_run_spider_project'
     proj_dir = join(str(tmpdir), proj_name)
     main(argv=['xpaw', 'init', proj_dir])
-    run_crawler(proj_dir, log_level='DEBUG')
+    run_spider_project(proj_dir, log_level='DEBUG')
 
 
-def test_run_crawler_bad_config(tmpdir, capsys):
+def test_run_spider_project_with_bad_config(tmpdir, capsys):
     proj_dir = join(str(tmpdir))
     config_file = join(proj_dir, 'config.py')
     with open(config_file, 'w') as f:
         f.write('bad config')
     with pytest.raises(SyntaxError):
-        run_crawler(proj_dir, log_level='DEBUG')
+        run_spider_project(proj_dir, log_level='DEBUG')
     _, _ = capsys.readouterr()
 
 
-def test_failed_to_create_cluster(tmpdir, capsys):
+def test_failed_to_create_crawler(tmpdir, capsys):
     proj_dir = join(str(tmpdir))
     with pytest.raises(Exception):
-        run_crawler(proj_dir, log_level='DEBUG')
+        run_spider_project(proj_dir, log_level='DEBUG')
     _, _ = capsys.readouterr()
 
 

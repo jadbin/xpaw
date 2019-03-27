@@ -1,14 +1,9 @@
 # coding=utf-8
 
-from xpaw.config import Config, DEFAULT_CONFIG
 from xpaw.spidermws import *
 from xpaw.http import HttpRequest
 from xpaw.item import Item
-
-
-class Cluster:
-    def __init__(self, **kwargs):
-        self.config = Config(DEFAULT_CONFIG, **kwargs)
+from .crawler import Crawler
 
 
 class TestDepthMiddleware:
@@ -19,7 +14,7 @@ class TestDepthMiddleware:
                 if depth is not None:
                     self.meta['depth'] = depth
 
-        mw = DepthMiddleware.from_cluster(Cluster(max_depth=1))
+        mw = DepthMiddleware.from_crawler(Crawler(max_depth=1))
         req = HttpRequest("http://python.org/", "GET")
         item = Item()
         res = [i for i in mw.handle_output(R(), [req, item])]
@@ -30,7 +25,7 @@ class TestDepthMiddleware:
         assert res == [item] and req.meta['depth'] == 2
 
     def test_handle_start_requests(self):
-        mw = DepthMiddleware.from_cluster(Cluster())
+        mw = DepthMiddleware.from_crawler(Crawler())
         req = HttpRequest("http://python.org/", "GET")
         res = [i for i in mw.handle_start_requests([req])]
         for r in res:

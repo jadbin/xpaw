@@ -208,8 +208,8 @@ class FooItemPipeLine:
         self.data = data
 
     @classmethod
-    def from_cluster(cls, cluster):
-        return cls(cluster.config.get('data'))
+    def from_crawler(cls, crawler):
+        return cls(crawler.config.get('data'))
 
     def handle_item(self, item):
         if isinstance(item, DroppedItem):

@@ -21,19 +21,19 @@ Spider API
     :param ~xpaw.config.Config config: 爬虫相关配置
     :param kwargs: 其他参数会作为爬虫的属性
 
-    .. classmethod:: from_cluster(cluster)
+    .. classmethod:: from_crawler(crawler)
 
-        :param ~xpaw.cluster.LocalCluster cluster: cluster
+        :param ~xpaw.crawler.Crawler crawler: crawler
 
-        cluster通过该函数实例化spider，在该函数中会调用spider的构造器
+        crawler通过该函数实例化spider，在该函数中会调用spider的构造器
 
     .. attribute:: config
 
         保存了爬虫相关的配置项，包括自定义配置项，参见 :class:`~xpaw.config.Config` 。
 
-    .. attribute:: cluster
+    .. attribute:: crawler
 
-        通过cluster可以访问爬虫的各个组件，参见 :class:`~xpaw.cluster.LocalCluster` 。
+        通过crawler可以访问爬虫的各个组件，参见 :class:`~xpaw.crawler.Crawler` 。
 
     .. attribute:: logger
 

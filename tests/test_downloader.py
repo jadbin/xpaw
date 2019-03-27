@@ -6,10 +6,9 @@ import pytest
 
 from xpaw.http import HttpRequest
 from xpaw.downloader import Downloader, DownloaderMiddlewareManager
-from xpaw.eventbus import EventBus
-from xpaw.config import Config, DEFAULT_CONFIG
 from xpaw import events
 from xpaw.errors import HttpError
+from .crawler import Crawler
 
 
 @pytest.mark.asyncio
@@ -43,12 +42,12 @@ async def test_params():
 
     async def dict_params():
         resp = await downloader.fetch(HttpRequest("http://httpbin.org/get",
-                                                     params={'key': 'value', 'none': ''}))
+                                                  params={'key': 'value', 'none': ''}))
         assert json.loads(resp.text)['args'] == {'key': 'value', 'none': ''}
 
     async def list_params():
         resp = await downloader.fetch(HttpRequest("http://httpbin.org/get",
-                                                     params=[('list', '1'), ('list', '2')]))
+                                                  params=[('list', '1'), ('list', '2')]))
         assert json.loads(resp.text)['args'] == {'list': ['1', '2']}
 
     await query_params()
@@ -61,7 +60,7 @@ async def test_headers():
     downloader = Downloader()
     headers = {'User-Agent': 'xpaw'}
     resp = await downloader.fetch(HttpRequest("http://httpbin.org/get",
-                                                 headers=headers))
+                                              headers=headers))
     assert resp.status == 200
     data = json.loads(resp.text)['headers']
     assert 'User-Agent' in data and data['User-Agent'] == 'xpaw'
@@ -74,8 +73,8 @@ async def test_body():
     async def post_str():
         str_data = 'str data: 字符串数据'
         resp = await downloader.fetch(HttpRequest('http://httpbin.org/post',
-                                                     'POST', body=str_data,
-                                                     headers={'Content-Type': 'text/plain'}))
+                                                  'POST', body=str_data,
+                                                  headers={'Content-Type': 'text/plain'}))
         assert resp.status == 200
         body = json.loads(resp.text)['data']
         assert body == str_data
@@ -83,8 +82,8 @@ async def test_body():
     async def post_bytes():
         bytes_data = 'bytes data: 字节数据'
         resp = await downloader.fetch(HttpRequest('http://httpbin.org/post',
-                                                     'POST', body=bytes_data.encode(),
-                                                     headers={'Content-Type': 'text/plain'}))
+                                                  'POST', body=bytes_data.encode(),
+                                                  headers={'Content-Type': 'text/plain'}))
         assert resp.status == 200
         body = json.loads(resp.text)['data']
         assert body == bytes_data
@@ -98,13 +97,13 @@ async def test_allow_redirects():
     downloader = Downloader()
 
     resp = await downloader.fetch(HttpRequest('http://httpbin.org/redirect-to',
-                                                 params={'url': 'http://python.org'}))
+                                              params={'url': 'http://python.org'}))
     assert resp.status // 100 == 2 and 'python.org' in resp.url
 
     with pytest.raises(HttpError) as e:
         await downloader.fetch(HttpRequest('http://httpbin.org/redirect-to',
-                                              params={'url': 'http://python.org'},
-                                              allow_redirects=False))
+                                           params={'url': 'http://python.org'},
+                                           allow_redirects=False))
     assert e.value.response.status // 100 == 3
 
 
@@ -136,8 +135,8 @@ class DummyDownloadermw:
 
 class FooAsyncDownloaderMw(FooDownloadermw):
     @classmethod
-    def from_cluster(cls, cluster):
-        return cls(cluster.config['data'])
+    def from_crawler(cls, crawler):
+        return cls(crawler.config['data'])
 
     async def handle_request(self, request):
         self.d['async_handle_request'] = request
@@ -149,29 +148,23 @@ class FooAsyncDownloaderMw(FooDownloadermw):
         self.d['async_handle_error'] = (request, error)
 
 
-class Cluster:
-    def __init__(self, **kwargs):
-        self.event_bus = EventBus()
-        self.config = Config(DEFAULT_CONFIG, **kwargs)
-
-
 @pytest.mark.asyncio
 async def test_downloader_middleware_manager_handlers():
     data = {}
-    cluster = Cluster(downloader_middlewares=[lambda d=data: FooDownloadermw(d),
+    crawler = Crawler(downloader_middlewares=[lambda d=data: FooDownloadermw(d),
                                               DummyDownloadermw,
                                               FooAsyncDownloaderMw],
                       default_downloader_middlewares=None,
                       data=data)
-    downloadermw = DownloaderMiddlewareManager.from_cluster(cluster)
+    downloadermw = DownloaderMiddlewareManager.from_crawler(crawler)
     request_obj = object()
     response_obj = object()
     error_obj = object()
-    await cluster.event_bus.send(events.cluster_start)
+    await crawler.event_bus.send(events.crawler_start)
     await downloadermw._handle_request(request_obj)
     await downloadermw._handle_response(request_obj, response_obj)
     await downloadermw._handle_error(request_obj, error_obj)
-    await cluster.event_bus.send(events.cluster_shutdown)
+    await crawler.event_bus.send(events.crawler_shutdown)
     assert 'open' in data and 'close' in data
     assert data['handle_request'] is request_obj
     assert data['handle_response'][0] is request_obj and data['handle_response'][1] is response_obj
@@ -181,16 +174,16 @@ async def test_downloader_middleware_manager_handlers():
     assert data['async_handle_error'][0] is request_obj and data['async_handle_error'][1] is error_obj
 
     data2 = {}
-    cluster2 = Cluster(downloader_middlewares={lambda d=data2: FooDownloadermw(d): 0},
+    crawler2 = Crawler(downloader_middlewares={lambda d=data2: FooDownloadermw(d): 0},
                        default_downloader_middlewares=None,
                        data=data2)
-    downloadermw2 = DownloaderMiddlewareManager.from_cluster(cluster2)
+    downloadermw2 = DownloaderMiddlewareManager.from_crawler(crawler2)
     request_obj2 = object()
-    await cluster2.event_bus.send(events.cluster_start)
+    await crawler2.event_bus.send(events.crawler_start)
     await downloadermw2._handle_request(request_obj2)
-    await cluster2.event_bus.send(events.cluster_shutdown)
+    await crawler2.event_bus.send(events.crawler_shutdown)
     assert 'open' in data2 and 'close' in data2
     assert data2['handle_request'] is request_obj2
 
-    cluster3 = Cluster(downloader_middlewares=None, default_downloader_middlewares=None, data={})
-    DownloaderMiddlewareManager.from_cluster(cluster3)
+    crawler3 = Crawler(downloader_middlewares=None, default_downloader_middlewares=None, data={})
+    DownloaderMiddlewareManager.from_crawler(crawler3)

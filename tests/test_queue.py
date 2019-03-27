@@ -6,20 +6,13 @@ import pytest
 import async_timeout
 
 from xpaw.queue import FifoQueue, LifoQueue, PriorityQueue
-from xpaw.config import Config, DEFAULT_CONFIG
-from xpaw.eventbus import EventBus
 from xpaw.http import HttpRequest
-
-
-class Cluster:
-    def __init__(self, **kwargs):
-        self.config = Config(DEFAULT_CONFIG, **kwargs)
-        self.event_bus = EventBus()
+from .crawler import Crawler
 
 
 @pytest.mark.asyncio
 async def test_fifo_queue():
-    q = FifoQueue.from_cluster(Cluster())
+    q = FifoQueue.from_crawler(Crawler())
     with pytest.raises(asyncio.TimeoutError):
         with async_timeout.timeout(0.1):
             await q.pop()
@@ -35,12 +28,12 @@ async def test_fifo_queue():
 
 @pytest.mark.asyncio
 async def test_fifo_queue_dump(tmpdir):
-    q = FifoQueue.from_cluster(Cluster(dump_dir=str(tmpdir)))
+    q = FifoQueue.from_crawler(Crawler(dump_dir=str(tmpdir)))
     obj_list = [HttpRequest('1'), HttpRequest('2'), HttpRequest('3')]
     for o in obj_list:
         await q.push(o)
     await q.close()
-    q2 = FifoQueue.from_cluster(Cluster(dump_dir=str(tmpdir)))
+    q2 = FifoQueue.from_crawler(Crawler(dump_dir=str(tmpdir)))
     await q2.open()
     with async_timeout.timeout(0.1):
         for i in range(len(obj_list)):
@@ -49,7 +42,7 @@ async def test_fifo_queue_dump(tmpdir):
 
 @pytest.mark.asyncio
 async def test_lifo_queue():
-    q = LifoQueue.from_cluster(Cluster())
+    q = LifoQueue.from_crawler(Crawler())
     with pytest.raises(asyncio.TimeoutError):
         with async_timeout.timeout(0.1):
             await q.pop()
@@ -65,12 +58,12 @@ async def test_lifo_queue():
 
 @pytest.mark.asyncio
 async def test_lifo_queue_dump(tmpdir):
-    q = LifoQueue.from_cluster(Cluster(dump_dir=str(tmpdir)))
+    q = LifoQueue.from_crawler(Crawler(dump_dir=str(tmpdir)))
     obj_list = [HttpRequest('1'), HttpRequest('2'), HttpRequest('3')]
     for o in obj_list:
         await q.push(o)
     await q.close()
-    q2 = LifoQueue.from_cluster(Cluster(dump_dir=str(tmpdir)))
+    q2 = LifoQueue.from_crawler(Crawler(dump_dir=str(tmpdir)))
     await q2.open()
     with async_timeout.timeout(0.1):
         for i in range(len(obj_list)):
@@ -85,7 +78,7 @@ async def test_priority_queue():
     item2_2 = HttpRequest('2_2', priority=2)
     item3_1 = HttpRequest('3_1', priority=3)
     item3_2 = HttpRequest('3_2', priority=3)
-    q = PriorityQueue.from_cluster(Cluster())
+    q = PriorityQueue.from_crawler(Crawler())
     with pytest.raises(asyncio.TimeoutError):
         with async_timeout.timeout(0.1):
             await q.pop()
@@ -108,12 +101,12 @@ async def test_priority_queue():
 
 @pytest.mark.asyncio
 async def test_priority_queue_dump(tmpdir):
-    q = PriorityQueue.from_cluster(Cluster(dump_dir=str(tmpdir)))
+    q = PriorityQueue.from_crawler(Crawler(dump_dir=str(tmpdir)))
     await q.push(HttpRequest('2', priority=2))
     await q.push(HttpRequest('3', priority=3))
     await q.push(HttpRequest('1', priority=1))
     await q.close()
-    q2 = PriorityQueue.from_cluster(Cluster(dump_dir=str(tmpdir)))
+    q2 = PriorityQueue.from_crawler(Crawler(dump_dir=str(tmpdir)))
     await q2.open()
     with async_timeout.timeout(0.1):
         assert (await q2.pop()).url == 'http://3'

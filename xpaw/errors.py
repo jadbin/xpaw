@@ -45,7 +45,7 @@ class IgnoreItem(Exception):
     """
 
 
-class StopCluster(Exception):
+class StopCrawler(Exception):
     """
-    Stop cluster.
+    Stop crawler.
     """

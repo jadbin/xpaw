@@ -18,10 +18,10 @@ class Spider:
         self.__dict__.update(kwargs)
 
     @classmethod
-    def from_cluster(cls, cluster):
-        spider = cls(config=cluster.config, cluster=cluster)
-        cluster.event_bus.subscribe(spider.open, events.cluster_start)
-        cluster.event_bus.subscribe(spider.close, events.cluster_shutdown)
+    def from_crawler(cls, crawler):
+        spider = cls(config=crawler.config, crawler=crawler)
+        crawler.event_bus.subscribe(spider.open, events.crawler_start)
+        crawler.event_bus.subscribe(spider.close, events.crawler_shutdown)
         return spider
 
     @property

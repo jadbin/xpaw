@@ -3,9 +3,8 @@
 import pytest
 
 from xpaw.extension import ExtensionManager
-from xpaw.config import Config, DEFAULT_CONFIG
-from xpaw.eventbus import EventBus
 from xpaw import events
+from .crawler import Crawler
 
 
 class FooExtension:
@@ -25,23 +24,17 @@ class DummyExtension:
     """
 
 
-class Cluster:
-    def __init__(self, **kwargs):
-        self.event_bus = EventBus()
-        self.config = Config(DEFAULT_CONFIG, **kwargs)
-
-
 @pytest.mark.asyncio
 async def test_extension_manager():
     data = {}
-    cluster = Cluster(extensions=[lambda d=data: FooExtension(d),
+    crawler = Crawler(extensions=[lambda d=data: FooExtension(d),
                                   DummyExtension],
                       default_extensions=None,
                       data=data)
-    extensions = ExtensionManager.from_cluster(cluster)
-    await cluster.event_bus.send(events.cluster_start)
-    await cluster.event_bus.send(events.cluster_shutdown)
+    extensions = ExtensionManager.from_crawler(crawler)
+    await crawler.event_bus.send(events.crawler_start)
+    await crawler.event_bus.send(events.crawler_shutdown)
     assert 'open' in data and 'close' in data
 
-    cluster3 = Cluster(extensions=None, default_extensions=None, data={})
-    ExtensionManager.from_cluster(cluster3)
+    crawler3 = Crawler(extensions=None, default_extensions=None, data={})
+    ExtensionManager.from_crawler(crawler3)

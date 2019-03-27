@@ -16,8 +16,8 @@ class DepthMiddleware:
         return '{}(max_depth={})'.format(cls_name, repr(self._max_depth))
 
     @classmethod
-    def from_cluster(cls, cluster):
-        config = cluster.config
+    def from_crawler(cls, crawler):
+        config = crawler.config
         max_depth = config.getint('max_depth')
         return cls(max_depth=max_depth)
 

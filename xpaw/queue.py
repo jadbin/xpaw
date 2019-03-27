@@ -24,10 +24,10 @@ class FifoQueue:
         return len(self._queue)
 
     @classmethod
-    def from_cluster(cls, cluster):
-        queue = cls(dump_dir=get_dump_dir(cluster.config))
-        cluster.event_bus.subscribe(queue.open, events.cluster_start)
-        cluster.event_bus.subscribe(queue.close, events.cluster_shutdown)
+    def from_crawler(cls, crawler):
+        queue = cls(dump_dir=get_dump_dir(crawler.config))
+        crawler.event_bus.subscribe(queue.open, events.crawler_start)
+        crawler.event_bus.subscribe(queue.close, events.crawler_shutdown)
         return queue
 
     async def push(self, request):
@@ -85,10 +85,10 @@ class PriorityQueue:
         return len(self._queue)
 
     @classmethod
-    def from_cluster(cls, cluster):
-        queue = cls(dump_dir=get_dump_dir(cluster.config))
-        cluster.event_bus.subscribe(queue.open, events.cluster_start)
-        cluster.event_bus.subscribe(queue.close, events.cluster_shutdown)
+    def from_crawler(cls, crawler):
+        queue = cls(dump_dir=get_dump_dir(crawler.config))
+        crawler.event_bus.subscribe(queue.open, events.crawler_start)
+        crawler.event_bus.subscribe(queue.close, events.crawler_shutdown)
         return queue
 
     async def push(self, request):

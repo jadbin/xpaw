@@ -2,10 +2,10 @@
 
 import pytest
 
-from xpaw.spider import SpiderMiddlewareManager, Spider, every
-from xpaw.eventbus import EventBus
-from xpaw.config import Config, DEFAULT_CONFIG
+from xpaw.spider import SpiderMiddlewareManager, Spider
 from xpaw import events
+from xpaw.handler import every
+from .crawler import Crawler
 
 
 class FooSpidermw:
@@ -47,8 +47,8 @@ class DummySpidermw:
 
 class FooAsyncSpiderMw(FooSpidermw):
     @classmethod
-    def from_cluster(cls, cluster):
-        return cls(cluster.config['data'])
+    def from_crawler(cls, crawler):
+        return cls(crawler.config['data'])
 
     @pytest.mark.asyncio
     async def handle_start_requests(self, result):
@@ -75,30 +75,24 @@ class FooAsyncSpiderMw(FooSpidermw):
         self.d['async_handle_error'] = (response, error)
 
 
-class Cluster:
-    def __init__(self, **kwargs):
-        self.event_bus = EventBus()
-        self.config = Config(DEFAULT_CONFIG, **kwargs)
-
-
 @pytest.mark.asyncio
 async def test_spider_middleware_manager_handlers():
     data = {}
-    cluster = Cluster(spider_middlewares=[lambda d=data: FooSpidermw(d),
+    crawler = Crawler(spider_middlewares=[lambda d=data: FooSpidermw(d),
                                           DummySpidermw,
                                           FooAsyncSpiderMw],
                       default_spider_middlewares=None,
                       data=data)
-    spidermw = SpiderMiddlewareManager.from_cluster(cluster)
+    spidermw = SpiderMiddlewareManager.from_crawler(crawler)
     response_obj = object()
     result_obj = object()
     error_obj = object()
-    await cluster.event_bus.send(events.cluster_start)
+    await crawler.event_bus.send(events.crawler_start)
     await spidermw._handle_start_requests((result_obj,))
     await spidermw._handle_input(response_obj)
     await spidermw._handle_output(response_obj, (result_obj,))
     await spidermw._handle_error(response_obj, error_obj)
-    await cluster.event_bus.send(events.cluster_shutdown)
+    await crawler.event_bus.send(events.crawler_shutdown)
     assert 'open' in data and 'close' in data
     assert data['handle_start_requests'] is result_obj
     assert data['handle_input'] is response_obj
@@ -110,19 +104,19 @@ async def test_spider_middleware_manager_handlers():
     assert data['async_handle_error'][0] is response_obj and data['async_handle_error'][1] is error_obj
 
     data2 = {}
-    cluster2 = Cluster(spider_middlewares={lambda d=data2: FooSpidermw(d): 0},
+    crawler2 = Crawler(spider_middlewares={lambda d=data2: FooSpidermw(d): 0},
                        default_spider_middlewares=None,
                        data=data2)
-    spidermw2 = SpiderMiddlewareManager.from_cluster(cluster2)
+    spidermw2 = SpiderMiddlewareManager.from_crawler(crawler2)
     response_obj2 = object()
-    await cluster2.event_bus.send(events.cluster_start)
+    await crawler2.event_bus.send(events.crawler_start)
     await spidermw2._handle_input(response_obj2)
-    await cluster2.event_bus.send(events.cluster_shutdown)
+    await crawler2.event_bus.send(events.crawler_shutdown)
     assert 'open' in data2 and 'close' in data2
     assert data2['handle_input'] is response_obj2
 
-    cluster3 = Cluster(spider_middlewares=None, default_spider_middlewares=None, data={})
-    SpiderMiddlewareManager.from_cluster(cluster3)
+    crawler3 = Crawler(spider_middlewares=None, default_spider_middlewares=None, data={})
+    SpiderMiddlewareManager.from_crawler(crawler3)
 
 
 class FooSpider(Spider):
@@ -142,14 +136,14 @@ class FooSpider(Spider):
 @pytest.mark.asyncio
 async def test_spider():
     data = {}
-    cluster = Cluster(data=data)
-    spider = FooSpider.from_cluster(cluster)
-    await cluster.event_bus.send(events.cluster_start)
+    crawler = Crawler(data=data)
+    spider = FooSpider.from_crawler(crawler)
+    await crawler.event_bus.send(events.crawler_start)
     with pytest.raises(NotImplementedError):
         spider.start_requests()
     with pytest.raises(NotImplementedError):
         spider.parse(None)
-    await cluster.event_bus.send(events.cluster_shutdown)
+    await crawler.event_bus.send(events.crawler_shutdown)
     assert 'open' in data and 'close' in data
 
 

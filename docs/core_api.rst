@@ -3,9 +3,9 @@
 Core API
 ========
 
-.. _cluster_api:
+.. _crawler_api:
 
-Cluster API
+Crawler API
 -----------
 
 通常用户自定义的组件可以在class中定义类似如下的函数，来达到获取配置的目的：
@@ -13,14 +13,14 @@ Cluster API
 .. code-block:: python
 
     @classmethod
-    def from_cluster(cls, cluster):
-        return cls(cluster.config)
+    def from_crawler(cls, crawler):
+        return cls(crawler.config)
 
-对于用户自定义的组件，xpaw会首先检查是否存在名为 ``from_cluster`` 的函数，如果存在则会通过调用 ``from_cluster`` 来实例化对象:
+对于用户自定义的组件，xpaw会首先检查是否存在名为 ``from_crawler`` 的函数，如果存在则会通过调用 ``from_crawler`` 来实例化对象:
 
 .. code-block:: python
 
-    foo = FooClass.from_cluster(cluster)
+    foo = FooClass.from_crawler(crawler)
 
 如果不存在该函数，则会调用默认的不含参数的构造器来实例化：
 
@@ -28,14 +28,14 @@ Cluster API
 
     foo = FooClass()
 
-对于spider来讲，由于强制要求继承 :class:`~xpaw.spider.Spider` 类，且在该类中已经实现了 ``from_cluster`` 函数，我们可以直接在spider中通过 ``self.config`` 来获取配置，通过 ``self.cluster`` 来获取cluster。
+对于spider来讲，由于强制要求继承 :class:`~xpaw.spider.Spider` 类，且在该类中已经实现了 ``from_crawler`` 函数，我们可以直接在spider中通过 ``self.config`` 来获取配置，通过 ``self.crawler`` 来获取crawler。
 
-``from_cluster`` 提供了获取cluster的途径，通过cluster我们不仅可以获取到 :attr:`~xpaw.cluster.LocalCluster.config` ，也可以获取到其他的我们需要使用的cluster的属性。
+``from_crawler`` 提供了获取crawler的途径，通过crawler我们不仅可以获取到 :attr:`~xpaw.crawler.Crawler.config` ，也可以获取到其他的我们需要使用的crawler的属性。
 
 
-.. class:: xpaw.cluster.LocalCluster(config, loop=None)
+.. class:: xpaw.crawler.Crawler(config, loop=None)
 
-    本地模式的cluster
+    本地模式的crawler
 
     :param ~xpaw.config.Config config: 爬虫相关的配置项
 
@@ -43,19 +43,19 @@ Cluster API
 
     .. attribute:: config
 
-    爬虫相关的配置项，对于 :attr:`~xpaw.cluster.LocalCluster.config` 的使用可以参考 :ref:`config_api` 。
+    爬虫相关的配置项，对于 :attr:`~xpaw.crawler.Crawler.config` 的使用可以参考 :ref:`config_api` 。
 
     .. method:: run()
 
-        启动cluster
+        启动crawler
 
     .. method:: stop()
 
-        停止cluster
+        停止crawler
 
     .. method:: schedule(request)
 
-        向运行中的cluster添加请求
+        向运行中的crawler添加请求
 
         :param ~xpaw.http.HttpRequest request: 请求
 

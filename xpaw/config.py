@@ -299,7 +299,7 @@ class DownloaderMiddlewares(Setting):
 class DefaultDownloaderMiddlewares(Setting):
     name = 'default_downloader_middlewares'
     default = {
-        # cluster side
+        # crawler side
         'xpaw.downloadermws.DefaultHeadersMiddleware': 300,
         'xpaw.downloadermws.UserAgentMiddleware': 400,
         'xpaw.downloadermws.RetryMiddleware': 500,
@@ -316,7 +316,7 @@ class SpiderMiddlewares(Setting):
 class DefaultSpiderMiddlewares(Setting):
     name = 'default_spider_middlewares'
     default = {
-        # cluster side
+        # crawler side
         'xpaw.spidermws.DepthMiddleware': 900
         # spider side
     }

@@ -24,10 +24,10 @@ class Downloader:
         self._http_client = CurlAsyncHTTPClient(max_clients=max_clients, force_instance=True)
 
     @classmethod
-    def from_cluster(cls, cluster):
-        config = cluster.config
+    def from_crawler(cls, crawler):
+        config = crawler.config
         downloader = cls(max_clients=config.getint('downloader_clients'))
-        cluster.event_bus.subscribe(downloader.close, events.cluster_shutdown)
+        crawler.event_bus.subscribe(downloader.close, events.crawler_shutdown)
         return downloader
 
     @property
