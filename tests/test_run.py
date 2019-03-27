@@ -48,7 +48,7 @@ def test_run_spider():
 
 
 def test_make_requests():
-    requests = [None, 'http://localhost:8080',
+    requests = [None, 'http://unknonw',
                 'http://python.org/', HttpRequest('http://python.org'),
                 'http://httpbin.org/status/404']
     results = make_requests(requests, log_level='DEBUG')
