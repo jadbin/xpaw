@@ -20,27 +20,27 @@ Key Features
 Spider Example
 ==============
 
-以下是我们的一个爬虫类示例，其作用为爬取 `腾讯新闻 <http://news.qq.com/>`_ 首页的"要闻":
+以下是我们的一个爬虫类示例，其作用为爬取 `百度百科 <http://baike.baidu.com/>`_ 的热搜词:
 
 .. code-block:: python
 
     from xpaw import Spider, HttpRequest, Selector, run_spider
 
 
-    class TencentNewsSpider(Spider):
+    class BaikeHotSearchSpider(Spider):
         def start_requests(self):
-            yield HttpRequest("http://news.qq.com/", callback=self.parse)
+            yield HttpRequest("http://baike.baidu.com/", callback=self.parse)
 
         def parse(self, response):
             selector = Selector(response.text)
-            major_news = selector.css("div.major a.linkto").text
-            self.log("Major news:")
+            major_news = selector.css("div.content_tit span").text
+            self.log("Hot Search:")
             for i in range(len(major_news)):
                 self.log("%s: %s", i + 1, major_news[i])
 
 
     if __name__ == '__main__':
-        run_spider(TencentNewsSpider)
+        run_spider(BaikeHotSearchSpider)
 
 在爬虫类中我们定义了一些方法：
 
