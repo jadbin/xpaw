@@ -68,7 +68,7 @@ class Crawler:
             self._workers.append(f)
         self._workers_done = set()
         self._req_in_worker = [None] * downloader_clients
-        log.info('Crawler is loaded')
+        log.info('Crawler is initialized')
 
     def stop(self):
         if not self._is_running:
@@ -102,7 +102,7 @@ class Crawler:
         await self.event_bus.send(events.crawler_shutdown)
         # wait cancelled futures
         await asyncio.wait(cancelled_futures)
-        log.info('Crawler is unloaded')
+        log.info('Crawler is stopped')
         if self._run_lock:
             self._run_lock.set_result(True)
 
