@@ -137,9 +137,9 @@ class ProxyMiddleware:
 
 
 class SpeedLimitMiddleware:
-    def __init__(self, speed_limit_rate, speed_limit_burst):
-        self._rate = speed_limit_rate
-        self._burst = speed_limit_burst
+    def __init__(self, rate=1, burst=1):
+        self._rate = rate
+        self._burst = burst
         if self._rate <= 0:
             raise ValueError("rate must be greater than 0")
         if self._burst <= 0:
@@ -156,11 +156,9 @@ class SpeedLimitMiddleware:
     @classmethod
     def from_crawler(cls, crawler):
         config = crawler.config
-        if config['speed_limit_rate'] is None or config['speed_limit_burst'] is None:
+        if config['speed_limit'] is None:
             raise NotEnabled
-        speed_limit_rate = config.getfloat('speed_limit_rate')
-        speed_limit_burst = config.getint('speed_limit_burst')
-        return cls(speed_limit_rate=speed_limit_rate, speed_limit_burst=speed_limit_burst)
+        return cls(**config['speed_limit'])
 
     async def handle_request(self, request):
         await self._semaphore.acquire()
