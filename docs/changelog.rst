@@ -6,20 +6,24 @@ Changelog
 0.11.0 (2018-??-??)
 -------------------
 
-- 默认情况下非2xx的HttpResponse将视为请求失败并抛出 ``HttpError`` 异常进入错误处理流程
+- 移除对aiohttp的依赖，改由tornado实现HTTP请求，新增pycurl依赖
+- 暂时移除对cookies和cookie jar的支持
+- 组件cluster更名为crawler，包含cluster命名的模块、对象、函数、配置等均作出了相应的替换
+- 运行爬虫工程的 ``run_crawler`` 接口更名为 ``run_spider_project``
+- 非2xx的HttpResponse将视为请求失败并抛出 ``HttpError`` 异常进入错误处理流程
 - RetryMiddleware不再raise IgnoreRequest，即因达到重试次数上限而导致请求失败时不再封装为IgnoreRequest，将保留原有的HttpResponse或异常
-- 命令行参数 ``--cookie-jar-enabled`` 更名为 ``--enable-cookie-jar`` ，配置项 ``cookie_jar_enabled`` 保持不变
 - HttpRequest ``proxy`` , ``timeout`` , ``verify_ssl`` , ``allow_redirects`` , ``auth`` ,  ``proxy_auth`` 由在 ``meta`` 中配置改为直接作为HttpRequest的属性
 - Selector之前在遇到异常时会返回空数组，现在改为直接抛出异常
-- 修改了 ``proxy`` 的配置格式
+- 修改 ``proxy`` 的配置格式
 - 移除ImitatingProxyMiddleware
-- 移除 ``speed_limit_enabled`` 配置项， ``speed_limit_rate`` 和 ``speed_limit_burst`` 默认值设为 ``None`` ，当 ``speed_limit_rate`` 和 ``speed_limit_burst`` 均不为 ``None`` 时启动
+- 修改SpeedLimitMiddleware的配置格式
 - 移除 config.py 中的 ``downloader_timeout`` , ``verify_ssl`` , ``allow_redirects`` 配置项
-- 移除对aiohttp的依赖，改由tornado实现HTTP请求
 - 移除 ``xpaw.FormData`` , ``xpaw.URL``
 - 移除 ``xpaw.MultiDict`` , ``xpaw.CIMultiDict`` , 改由 ``xpaw.HttpHeaders`` 替代承载headers的功能
 - 移除请求超时错误TimeoutError，统一由ClientError表示downloader抛出的异常
 - ``default_headers`` 默认为 ``None`` , 浏览器默认的HTTP header改由UserAgentMiddleware根据设定的浏览器类型进行设置
+- ``xpaw.downloadermws`` 模块更名为 ``xpaw.downloader_middlewares`` ， ``xpaw.spidermws`` 模块更名为 ``xpaw.spider_middlewares``
+- ``@every`` 装饰器移至 ``xpaw.decorator`` 模块
 
 
 0.10.4 (2018-11-06)
@@ -55,7 +59,7 @@ Bug fixes
 -------------------
 
 - 新增 ``make_requests`` 函数，用于发起请求并获取对应的结果，详见 :ref:`make_requests`
-- ``log_level`` 支持小写字母配置，如 ``debug`` 等。
+- ``log_level`` 支持小写字母配置，如 ``debug`` 。
 
 
 0.10.0 (2018-07-15)

@@ -100,7 +100,7 @@ Parsing Data to Callback Functions
 
 .. note::
     - :class:`~xpaw.http.HttpResponse` 的 :attr:`~xpaw.http.HttpResponse.meta` 属性即为对应 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 属性。
-    - 在使用 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 传递参数时，请避免使用内置的关键字，详见 :ref:`request_meta` 。
+    - 在使用 :class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 传递参数时，请避免和中间件使用的关键字冲突。
 
 Request Error Handling in Errback Functions
 -------------------------------------------

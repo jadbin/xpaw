@@ -17,6 +17,10 @@ Built-in Errors
 
     在downloader发起请求过程中抛出的异常，例如服务器无法访问等。
 
+.. class:: xpaw.errors.HttpError
+
+    非2xx响应抛出的异常。
+
 .. class:: xpaw.errors.IgnoreRequest
 
     在处理 :class:`~xpaw.http.HttpRequest` 时抛出的异常，表示忽略该request，例如到达了一定的重试次数等。

@@ -11,7 +11,7 @@ Request & Response
 Request API
 -----------
 
-.. class:: xpaw.http.HttpRequest(url, method="GET", body=None, params=None, headers=None, cookies=None, meta=None, priority=None, dont_filter=False, callback=None, errback=None)
+.. class:: xpaw.http.HttpRequest(url, method="GET", body=None, params=None, headers=None, proxy=None, timeout=20, verify_ssl=False, allow_redirects=True, auth=None, proxy_auth=None, priority=None, dont_filter=False, callback=None, errback=None, meta=None)
 
     用户通过此类封装HTTP请求。
 
@@ -19,20 +19,24 @@ Request API
     :type url: str or :class:`~xpaw.http.URL`
     :param str method: HTTP method，``GET`` 、 ``POST`` 等
     :param body: 请求发送的数据。如果类型为 ``dict`` ，会默认为发送json格式的数据。
-    :type body: bytes or str or dict or :class:`~xpaw.http.FormData`
+    :type body: bytes or str or dict
     :param params: 请求参数
-    :type params: dict or :class:`~xpaw.http.MultiDict`
+    :type params: dict
     :param headers: HTTP headers
-    :type headers: dict or :class:`~xpaw.http.CIMultiDict`
-    :param cookies: cookies
-    :type cookies: dict
-    :param dict meta: :attr:`~xpaw.http.HttpRequest.meta` 属性的初始值，用于存储请求相关的元信息
+    :type headers: dict or :class:`~xpaw.http.HttpHeaders`
+    :param str proxy: 代理地址
+    :param float timeout: 请求超时时间
+    :param bool verify_ssl: 是否校验SSL
+    :param bool allow_redirects: 是否自动重定向
+    :param tuple auth: 认证信息，用户名和密码
+    :param tuple proxy_auth: 代理认证信息，用户名和密码
     :param float priority: 请求的优先级
     :param bool dont_filter: 是否经过去重过滤器
     :param callback: 请求成功时的回调函数，必须是spider的成员函数，也可以传递递函数名称
     :type callback: str or method
     :param errback: 请求失败时的回调函数，必须是spider的成员函数，也可以传递函数名称
     :type errback: str or method
+    :param dict meta: :attr:`~xpaw.http.HttpRequest.meta` 属性的初始值，用于存储请求相关的元信息
 
     .. attribute:: url
 
@@ -54,15 +58,29 @@ Request API
 
         HTTP headers
 
-    .. attribute:: cookies
+    .. attribute:: proxy
 
-        cookies
+        代理地址
 
-    .. attribute:: meta
+    .. attribute:: timeout
 
-        只读属性，是一个 ``dict`` ，用于存储请求相关的元信息。
-        xpaw预设各项元信息详见 :ref:`request_meta` 。
-        用户可将自定义的元信息存储在 :attr:`~xpaw.http.HttpRequest.meta` 中。
+        请求超时时间
+
+    .. attribute:: verify_ssl
+
+        是否校验SSL
+
+    .. attribute:: allow_redirects
+
+        是否自动重定向
+
+    .. attribute:: auth
+
+        认证信息，用户名和密码
+
+    .. attribute:: proxy_auth
+
+        代理认证信息，用户名和密码
 
     .. attribute:: priority
 
@@ -80,6 +98,11 @@ Request API
 
         请求失败时的回调函数，必须是spider的成员函数，也可以传递函数名称。
 
+    .. attribute:: meta
+
+        只读属性，是一个 ``dict`` ，用于存储请求相关的元信息。
+        用户可将自定义的元信息存储在 :attr:`~xpaw.http.HttpRequest.meta` 中。
+
     .. method:: copy()
 
         复制request。
@@ -88,63 +111,21 @@ Request API
 
         复制request并替换部分属性。
 
-.. class:: xpaw.http.URL
+.. class:: xpaw.http.HttpHeaders
 
-    同 ``yarl.URL`` ，提供了丰富的解析URL的方法。
+    同 ``tornado.httputil.HTTPHeaders`` 。
 
-.. class:: xpaw.http.FormData
-
-    同 ``aiohttp.FormData`` ，用于构造POST请求的form data。
-
-.. class:: xpaw.http.MultiDict
-
-    同 ``multidict.MultiDict`` ，多值字典。
-
-.. class:: xpaw.http.CIMultiDict
-
-    同 ``multidict.CIMultiDict`` ，关键字大小写不敏感的多值字典。
-
-
-.. _request_meta:
-
-Request Meta Keys
------------------
-
-:class:`~xpaw.http.HttpRequest` 的 :attr:`~xpaw.http.HttpRequest.meta` 属性用于存储请求相关的元信息，其中内置的关键字如下：
-
-- ``timeout`` : 可以通过设置 ``timeout`` 分别控制每个request的超时时间。
-
-- ``verify_ssl`` : 是否校验SSL证书。
-
-- ``allow_redirects`` : 是否允许重定向。
-
-- ``auth`` : 设置request的HTTP Basic Auth，可以是 ``str`` 、 ``tuple`` 或 ``aiohttp.helpers.BasicAuth`` 。
-
-- ``proxy`` : 设置请求使用的代理。
-
-- ``proxy_auth`` : 设置代理的HTTP Basic Auth。
-
-- ``cookie_jar`` : 设置请求相关的cookie jar。
-
-- ``cookie_jar_key`` : 设置代表cookie jar的标识符。
-
-- ``depth`` : 当使用 :class:`~xpaw.spidermws.DepthMiddleware` 时，纪录当前request的深度。
-
-- ``retry_times`` : 请求重试的次数。
 
 Response API
 ------------
 
-.. class:: xpaw.http.HttpResponse(url, status, body=None, headers=None, cookies=None, request=None)
+.. class:: xpaw.http.HttpResponse(url, status, body=None, headers=None, request=None)
 
-    :param url: URL地址
-    :type url: str or :class:`~xpaw.http.URL`
+    :param str url: URL地址
     :param int status: HTTP状态码
     :param bytes body: HTTP body
     :param headers: HTTP headers
-    :type headers: dict or :class:`~xpaw.http.CIMultiDict`
-    :param cookies: cookies
-    :type cookies: dict
+    :type headers: dict or :class:`~xpaw.http.HttpHeaders`
     :param ~xpaw.http.HttpRequest request: 爬虫请求
 
     .. attribute:: url
@@ -169,11 +150,7 @@ Response API
 
     .. attribute:: headers
 
-        HTTP headers，如果是xpaw生成的response则类型为 :class:`~xpaw.http.CIMultiDict` 。
-
-    .. attribute:: cookies
-
-        cookies
+        HTTP headers，如果是xpaw生成的response则类型为 :class:`~xpaw.http.HttpHeaders` 。
 
     .. attribute:: request
 
