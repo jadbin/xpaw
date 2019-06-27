@@ -1,12 +1,11 @@
 # coding=utf-8
 
-from xpaw import Spider, HttpRequest, Selector, every, run_spider
+from xpaw import Spider, HttpRequest, Selector, run_spider
 
 
-class CronJobSpider(Spider):
-    @every(seconds=10)
+class BaiduNewsSpider(Spider):
     def start_requests(self):
-        yield HttpRequest("http://news.baidu.com/", callback=self.parse, dont_filter=True)
+        yield HttpRequest("http://news.baidu.com/", callback=self.parse)
 
     def parse(self, response):
         selector = Selector(response.text)
@@ -17,4 +16,4 @@ class CronJobSpider(Spider):
 
 
 if __name__ == '__main__':
-    run_spider(CronJobSpider)
+    run_spider(BaiduNewsSpider)

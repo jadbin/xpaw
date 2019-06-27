@@ -149,14 +149,14 @@ Cron Job
     class CronJobSpider(Spider):
         @every(seconds=10)
         def start_requests(self):
-            yield HttpRequest("http://news.qq.com/", callback=self.parse, dont_filter=True)
+            yield HttpRequest("http://news.baidu.com/", callback=self.parse, dont_filter=True)
 
         def parse(self, response):
             selector = Selector(response.text)
-            major_news = selector.css("div.major a.linkto").text
-            self.log("Major news:")
-            for i in range(len(major_news)):
-                self.log("%s: %s", i + 1, major_news[i])
+            hot = selector.css("div.hotnews a").text
+            self.log("Hot Search:")
+            for i in range(len(hot)):
+                self.log("%s: %s", i + 1, hot[i])
 
 
     if __name__ == '__main__':
