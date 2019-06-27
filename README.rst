@@ -34,7 +34,7 @@ Spider Example
         def parse(self, response):
             selector = Selector(response.text)
             hot = selector.css("div.hotnews a").text
-            self.log("Hot Search:")
+            self.log("Hot News:")
             for i in range(len(hot)):
                 self.log("%s: %s", i + 1, hot[i])
 
