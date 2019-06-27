@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from xpaw.http import HttpRequest
+from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloader import Downloader, DownloaderMiddlewareManager
 from xpaw import events
 from xpaw.errors import HttpError
@@ -157,8 +157,8 @@ async def test_downloader_middleware_manager_handlers():
                       default_downloader_middlewares=None,
                       data=data)
     downloadermw = DownloaderMiddlewareManager.from_crawler(crawler)
-    request_obj = object()
-    response_obj = object()
+    request_obj = HttpRequest(None)
+    response_obj = HttpResponse(None, None)
     error_obj = object()
     await crawler.event_bus.send(events.crawler_start)
     await downloadermw._handle_request(request_obj)
@@ -178,7 +178,7 @@ async def test_downloader_middleware_manager_handlers():
                        default_downloader_middlewares=None,
                        data=data2)
     downloadermw2 = DownloaderMiddlewareManager.from_crawler(crawler2)
-    request_obj2 = object()
+    request_obj2 = HttpRequest(None)
     await crawler2.event_bus.send(events.crawler_start)
     await downloadermw2._handle_request(request_obj2)
     await crawler2.event_bus.send(events.crawler_shutdown)

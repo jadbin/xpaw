@@ -12,14 +12,15 @@ HttpHeaders = HTTPHeaders
 class HttpRequest:
     def __init__(self, url, method="GET", body=None, params=None, headers=None, proxy=None,
                  timeout=20, verify_ssl=False, allow_redirects=True, auth=None, proxy_auth=None,
-                 priority=None, dont_filter=False, callback=None, errback=None, meta=None):
+                 priority=None, dont_filter=False, callback=None, errback=None, meta=None,
+                 render=False, on_ready=None):
         """
         Construct an HTTP request.
         """
         self.url = make_url(url, params=params)
         self.method = method
         self.body = body
-        self.headers = headers or {}
+        self.headers = headers
         self.proxy = proxy
         self.timeout = timeout
         self.verify_ssl = verify_ssl
@@ -31,6 +32,8 @@ class HttpRequest:
         self.callback = callback
         self.errback = errback
         self._meta = dict(meta) if meta else {}
+        self.render = render
+        self.on_ready = on_ready
 
     def __str__(self):
         return '<{}, {}>'.format(self.method, self.url)
@@ -63,9 +66,9 @@ class HttpResponse:
         Construct an HTTP response.
         """
         self.url = url
-        self.status = int(status)
+        self.status = status
         self.body = body
-        self.headers = headers or {}
+        self.headers = headers
         self.request = request
 
     def __str__(self):

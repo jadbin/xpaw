@@ -7,6 +7,7 @@ Changelog
 -------------------
 
 - 移除对aiohttp的依赖，改由tornado实现HTTP请求，新增pycurl依赖
+- 添加基于Selenium和Chrome driver的渲染器
 - 暂时移除对cookies和cookie jar的支持
 - 组件cluster更名为crawler，包含cluster命名的模块、对象、函数、配置等均作出了相应的替换
 - 运行爬虫工程的 ``run_crawler`` 接口更名为 ``run_spider_project``
@@ -14,7 +15,7 @@ Changelog
 - RetryMiddleware不再raise IgnoreRequest，即因达到重试次数上限而导致请求失败时不再封装为IgnoreRequest，将保留原有的HttpResponse或异常
 - HttpRequest ``proxy`` , ``timeout`` , ``verify_ssl`` , ``allow_redirects`` , ``auth`` ,  ``proxy_auth`` 由在 ``meta`` 中配置改为直接作为HttpRequest的属性
 - Selector之前在遇到异常时会返回空数组，现在改为直接抛出异常
-- 修改 ``proxy`` 的配置格式
+- 修改ProxyMiddleware的配置格式
 - 移除ImitatingProxyMiddleware
 - 修改SpeedLimitMiddleware的配置格式
 - 移除 config.py 中的 ``downloader_timeout`` , ``verify_ssl`` , ``allow_redirects`` 配置项

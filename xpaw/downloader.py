@@ -14,6 +14,7 @@ from .middleware import MiddlewareManager
 from .http import HttpRequest, HttpResponse, HttpHeaders
 from .errors import ClientError, HttpError
 from . import events
+from .renderer import ChromeRenderer
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class Downloader:
     def __init__(self, max_clients=10):
         self._max_clients = max_clients
         self._http_client = CurlAsyncHTTPClient(max_clients=max_clients, force_instance=True)
+        self._renderer = ChromeRenderer()
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -36,9 +38,13 @@ class Downloader:
 
     async def fetch(self, request):
         log.debug("HTTP request: %s", request)
-        req = self._make_request(request)
         try:
-            resp = await self._http_client.fetch(req)
+            if request.render:
+                response = await self._renderer.fetch(request)
+            else:
+                req = self._make_request(request)
+                resp = await self._http_client.fetch(req)
+                response = self._make_response(resp)
         except CancelledError:
             raise
         except HTTPClientError as e:
@@ -48,14 +54,13 @@ class Downloader:
             raise ClientError(e.message)
         except Exception as e:
             raise ClientError(e)
-        response = self._make_response(resp)
         log.debug("HTTP response: %s", response)
         return response
 
     @classmethod
     def _make_request(cls, request):
         kwargs = {'method': request.method,
-                  'headers': cls._make_request_headers(request.headers),
+                  'headers': request.headers,
                   'body': request.body,
                   'connect_timeout': request.timeout,  # FIXME
                   'request_timeout': request.timeout,  # FIXME
@@ -92,21 +97,6 @@ class Downloader:
                             resp.code,
                             headers=resp.headers,
                             body=resp.body)
-
-    @staticmethod
-    def _make_request_headers(headers):
-        res = HttpHeaders()
-        if isinstance(headers, dict):
-            for k, v in headers.items():
-                if isinstance(v, (tuple, list)):
-                    for i in v:
-                        res.add(k, i)
-                else:
-                    res.add(k, v)
-        elif isinstance(headers, (tuple, list)):
-            for k, v in headers:
-                res.add(k, v)
-        return res
 
     def close(self):
         self._http_client.close()
@@ -162,6 +152,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         return res
 
     async def _handle_request(self, request):
+        request.headers = self._make_request_headers(request.headers)
         for method in self._request_handlers:
             res = method(request)
             if inspect.iscoroutine(res):
@@ -170,6 +161,22 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 "Request handler must return None, HttpRequest or HttpResponse, got {}".format(type(res).__name__)
             if res:
                 return res
+
+    def _make_request_headers(self, headers):
+        if isinstance(headers, HttpHeaders):
+            return headers
+        res = HttpHeaders()
+        if isinstance(headers, dict):
+            for k, v in headers.items():
+                if isinstance(v, (tuple, list)):
+                    for i in v:
+                        res.add(k, i)
+                else:
+                    res.add(k, v)
+        elif isinstance(headers, (tuple, list)):
+            for k, v in headers:
+                res.add(k, v)
+        return res
 
     async def _handle_response(self, request, response):
         for method in self._response_handlers:
