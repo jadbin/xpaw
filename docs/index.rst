@@ -59,6 +59,7 @@ Table of Contents
 
     architecture
     core_api
+    problems
 
 .. toctree::
     :caption: All the Rest
