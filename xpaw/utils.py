@@ -9,7 +9,7 @@ from importlib import import_module
 import string
 from os.path import isfile, exists
 import inspect
-from urllib.parse import urlsplit, parse_qsl, urlencode
+from urllib.parse import urlsplit, parse_qsl, urlencode, parse_qs
 import cgi
 
 from tornado.httputil import url_concat
@@ -228,3 +228,7 @@ def make_url(url, params=None):
         for k, v in params:
             args.append((k, v))
     return url_concat(url, args)
+
+
+def get_params_in_url(url):
+    return parse_qs(urlsplit(url).query)

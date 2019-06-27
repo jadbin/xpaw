@@ -15,6 +15,7 @@ from .http import HttpRequest, HttpResponse, HttpHeaders
 from .errors import ClientError, HttpError
 from . import events
 from .renderer import ChromeRenderer
+from .utils import make_url, get_params_in_url
 
 log = logging.getLogger(__name__)
 
@@ -152,6 +153,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         return res
 
     async def _handle_request(self, request):
+        request.url = make_url(request.url, params=request.params)
+        request.params = get_params_in_url(request.url)
         request.headers = self._make_request_headers(request.headers)
         for method in self._request_handlers:
             res = method(request)

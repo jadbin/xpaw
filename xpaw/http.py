@@ -1,10 +1,8 @@
 # coding=utf-8
 
-from urllib.parse import urlsplit, parse_qs
-
 from tornado.httputil import HTTPHeaders
 
-from .utils import get_encoding_from_content, get_encoding_from_content_type, make_url
+from .utils import get_encoding_from_content, get_encoding_from_content_type
 
 HttpHeaders = HTTPHeaders
 
@@ -17,7 +15,8 @@ class HttpRequest:
         """
         Construct an HTTP request.
         """
-        self.url = make_url(url, params=params)
+        self.url = url
+        self.params = params
         self.method = method
         self.body = body
         self.headers = headers
@@ -39,10 +38,6 @@ class HttpRequest:
         return '<{}, {}>'.format(self.method, self.url)
 
     __repr__ = __str__
-
-    @property
-    def params(self):
-        return parse_qs(urlsplit(self.url).query)
 
     @property
     def meta(self):
