@@ -47,7 +47,7 @@ class HttpRequest:
         return self.replace()
 
     def replace(self, **kwargs):
-        for i in ["url", "method", "body", "headers", "proxy",
+        for i in ["url", "method", "body", "params", "headers", "proxy",
                   "timeout", "verify_ssl", "allow_redirects", "auth", "proxy_auth",
                   "priority", "dont_filter", "callback", "errback", "meta"]:
             kwargs.setdefault(i, getattr(self, i))

@@ -2,6 +2,7 @@
 
 from xpaw.http import HttpRequest
 from xpaw.dupefilter import HashDupeFilter
+from xpaw.utils import make_url
 
 
 def run_any_dupe_filter(f):
@@ -14,11 +15,11 @@ def run_any_dupe_filter(f):
     r_post = HttpRequest("http://example.com/post", "POST")
     r_post_dir = HttpRequest("http://example.com/post/", "POST")
     r_post_data = HttpRequest("http://example.com/post", "POST", body=b'data')
-    r_get_param = HttpRequest("http://example.com/get", params={'k1': 'v1'})
+    r_get_param = HttpRequest(make_url("http://example.com/get", params={'k1': 'v1'}))
     r_get_query = HttpRequest("http://example.com/get?k1=v1")
-    r_get_param_2 = HttpRequest("http://example.com/get", params={'k1': 'v1', 'k2': 'v2'})
+    r_get_param_2 = HttpRequest(make_url("http://example.com/get", params={'k1': 'v1', 'k2': 'v2'}))
     r_get_query_2 = HttpRequest("http://example.com/get?k2=v2&k1=v1")
-    r_get_query_param = HttpRequest("http://example.com/get?k1=v1", params={'k2': 'v2'})
+    r_get_query_param = HttpRequest(make_url("http://example.com/get?k1=v1", params={'k2': 'v2'}))
     assert f.is_duplicated(r_get) is False
     assert f.is_duplicated(r_get_port_80) is True
     assert f.is_duplicated(r_get_port_81) is False

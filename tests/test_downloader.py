@@ -8,6 +8,8 @@ from xpaw.http import HttpRequest, HttpResponse
 from xpaw.downloader import Downloader, DownloaderMiddlewareManager
 from xpaw import events
 from xpaw.errors import HttpError
+from xpaw.utils import make_url
+
 from .crawler import Crawler
 
 
@@ -41,13 +43,13 @@ async def test_params():
         assert json.loads(resp.text)['args'] == {'key': 'value', 'none': ''}
 
     async def dict_params():
-        resp = await downloader.fetch(HttpRequest("http://httpbin.org/get",
-                                                  params={'key': 'value', 'none': ''}))
+        resp = await downloader.fetch(
+            HttpRequest(make_url("http://httpbin.org/get", params={'key': 'value', 'none': ''})))
         assert json.loads(resp.text)['args'] == {'key': 'value', 'none': ''}
 
     async def list_params():
-        resp = await downloader.fetch(HttpRequest("http://httpbin.org/get",
-                                                  params=[('list', '1'), ('list', '2')]))
+        resp = await downloader.fetch(HttpRequest(make_url("http://httpbin.org/get",
+                                                           params=[('list', '1'), ('list', '2')])))
         assert json.loads(resp.text)['args'] == {'list': ['1', '2']}
 
     await query_params()
@@ -96,13 +98,13 @@ async def test_body():
 async def test_allow_redirects():
     downloader = Downloader()
 
-    resp = await downloader.fetch(HttpRequest('http://httpbin.org/redirect-to',
-                                              params={'url': 'http://python.org'}))
+    resp = await downloader.fetch(HttpRequest(make_url('http://httpbin.org/redirect-to',
+                                                       params={'url': 'http://python.org'})))
     assert resp.status // 100 == 2 and 'python.org' in resp.url
 
     with pytest.raises(HttpError) as e:
-        await downloader.fetch(HttpRequest('http://httpbin.org/redirect-to',
-                                           params={'url': 'http://python.org'},
+        await downloader.fetch(HttpRequest(make_url('http://httpbin.org/redirect-to',
+                                                    params={'url': 'http://python.org'}),
                                            allow_redirects=False))
     assert e.value.response.status // 100 == 3
 
