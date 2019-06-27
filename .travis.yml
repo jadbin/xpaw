@@ -1,17 +1,17 @@
 language: python
 sudo: false
+addons:
+  apt:
+    packages:
+      - libgnutls-dev
 matrix:
   include:
     - python: 3.5
       env:
         - TOXENV=py35
-        - USECURL=dev-gnutls-gssapi-libssh2
-        - USESSL=gnutls
     - python: 3.6
       env:
         - TOXENV=py36
-        - USECURL=dev-gnutls-gssapi-libssh2
-        - USESSL=gnutls
 cache:
   directories:
     - $HOME/.cache/pip
