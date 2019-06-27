@@ -21,15 +21,16 @@ log = logging.getLogger(__name__)
 
 
 class Downloader:
-    def __init__(self, max_clients=10):
+    def __init__(self, max_clients=10, renderer_cores=None):
         self._max_clients = max_clients
         self._http_client = CurlAsyncHTTPClient(max_clients=max_clients, force_instance=True)
-        self._renderer = ChromeRenderer()
+        self._renderer = ChromeRenderer(cores=renderer_cores)
 
     @classmethod
     def from_crawler(cls, crawler):
         config = crawler.config
-        downloader = cls(max_clients=config.getint('downloader_clients'))
+        downloader = cls(max_clients=config.getint('downloader_clients'),
+                         renderer_cores=config.getint('renderer_cores'))
         crawler.event_bus.subscribe(downloader.close, events.crawler_shutdown)
         return downloader
 

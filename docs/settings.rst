@@ -69,10 +69,18 @@ Downloading
 downloader_clients
 ^^^^^^^^^^^^^^^^^^
 
-- ``--downloader-clients``
 - Default: ``100``
 
 下载时的并发量。
+
+.. _renderer_cores:
+
+renderer_cores
+^^^^^^^^^^^^^^
+
+- Default: ``4 * cpu_count()``
+
+渲染进程的并发量。
 
 .. _default_headers:
 

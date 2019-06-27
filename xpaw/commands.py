@@ -9,11 +9,11 @@ import sys
 import inspect
 
 from .errors import UsageError
-from .config import make_settings
 from .utils import string_camelcase, render_template_file, load_config, iter_settings
 from . import __version__
 from .run import run_crawler
 from .spider import Spider
+from .config import DEFAULT_CONFIG
 
 log = logging.getLogger(__name__)
 
@@ -63,11 +63,47 @@ def _import_spider(file):
     raise UsageError('Cannot find spider in {}'.format(file))
 
 
+class Option:
+    def __init__(self, name=None, cli=None, metavar=None, default=None, action=None, type=None, nargs=None,
+                 short_desc=None):
+        self.name = name
+        self.cli = cli
+        self.metavar = metavar
+        self.default = default
+        self.action = action
+        self.type = type
+        self.nargs = nargs
+        self.short_desc = short_desc
+
+    def add_argument(self, parser):
+        if self.cli is None:
+            return
+        args = tuple(self.cli)
+        kwargs = {'dest': self.name, 'help': '{} (default: {})'.format(self.short_desc, self.default)}
+        if self.metavar is not None:
+            kwargs['metavar'] = self.metavar
+        if self.action is not None:
+            kwargs['action'] = self.action
+        if self.type is not None:
+            kwargs['type'] = self.type
+        if self.nargs is not None:
+            kwargs['nargs'] = self.nargs
+        parser.add_argument(*args, **kwargs)
+
+
 class CrawlCommand(Command):
     def __init__(self):
         super().__init__()
-        self.settings = make_settings()
         self.config = {}
+        self.options = [
+            Option(name='daemon', cli=['-d', '--daemon'], action='store_true', default=DEFAULT_CONFIG['daemon'],
+                   short_desc='run in daemon mode'),
+            Option(name='log_level', cli=['-l', '--log-level'], metavar='LEVEL',
+                   default=DEFAULT_CONFIG['log_level'], short_desc='log level'),
+            Option(name='log_file', cli=['--log-file'], metavar='FILE', short_desc='log file'),
+            Option(name='pid_file', cli=['--pid-file'], metavar='FILE', short_desc='PID file'),
+            Option(name='dump_dir', cli=['--dump-dir'], metavar='DIR',
+                   short_desc='the directory to dump the state of a single job')]
 
     @property
     def syntax(self):
@@ -85,7 +121,7 @@ class CrawlCommand(Command):
         parser.add_argument("path", metavar="PATH", nargs=1, help="project directory or spider file")
         parser.add_argument('-c', '--config', dest='config', metavar='FILE',
                             help='configuration file (default: None)')
-        for s in self.settings:
+        for s in self.options:
             s.add_argument(parser)
         parser.add_argument("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE",
                             help="set/override setting (can be repeated)")
@@ -100,7 +136,7 @@ class CrawlCommand(Command):
             self.config.update(dict(x.split("=", 1) for x in args.set))
         except ValueError:
             raise UsageError("Invalid -s value, use -s NAME=VALUE")
-        for s in self.settings:
+        for s in self.options:
             v = getattr(args, s.name)
             if v is not None:
                 self.config[s.name] = v
