@@ -189,7 +189,7 @@ class Crawler:
         elif isinstance(resp, HttpResponse):
             await self.event_bus.send(events.response_received, response=resp)
             try:
-                result = await self.spidermw.parse(self.spider, resp)
+                result = await self.spidermw.parse(resp, self.spider)
             except CancelledError:
                 raise
             except Exception as e:

@@ -97,7 +97,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def _middleware_list_from_config(cls, config):
         return cls._make_component_list('spider_middlewares', config)
 
-    async def parse(self, spider, response):
+    async def parse(self, response, spider):
         request = response.request
         try:
             try:
