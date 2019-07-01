@@ -4,6 +4,8 @@ import logging
 import inspect
 from asyncio import CancelledError
 from urllib.parse import urlsplit
+from os import cpu_count
+from asyncio import Semaphore
 
 from tornado.httpclient import HTTPRequest, HTTPClientError
 from tornado.curl_httpclient import CurlAsyncHTTPClient
@@ -21,10 +23,13 @@ log = logging.getLogger(__name__)
 
 
 class Downloader:
-    def __init__(self, max_clients=10, renderer_cores=None):
+    def __init__(self, max_clients=100, renderer_cores=None):
         self._max_clients = max_clients
         self._http_client = CurlAsyncHTTPClient(max_clients=max_clients, force_instance=True)
-        self._renderer = ChromeRenderer(cores=renderer_cores)
+        self._renderer = ChromeRenderer()
+        if renderer_cores is None:
+            renderer_cores = 4 * cpu_count()
+        self._renderer_semaphore = Semaphore(renderer_cores)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -42,7 +47,8 @@ class Downloader:
         log.debug("HTTP request: %s", request)
         try:
             if request.render:
-                response = await self._renderer.fetch(request)
+                async with self._renderer_semaphore:
+                    response = await self._renderer.fetch(request)
             else:
                 req = self._make_request(request)
                 resp = await self._http_client.fetch(req)

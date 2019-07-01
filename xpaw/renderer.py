@@ -1,9 +1,7 @@
 # coding=utf-8
 
 import asyncio
-from asyncio import Semaphore
 from threading import Thread
-from multiprocessing import cpu_count
 
 from selenium.webdriver import Chrome, ChromeOptions
 
@@ -11,22 +9,15 @@ from .http import HttpResponse, HttpHeaders
 
 
 class ChromeRenderer:
-    def __init__(self, cores=None):
-        if cores is None:
-            cores = 4 * cpu_count()
-        self._cores = cores
-        self._cores_semaphore = Semaphore(cores)
-
     async def fetch(self, request):
-        async with self._cores_semaphore:
-            lock = asyncio.Future()
-            t = Thread(target=self._run_fetch_thread, args=(asyncio.get_event_loop(), lock, request))
-            t.start()
-            await lock
-            result = lock.result()
-            if isinstance(result, Exception):
-                raise result
-            return result
+        lock = asyncio.Future()
+        t = Thread(target=self._run_fetch_thread, args=(asyncio.get_event_loop(), lock, request))
+        t.start()
+        await lock
+        result = lock.result()
+        if isinstance(result, Exception):
+            raise result
+        return result
 
     def _run_fetch_thread(self, loop, lock, request):
         driver = Chrome(options=self.make_chrome_options(request))
@@ -35,8 +26,6 @@ class ChromeRenderer:
         driver.implicitly_wait(request.timeout)
         try:
             driver.get(request.url)
-            if request.on_ready is not None:
-                loop.call_soon_threadsafe(request.on_ready, driver)
             response = HttpResponse(driver.current_url, 200, body=driver.page_source.encode('utf-8'),
                                     headers=HttpHeaders(), request=request)
             loop.call_soon_threadsafe(lock.set_result, response)

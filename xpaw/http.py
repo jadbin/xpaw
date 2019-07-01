@@ -11,7 +11,7 @@ class HttpRequest:
     def __init__(self, url, method="GET", body=None, params=None, headers=None, proxy=None,
                  timeout=20, verify_ssl=False, allow_redirects=True, auth=None, proxy_auth=None,
                  priority=None, dont_filter=False, callback=None, errback=None, meta=None,
-                 render=None, on_ready=None):
+                 render=None):
         """
         Construct an HTTP request.
         """
@@ -32,7 +32,6 @@ class HttpRequest:
         self.errback = errback
         self._meta = dict(meta) if meta else {}
         self.render = render
-        self.on_ready = on_ready
 
     def __str__(self):
         return '<{}, {}>'.format(self.method, self.url)
@@ -49,7 +48,8 @@ class HttpRequest:
     def replace(self, **kwargs):
         for i in ["url", "method", "body", "params", "headers", "proxy",
                   "timeout", "verify_ssl", "allow_redirects", "auth", "proxy_auth",
-                  "priority", "dont_filter", "callback", "errback", "meta"]:
+                  "priority", "dont_filter", "callback", "errback", "meta",
+                  "render"]:
             kwargs.setdefault(i, getattr(self, i))
         return type(self)(**kwargs)
 
