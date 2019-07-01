@@ -9,7 +9,7 @@ class ErrorHandlingSpider(Spider):
         "http://www.python.org/",  # 200 OK
         "http://www.httpbin.org/status/404",  # 404 Not Found
         "http://www.httpbin.org/status/500",  # 500 Service Not Available
-        "http://localhost:8080/",  # ClientError
+        "http://unknown/",  # ClientError
     ]
 
     def start_requests(self):
