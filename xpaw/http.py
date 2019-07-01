@@ -16,9 +16,9 @@ class HttpRequest:
         Construct an HTTP request.
         """
         self.url = url
-        self.params = params
         self.method = method
         self.body = body
+        self.params = params
         self.headers = headers
         self.proxy = proxy
         self.timeout = timeout

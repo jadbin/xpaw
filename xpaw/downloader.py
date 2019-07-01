@@ -17,7 +17,7 @@ from .http import HttpRequest, HttpResponse, HttpHeaders
 from .errors import ClientError, HttpError
 from . import events
 from .renderer import ChromeRenderer
-from .utils import make_url, get_params_in_url
+from .utils import make_url, get_params_in_url, with_not_none_params
 
 log = logging.getLogger(__name__)
 
@@ -34,8 +34,8 @@ class Downloader:
     @classmethod
     def from_crawler(cls, crawler):
         config = crawler.config
-        downloader = cls(max_clients=config.getint('downloader_clients'),
-                         renderer_cores=config.getint('renderer_cores'))
+        downloader = cls(**with_not_none_params(max_clients=config.getint('downloader_clients'),
+                                                renderer_cores=config.getint('renderer_cores')))
         crawler.event_bus.subscribe(downloader.close, events.crawler_shutdown)
         return downloader
 

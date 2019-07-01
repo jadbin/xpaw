@@ -46,7 +46,7 @@ class Spider:
     async def request_success(self, response):
         callback = response.request.callback
         if callback:
-            res = self._parse_method(callback)(response)
+            res = self._get_mothod(callback)(response)
         else:
             res = self.parse(response)
         if inspect.iscoroutine(res):
@@ -56,7 +56,7 @@ class Spider:
     async def request_error(self, request, error):
         try:
             if request and request.errback:
-                r = self._parse_method(request.errback)(request, error)
+                r = self._get_mothod(request.errback)(request, error)
                 if inspect.iscoroutine(r):
                     await r
         except CancelledError:
@@ -64,7 +64,7 @@ class Spider:
         except Exception:
             log.warning("Error occurred in the error callback of spider", exc_info=True)
 
-    def _parse_method(self, method):
+    def _get_mothod(self, method):
         if isinstance(method, str):
             method = getattr(self, method)
         return method

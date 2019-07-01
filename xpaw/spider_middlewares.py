@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 
 
 class DepthMiddleware:
-    def __init__(self, max_depth):
+    def __init__(self, max_depth=None):
         self._max_depth = max_depth
 
     def __repr__(self):

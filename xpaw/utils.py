@@ -232,3 +232,11 @@ def make_url(url, params=None):
 
 def get_params_in_url(url):
     return parse_qs(urlsplit(url).query)
+
+
+def with_not_none_params(**kwargs):
+    params = {}
+    for k, v in kwargs.items():
+        if v is not None:
+            params[k] = v
+    return params

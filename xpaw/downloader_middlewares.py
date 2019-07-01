@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 
 from .errors import ClientError, NotEnabled, HttpError
 from . import __version__
+from .utils import with_not_none_params
 
 log = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class RetryMiddleware:
     RETRY_ERRORS = (ClientError,)
     RETRY_HTTP_STATUS = (500, 502, 503, 504, 408, 429)
 
-    def __init__(self, max_retry_times, retry_http_status=None):
+    def __init__(self, max_retry_times=3, retry_http_status=None):
         self._max_retry_times = max_retry_times
         self._retry_http_status = retry_http_status or self.RETRY_HTTP_STATUS
 
@@ -29,8 +30,8 @@ class RetryMiddleware:
         config = crawler.config
         if not config.getbool('retry_enabled'):
             raise NotEnabled
-        return cls(max_retry_times=config.getint('max_retry_times'),
-                   retry_http_status=config.getlist('retry_http_status'))
+        return cls(**with_not_none_params(max_retry_times=config.getint('max_retry_times'),
+                                          retry_http_status=config.getlist('retry_http_status')))
 
     def handle_response(self, request, response):
         for p in self._retry_http_status:
