@@ -79,7 +79,7 @@ class Option:
         if self.cli is None:
             return
         args = tuple(self.cli)
-        kwargs = {'dest': self.name, 'help': '{} (default: {})'.format(self.short_desc, self.default)}
+        kwargs = {'dest': self.name, 'help': self.short_desc}
         if self.metavar is not None:
             kwargs['metavar'] = self.metavar
         if self.action is not None:
@@ -120,7 +120,7 @@ class CrawlCommand(Command):
     def add_arguments(self, parser):
         parser.add_argument("path", metavar="PATH", nargs=1, help="project directory or spider file")
         parser.add_argument('-c', '--config', dest='config', metavar='FILE',
-                            help='configuration file (default: None)')
+                            help='configuration file')
         for s in self.options:
             s.add_argument(parser)
         parser.add_argument("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE",
