@@ -11,7 +11,7 @@ class HttpRequest:
     def __init__(self, url, method="GET", body=None, params=None, headers=None, proxy=None,
                  timeout=20, verify_ssl=False, allow_redirects=True, auth=None, proxy_auth=None,
                  priority=None, dont_filter=False, callback=None, errback=None, meta=None,
-                 render=False, on_ready=None):
+                 render=None, on_ready=None):
         """
         Construct an HTTP request.
         """

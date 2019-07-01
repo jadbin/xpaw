@@ -29,7 +29,7 @@ class ChromeRenderer:
             return result
 
     def _run_fetch_thread(self, loop, lock, request):
-        driver = Chrome(options=self._make_chrome_options())
+        driver = Chrome(options=self.make_chrome_options(request))
         driver.set_page_load_timeout(request.timeout)
         driver.set_script_timeout(request.timeout)
         driver.implicitly_wait(request.timeout)
@@ -45,11 +45,10 @@ class ChromeRenderer:
         finally:
             driver.quit()
 
-    def _make_chrome_options(self):
+    @classmethod
+    def make_chrome_options(cls, request):
+        render_options = request.render if isinstance(request.render, dict) else {}
         chrome_options = ChromeOptions()
-        # disable images
-        prefs = {'profile.managed_default_content_settings.images': 2}
-        chrome_options.add_experimental_option('prefs', prefs)
         chrome_options.add_argument('--headless')
         # anonymous
         chrome_options.add_argument('--incognito')
@@ -58,4 +57,15 @@ class ChromeRenderer:
         chrome_options.add_argument('--disable-popup-blocking')
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--no-sandbox')
+        prefs = {}
+        if not render_options.get('show_images'):
+            # disable images
+            prefs.setdefault('profile.managed_default_content_settings.images', 2)
+        if prefs:
+            chrome_options.add_experimental_option('prefs', prefs)
+        if 'mobile_emulation' in render_options:
+            mobile_emulation = render_options['mobile_emulation']
+            if not isinstance(mobile_emulation, dict):
+                mobile_emulation = {'deviceName': 'iPhone 8'}
+            chrome_options.add_experimental_option('mobileEmulation', mobile_emulation)
         return chrome_options
