@@ -1,5 +1,7 @@
 # coding=utf-8
 
+import inspect
+
 from tornado.httputil import HTTPHeaders
 
 from .utils import get_encoding_from_content, get_encoding_from_content_type
@@ -53,10 +55,42 @@ class HttpRequest:
             kwargs.setdefault(i, getattr(self, i))
         return type(self)(**kwargs)
 
+    def to_dict(self):
+        callback = self.callback
+        if inspect.ismethod(callback):
+            callback = callback.__name__
+        errback = self.errback
+        if inspect.ismethod(errback):
+            errback = errback.__name__
+        d = {
+            'url': self.url,
+            'method': self.method,
+            'body': self.body,
+            'params': self.params,
+            'headers': self.headers,
+            'proxy': self.proxy,
+            'timeout': self.timeout,
+            'verify_ssl': self.verify_ssl,
+            'allow_redirects': self.allow_redirects,
+            'auth': self.auth,
+            'proxy_auth': self.proxy_auth,
+            'priority': self.priority,
+            'dont_filter': self.dont_filter,
+            'callback': callback,
+            'errback': errback,
+            'meta': self.meta,
+            'render': self.render
+        }
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(**d)
+
 
 class HttpResponse:
     def __init__(self, url, status, body=None, headers=None,
-                 request=None):
+                 request=None, encoding=None):
         """
         Construct an HTTP response.
         """
@@ -65,6 +99,7 @@ class HttpResponse:
         self.body = body
         self.headers = headers
         self.request = request
+        self._encoding = encoding
 
     def __str__(self):
         return '<{}, {}>'.format(self.status, self.url)
@@ -73,13 +108,12 @@ class HttpResponse:
 
     @property
     def encoding(self):
-        if hasattr(self, "_encoding"):
+        if self._encoding:
             return self._encoding
         encoding = get_encoding_from_content_type(self.headers.get("Content-Type"))
         if not encoding and self.body:
             encoding = get_encoding_from_content(self.body)
-        self._encoding = encoding or "utf-8"
-        return self._encoding
+        return encoding
 
     @encoding.setter
     def encoding(self, value):
@@ -91,7 +125,10 @@ class HttpResponse:
             return self._text
         if not self.body:
             return ""
-        self._text = self.body.decode(self.encoding, errors="replace")
+        if isinstance(self.body, bytes):
+            self._text = self.body.decode(self.encoding, errors="replace")
+        else:
+            self._text = self.body
         return self._text
 
     @property

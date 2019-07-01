@@ -8,8 +8,9 @@ from heapq import heappush, heappop
 from os.path import join, isfile
 import pickle
 
-from .utils import get_dump_dir, request_to_dict, request_from_dict, cmp
+from .utils import get_dump_dir, cmp
 from . import events
+from .http import HttpRequest
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class FifoQueue:
                 with open(file, 'rb') as f:
                     arr = pickle.load(f)
                 for a in arr:
-                    r = request_from_dict(a)
+                    r = HttpRequest.from_dict(a)
                     await self.push(r)
 
     async def close(self):
@@ -53,7 +54,7 @@ class FifoQueue:
             reqs = []
             while len(self) > 0:
                 r = await self.pop()
-                reqs.append(request_to_dict(r))
+                reqs.append(r.to_dict())
             with open(join(self._dump_dir, 'queue'), 'wb') as f:
                 pickle.dump(reqs, f)
 
@@ -71,7 +72,7 @@ class LifoQueue(FifoQueue):
                     arr = pickle.load(f)
                 arr.reverse()
                 for a in arr:
-                    r = request_from_dict(a)
+                    r = HttpRequest.from_dict(a)
                     await self.push(r)
 
 
@@ -107,7 +108,7 @@ class PriorityQueue:
                 with open(file, 'rb') as f:
                     arr = pickle.load(f)
                 for a in arr:
-                    r = request_from_dict(a)
+                    r = HttpRequest.from_dict(a)
                     await self.push(r)
 
     async def close(self):
@@ -115,7 +116,7 @@ class PriorityQueue:
             reqs = []
             while len(self) > 0:
                 r = await self.pop()
-                reqs.append(request_to_dict(r))
+                reqs.append(r.to_dict())
             with open(join(self._dump_dir, 'queue'), 'wb') as f:
                 pickle.dump(reqs, f)
 

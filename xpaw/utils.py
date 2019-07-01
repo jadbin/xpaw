@@ -156,34 +156,6 @@ def get_dump_dir(config):
         return dump_dir
 
 
-def request_to_dict(request):
-    callback = request.callback
-    if inspect.ismethod(callback):
-        callback = callback.__name__
-    errback = request.errback
-    if inspect.ismethod(errback):
-        errback = errback.__name__
-    meta = dict(request.meta)
-    d = {
-        'url': request.url,
-        'method': request.method,
-        'body': request.body,
-        'headers': request.headers,
-        'meta': meta,
-        'priority': request.priority,
-        'dont_filter': request.dont_filter,
-        'callback': callback,
-        'errback': errback,
-        '_class': request.__module__ + '.' + request.__class__.__name__
-    }
-    return d
-
-
-def request_from_dict(d):
-    req_cls = load_object(d.pop('_class'))
-    return req_cls(**d)
-
-
 def get_encoding_from_content_type(content_type):
     if content_type:
         content_type, params = cgi.parse_header(content_type)
