@@ -113,7 +113,7 @@ class HttpResponse:
         encoding = get_encoding_from_content_type(self.headers.get("Content-Type"))
         if not encoding and self.body:
             encoding = get_encoding_from_content(self.body)
-        return encoding
+        return encoding or 'utf-8'
 
     @encoding.setter
     def encoding(self, value):
