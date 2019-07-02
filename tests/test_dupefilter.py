@@ -48,13 +48,3 @@ class TestHashDupeFilter:
         assert f.is_duplicated(r_get) is True
         f.clear()
         assert f.is_duplicated(r_get) is False
-
-    def test_dump(self, tmpdir):
-        f = HashDupeFilter(dump_dir=str(tmpdir))
-        r_get = HttpRequest("http://example.com")
-        assert f.is_duplicated(r_get) is False
-        assert f.is_duplicated(r_get) is True
-        f.close()
-        f2 = HashDupeFilter(dump_dir=str(tmpdir))
-        f2.open()
-        assert f2.is_duplicated(r_get) is True

@@ -7,8 +7,7 @@ import hashlib
 import logging
 from importlib import import_module
 import string
-from os.path import isfile, exists
-import inspect
+from os.path import isfile
 from urllib.parse import urlsplit, parse_qsl, urlencode, parse_qs
 import cgi
 
@@ -146,14 +145,6 @@ def iter_settings(config):
     for key, value in config.items():
         if not key.startswith('_'):
             yield key, value
-
-
-def get_dump_dir(config):
-    dump_dir = config.get('dump_dir')
-    if dump_dir:
-        if not exists(dump_dir):
-            os.makedirs(dump_dir, 0o755)
-        return dump_dir
 
 
 def get_encoding_from_content_type(content_type):

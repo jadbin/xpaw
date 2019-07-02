@@ -25,6 +25,7 @@ Changelog
 - ``default_headers`` 默认为 ``None`` , 浏览器默认的HTTP header改由UserAgentMiddleware根据设定的浏览器类型进行设置
 - ``xpaw.downloadermws`` 模块更名为 ``xpaw.downloader_middlewares`` ， ``xpaw.spidermws`` 模块更名为 ``xpaw.spider_middlewares``
 - ``@every`` 装饰器移至 ``xpaw.decorator`` 模块
+- 移除对 ``dump_dir`` 的支持
 
 
 0.10.4 (2018-11-06)

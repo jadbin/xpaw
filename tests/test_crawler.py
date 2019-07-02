@@ -252,16 +252,3 @@ class ToLoadSpider(Spider):
         data = self.config.get('data')
         data['url'] = response.request.url
         data['meta'] = response.meta
-
-
-def test_dump_request(tmpdir):
-    dump_dir = str(tmpdir)
-    pid_file = join(dump_dir, 'pid')
-    t = Thread(target=kill_spider, args=(pid_file,))
-    t.start()
-    run_spider(ToDumpSpider, dump_dir=dump_dir, pid_file=pid_file)
-    t.join()
-    data = {}
-    run_spider(ToLoadSpider, dump_dir=dump_dir, data=data)
-    assert data['url'] == 'http://python.org/'
-    assert data['meta']['key'] == 'value'

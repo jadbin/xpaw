@@ -101,9 +101,7 @@ class CrawlCommand(Command):
             Option(name='log_level', cli=['-l', '--log-level'], metavar='LEVEL',
                    default=DEFAULT_CONFIG['log_level'], short_desc='log level'),
             Option(name='log_file', cli=['--log-file'], metavar='FILE', short_desc='log file'),
-            Option(name='pid_file', cli=['--pid-file'], metavar='FILE', short_desc='PID file'),
-            Option(name='dump_dir', cli=['--dump-dir'], metavar='DIR',
-                   short_desc='the directory to dump the state of a single job')]
+            Option(name='pid_file', cli=['--pid-file'], metavar='FILE', short_desc='PID file')]
 
     @property
     def syntax(self):
