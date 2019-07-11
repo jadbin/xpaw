@@ -138,7 +138,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
     def _middleware_list_from_config(cls, config):
         return cls._make_component_list('downloader_middlewares', config)
 
-    async def fetch(self, downloader, request):
+    async def fetch(self, request, downloader):
         try:
             res = await self._handle_request(request)
             if isinstance(res, HttpRequest):

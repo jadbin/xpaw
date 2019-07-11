@@ -13,7 +13,6 @@ from .utils import string_camelcase, render_template_file, load_config, iter_set
 from . import __version__
 from .run import run_crawler
 from .spider import Spider
-from .config import DEFAULT_CONFIG
 
 log = logging.getLogger(__name__)
 
@@ -96,10 +95,8 @@ class CrawlCommand(Command):
         super().__init__()
         self.config = {}
         self.options = [
-            Option(name='daemon', cli=['-d', '--daemon'], action='store_true', default=DEFAULT_CONFIG['daemon'],
-                   short_desc='run in daemon mode'),
-            Option(name='log_level', cli=['-l', '--log-level'], metavar='LEVEL',
-                   default=DEFAULT_CONFIG['log_level'], short_desc='log level'),
+            Option(name='daemon', cli=['-d', '--daemon'], action='store_true', short_desc='run in daemon mode'),
+            Option(name='log_level', cli=['-l', '--log-level'], metavar='LEVEL', short_desc='log level'),
             Option(name='log_file', cli=['--log-file'], metavar='FILE', short_desc='log file'),
             Option(name='pid_file', cli=['--pid-file'], metavar='FILE', short_desc='PID file')]
 

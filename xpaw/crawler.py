@@ -24,17 +24,17 @@ class Crawler:
     def __init__(self, config):
         self.config = config
         self.event_bus = EventBus()
-        self.stats_collector = self._new_object_from_crawler(self.config.get('stats_collector'))
-        self.queue = self._new_object_from_crawler(self.config.get('queue'))
-        self.dupe_filter = self._new_object_from_crawler(self.config.get('dupe_filter'))
-        self.downloader = self._new_object_from_crawler(self.config.get('downloader'))
-        self.spider = self._new_object_from_crawler(self.config.get('spider'))
+        self.stats_collector = self._instance_from_crawler(self.config.get('stats_collector'))
+        self.queue = self._instance_from_crawler(self.config.get('queue'))
+        self.dupe_filter = self._instance_from_crawler(self.config.get('dupe_filter'))
+        self.downloader = self._instance_from_crawler(self.config.get('downloader'))
+        self.spider = self._instance_from_crawler(self.config.get('spider'))
         assert isinstance(self.spider, Spider), 'spider must inherit from the Spider class'
         log.info('Spider: %s', str(self.spider))
-        self.downloadermw = DownloaderMiddlewareManager.from_crawler(self)
-        log.info('Downloader middlewares: %s', self._log_objects(self.downloadermw.components))
-        self.spidermw = SpiderMiddlewareManager.from_crawler(self)
-        log.info('Spider middlewares: %s', self._log_objects(self.spidermw.components))
+        self.downloader_middlware = DownloaderMiddlewareManager.from_crawler(self)
+        log.info('Downloader middlewares: %s', self._log_objects(self.downloader_middlware.components))
+        self.spider_middleware = SpiderMiddlewareManager.from_crawler(self)
+        log.info('Spider middlewares: %s', self._log_objects(self.spider_middleware.components))
         self.item_pipeline = ItemPipelineManager.from_crawler(self)
         log.info('Item pipelines: %s', self._log_objects(self.item_pipeline.components))
         self.extension = ExtensionManager.from_crawler(self)
@@ -142,7 +142,7 @@ class Crawler:
         while True:
             t = time.time()
             try:
-                res = await self.spidermw.start_requests(self.spider)
+                res = await self.spider_middleware.start_requests(self.spider)
             except CancelledError:
                 raise
             except Exception:
@@ -163,7 +163,7 @@ class Crawler:
             log.debug("%s -> worker[%s]", req, coro_id)
             self._req_in_worker[coro_id] = req
             try:
-                resp = await self.downloadermw.fetch(self.downloader, req)
+                resp = await self.downloader_middlware.fetch(req, self.downloader)
             except CancelledError:
                 raise
             except Exception as e:
@@ -189,7 +189,7 @@ class Crawler:
         elif isinstance(resp, HttpResponse):
             await self.event_bus.send(events.response_received, response=resp)
             try:
-                result = await self.spidermw.parse(resp, self.spider)
+                result = await self.spider_middleware.parse(resp, self.spider)
             except CancelledError:
                 raise
             except Exception as e:
@@ -220,7 +220,7 @@ class Crawler:
             else:
                 await self.event_bus.send(events.item_scraped, item=result)
 
-    def _new_object_from_crawler(self, cls_path):
+    def _instance_from_crawler(self, cls_path):
         obj_cls = load_object(cls_path)
         if inspect.isclass(obj_cls):
             if hasattr(obj_cls, "from_crawler"):

@@ -13,13 +13,12 @@ log = logging.getLogger(__name__)
 
 
 class Spider:
-    def __init__(self, config=None, **kwargs):
-        self.config = config
-        self.__dict__.update(kwargs)
 
     @classmethod
     def from_crawler(cls, crawler):
-        spider = cls(config=crawler.config, crawler=crawler)
+        cls.crawler = crawler
+        cls.config = crawler.config
+        spider = cls()
         crawler.event_bus.subscribe(spider.open, events.crawler_start)
         crawler.event_bus.subscribe(spider.close, events.crawler_shutdown)
         return spider
