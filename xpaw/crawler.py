@@ -39,6 +39,107 @@ class Crawler:
         log.info('Item pipelines: %s', self._log_objects(self.item_pipeline.components))
         self.extension = ExtensionManager.from_crawler(self)
         log.info('Extensions: %s', self._log_objects(self.extension.components))
+
+    async def start_requests(self):
+        try:
+            res = await self.spider_middleware.start_requests(self.spider)
+        except CancelledError:
+            raise
+        except Exception:
+            log.warning("Failed to get start requests", exc_info=True)
+        else:
+            return [r for r in res if isinstance(r, HttpRequest)]
+
+    async def schedule(self, request):
+        try:
+            res = self.dupe_filter.is_duplicated(request)
+            if inspect.iscoroutine(res):
+                res = await res
+            if not res:
+                await self.event_bus.send(events.request_scheduled, request=request)
+                await self.queue.push(request)
+        except Exception:
+            log.warning('Failed to schedule %s', request, exc_info=True)
+
+    async def next_request(self):
+        req = await self.queue.pop()
+        return req
+
+    async def fetch(self, req):
+        try:
+            resp = await self.downloader_middlware.fetch(req, self.downloader)
+        except CancelledError:
+            raise
+        except Exception as e:
+            if isinstance(e, IgnoreRequest):
+                await self.event_bus.send(events.request_ignored, request=req, error=e)
+            elif isinstance(e, (ClientError, HttpError)):
+                log.debug('Failed to make %s: %s', req, e)
+            else:
+                log.warning("Failed to request %s", req, exc_info=True)
+            await self.spider.request_error(req, e)
+        else:
+            await self._handle_response(resp)
+
+    async def _handle_response(self, resp):
+        if isinstance(resp, HttpRequest):
+            await self.schedule(resp)
+        elif isinstance(resp, HttpResponse):
+            await self.event_bus.send(events.response_received, response=resp)
+            try:
+                result = await self.spider_middleware.parse(resp, self.spider)
+            except CancelledError:
+                raise
+            except Exception as e:
+                if isinstance(e, StopCrawler):
+                    log.info('Request to stop crawler: %s', e)
+                    raise
+                elif isinstance(e, IgnoreRequest):
+                    await self.event_bus.send(events.request_ignored, request=resp.request, error=e)
+                else:
+                    log.warning("Failed to parse %s", resp, exc_info=True)
+            else:
+                for r in result:
+                    await self._handle_parsing_result(r)
+
+    async def _handle_parsing_result(self, result):
+        if isinstance(result, HttpRequest):
+            await self.schedule(result)
+        elif isinstance(result, (BaseItem, dict)):
+            try:
+                await self.item_pipeline.handle_item(result)
+            except CancelledError:
+                raise
+            except Exception as e:
+                if isinstance(e, IgnoreItem):
+                    await self.event_bus.send(events.item_ignored, item=result, error=e)
+                else:
+                    log.warning("Failed to handle %s", result, exc_info=True)
+            else:
+                await self.event_bus.send(events.item_scraped, item=result)
+
+    def _instance_from_crawler(self, cls_path):
+        obj_cls = load_object(cls_path)
+        if inspect.isclass(obj_cls):
+            if hasattr(obj_cls, "from_crawler"):
+                obj = obj_cls.from_crawler(self)
+            else:
+                obj = obj_cls()
+        else:
+            obj = obj_cls
+        return obj
+
+    @staticmethod
+    def _log_objects(objects):
+        if objects:
+            return ''.join(['\n\t({}/{}) {}'.format(i + 1, len(objects), o) for i, o in enumerate(objects)])
+        return ''
+
+
+class CrawlerRunner:
+    def __init__(self, crawler):
+        self.crawler = crawler
+
         self._workers = None
         self._workers_done = None
         self._req_in_worker = None
@@ -57,10 +158,10 @@ class Crawler:
         self._run_lock = None
 
     async def _init(self):
-        await self.event_bus.send(events.crawler_start)
+        await self.crawler.event_bus.send(events.crawler_start)
         self._supervisor_future = asyncio.ensure_future(self._supervisor())
         self._start_future = asyncio.ensure_future(self._generate_start_requests())
-        downloader_clients = self.downloader.max_clients
+        downloader_clients = self.crawler.downloader.max_clients
         log.info("The maximum number of simultaneous clients: %s", downloader_clients)
         self._workers = []
         for i in range(downloader_clients):
@@ -97,9 +198,9 @@ class Crawler:
         if self._req_in_worker:
             for r in self._req_in_worker:
                 if r:
-                    await self.queue.push(r)
+                    await self.crawler.schedule(r)
             self._req_in_worker = None
-        await self.event_bus.send(events.crawler_shutdown)
+        await self.crawler.event_bus.send(events.crawler_shutdown)
         # wait cancelled futures
         await asyncio.wait(cancelled_futures)
         log.info('Crawler is stopped')
@@ -122,7 +223,7 @@ class Crawler:
         self.stop()
 
     def _all_done(self):
-        if self._start_future.done() and len(self.queue) <= 0:
+        if self._start_future.done() and len(self.crawler.queue) <= 0:
             no_active = True
             for i in range(len(self._workers)):
                 if self._req_in_worker[i]:
@@ -135,22 +236,15 @@ class Crawler:
         return False
 
     async def _generate_start_requests(self):
-        if hasattr(self.spider.start_requests, "cron_job"):
-            tick = self.spider.start_requests.cron_tick
+        if hasattr(self.crawler.spider.start_requests, "cron_job"):
+            tick = self.crawler.spider.start_requests.cron_tick
         else:
             tick = 0
         while True:
             t = time.time()
-            try:
-                res = await self.spider_middleware.start_requests(self.spider)
-            except CancelledError:
-                raise
-            except Exception:
-                log.warning("Failed to get start requests", exc_info=True)
-            else:
-                for r in res:
-                    if isinstance(r, HttpRequest):
-                        await self.schedule(r)
+            reqs = await self.crawler.start_requests()
+            for r in reqs:
+                await self.crawler.schedule(r)
             if tick <= 0:
                 break
             t = time.time() - t
@@ -159,91 +253,15 @@ class Crawler:
 
     async def _download(self, coro_id):
         while True:
-            req = await self.queue.pop()
+            req = await self.crawler.next_request()
             log.debug("%s -> worker[%s]", req, coro_id)
             self._req_in_worker[coro_id] = req
             try:
-                resp = await self.downloader_middlware.fetch(req, self.downloader)
-            except CancelledError:
-                raise
-            except Exception as e:
-                if not isinstance(e, (IgnoreRequest, ClientError, HttpError)):
-                    log.warning("Failed to request %s", req, exc_info=True)
-                if isinstance(e, IgnoreRequest):
-                    await self.event_bus.send(events.request_ignored, request=req, error=e)
-                elif isinstance(e, (ClientError, HttpError)):
-                    log.debug('Failed to make %s: %s', req, e)
-                else:
-                    log.warning("Failed to make %s", req, exc_info=True)
-                await self.spider.request_error(req, e)
-            else:
-                await self._handle_response(resp)
+                await self.crawler.fetch(req)
+            except StopCrawler:
+                self.stop()
+                continue
             self._req_in_worker[coro_id] = None
             # check if it's all done
             if self._all_done():
                 self.stop()
-
-    async def _handle_response(self, resp):
-        if isinstance(resp, HttpRequest):
-            await self.schedule(resp)
-        elif isinstance(resp, HttpResponse):
-            await self.event_bus.send(events.response_received, response=resp)
-            try:
-                result = await self.spider_middleware.parse(resp, self.spider)
-            except CancelledError:
-                raise
-            except Exception as e:
-                if isinstance(e, StopCrawler):
-                    log.info('Request to stop crawler: %s', e)
-                    self.stop()
-                elif isinstance(e, IgnoreRequest):
-                    await self.event_bus.send(events.request_ignored, request=resp.request, error=e)
-                else:
-                    log.warning("Failed to parse %s", resp, exc_info=True)
-            else:
-                for r in result:
-                    await self._handle_parsing_result(r)
-
-    async def _handle_parsing_result(self, result):
-        if isinstance(result, HttpRequest):
-            await self.schedule(result)
-        elif isinstance(result, (BaseItem, dict)):
-            try:
-                await self.item_pipeline.handle_item(result)
-            except CancelledError:
-                raise
-            except Exception as e:
-                if isinstance(e, IgnoreItem):
-                    await self.event_bus.send(events.item_ignored, item=result, error=e)
-                else:
-                    log.warning("Failed to handle %s", result, exc_info=True)
-            else:
-                await self.event_bus.send(events.item_scraped, item=result)
-
-    def _instance_from_crawler(self, cls_path):
-        obj_cls = load_object(cls_path)
-        if inspect.isclass(obj_cls):
-            if hasattr(obj_cls, "from_crawler"):
-                obj = obj_cls.from_crawler(self)
-            else:
-                obj = obj_cls()
-        else:
-            obj = obj_cls
-        return obj
-
-    async def schedule(self, request):
-        try:
-            res = self.dupe_filter.is_duplicated(request)
-            if inspect.iscoroutine(res):
-                res = await res
-            if not res:
-                await self.event_bus.send(events.request_scheduled, request=request)
-                await self.queue.push(request)
-        except Exception:
-            log.warning('Failed to schedule %s', request, exc_info=True)
-
-    @staticmethod
-    def _log_objects(objects):
-        if objects:
-            return ''.join(['\n\t({}/{}) {}'.format(i + 1, len(objects), o) for i, o in enumerate(objects)])
-        return ''

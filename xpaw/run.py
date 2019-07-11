@@ -9,7 +9,7 @@ import signal
 from tornado.ioloop import IOLoop
 
 from .config import Config, DEFAULT_CONFIG
-from .crawler import Crawler
+from .crawler import CrawlerRunner, Crawler
 from .utils import configure_logger, configure_tornado_logger, daemonize, load_config, iter_settings
 from .spider import RequestsSpider
 
@@ -38,14 +38,14 @@ def run_crawler(proj_dir=None, config=None):
     pid_file = config.get('pid_file')
     _write_pid_file(pid_file)
     try:
-        crawler = Crawler(config)
+        crawler_runner = CrawlerRunner(Crawler(config))
     except Exception:
         log.error('Failed to create crawler', exc_info=True)
         _remove_pid_file(pid_file)
         raise
-    default_signal_handlers = _set_signal_handlers(crawler)
+    default_signal_handlers = _set_signal_handlers(crawler_runner)
     try:
-        IOLoop.current().run_sync(crawler.run)
+        IOLoop.current().run_sync(crawler_runner.run)
     finally:
         _remove_pid_file(pid_file)
         _recover_signal_handlers(default_signal_handlers)
