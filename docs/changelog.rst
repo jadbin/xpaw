@@ -3,11 +3,12 @@
 Changelog
 =========
 
-0.11.0 (2019-??-??)
+0.11.0 (2019-07-11)
 -------------------
 
 - 移除对aiohttp的依赖，改由tornado实现HTTP请求，新增pycurl依赖
 - 添加基于Selenium和Chrome driver的渲染器
+- 添加Docker镜像 ``jadbin/xpaw`` ，便于构建爬虫运行环境
 - 暂时移除对cookies和cookie jar的支持
 - 组件cluster更名为crawler，包含cluster命名的模块、对象、函数、配置等均作出了相应的替换
 - 运行爬虫工程的 ``run_crawler`` 接口更名为 ``run_spider_project``

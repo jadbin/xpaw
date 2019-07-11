@@ -78,7 +78,7 @@ downloader_clients
 renderer_cores
 ^^^^^^^^^^^^^^
 
-- Default: ``4 * cpu_count()``
+- Default: ``downloader_clients``
 
 渲染进程的并发量。
 

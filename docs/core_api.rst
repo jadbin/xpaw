@@ -33,31 +33,15 @@ Crawler API
 ``from_crawler`` 提供了获取crawler的途径，通过crawler我们不仅可以获取到 :attr:`~xpaw.crawler.Crawler.config` ，也可以获取到其他的我们需要使用的crawler的属性。
 
 
-.. class:: xpaw.crawler.Crawler(config, loop=None)
+.. class:: xpaw.crawler.Crawler(config)
 
     本地模式的crawler
 
     :param ~xpaw.config.Config config: 爬虫相关的配置项
 
-    :param loop: event loop
-
     .. attribute:: config
 
     爬虫相关的配置项，对于 :attr:`~xpaw.crawler.Crawler.config` 的使用可以参考 :ref:`config_api` 。
-
-    .. method:: run()
-
-        启动crawler
-
-    .. method:: stop()
-
-        停止crawler
-
-    .. method:: schedule(request)
-
-        向运行中的crawler添加请求
-
-        :param ~xpaw.http.HttpRequest request: 请求
 
 .. _config_api:
 

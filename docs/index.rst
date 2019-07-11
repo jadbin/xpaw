@@ -24,13 +24,16 @@ Installation
 Requirements
 ============
 
+- Python >= 3.5.3
 - `tornado`_
 - `lxml`_
 - `cssselect`_
+- `selenium`_
 
 .. _tornado: https://pypi.python.org/pypi/tornado
 .. _lxml: https://pypi.python.org/pypi/lxml
 .. _cssselect: https://pypi.python.org/pypi/cssselect
+.. _selenium: https://pypi.python.org/pypi/selenium
 
 Table of Contents
 =================

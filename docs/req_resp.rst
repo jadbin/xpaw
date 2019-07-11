@@ -11,7 +11,7 @@ Request & Response
 Request API
 -----------
 
-.. class:: xpaw.http.HttpRequest(url, method="GET", body=None, params=None, headers=None, proxy=None, timeout=20, verify_ssl=False, allow_redirects=True, auth=None, proxy_auth=None, priority=None, dont_filter=False, callback=None, errback=None, meta=None)
+.. class:: xpaw.http.HttpRequest(url, method="GET", body=None, params=None, headers=None, proxy=None, timeout=20, verify_ssl=False, allow_redirects=True, auth=None, proxy_auth=None, priority=None, dont_filter=False, callback=None, errback=None, meta=None, render=None)
 
     用户通过此类封装HTTP请求。
 
@@ -37,6 +37,7 @@ Request API
     :param errback: 请求失败时的回调函数，必须是spider的成员函数，也可以传递函数名称
     :type errback: str or method
     :param dict meta: :attr:`~xpaw.http.HttpRequest.meta` 属性的初始值，用于存储请求相关的元信息
+    :param render: 是否使用浏览器渲染，以及配置参数
 
     .. attribute:: url
 
@@ -103,13 +104,17 @@ Request API
         只读属性，是一个 ``dict`` ，用于存储请求相关的元信息。
         用户可将自定义的元信息存储在 :attr:`~xpaw.http.HttpRequest.meta` 中。
 
+    .. attribute:: render
+
+        是否使用浏览器渲染，以及配置参数
+
     .. method:: copy()
 
-        复制request。
+        复制request
 
     .. method:: replace(**kwargs)
 
-        复制request并替换部分属性。
+        复制request并替换部分属性
 
 .. class:: xpaw.http.HttpHeaders
 
@@ -119,7 +124,7 @@ Request API
 Response API
 ------------
 
-.. class:: xpaw.http.HttpResponse(url, status, body=None, headers=None, request=None)
+.. class:: xpaw.http.HttpResponse(url, status, body=None, headers=None, request=None, encoding=None)
 
     :param str url: URL地址
     :param int status: HTTP状态码
@@ -127,6 +132,7 @@ Response API
     :param headers: HTTP headers
     :type headers: dict or :class:`~xpaw.http.HttpHeaders`
     :param ~xpaw.http.HttpRequest request: 爬虫请求
+    :param str encoding: HTTP body的编码格式
 
     .. attribute:: url
 

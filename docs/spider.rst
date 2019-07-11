@@ -14,12 +14,9 @@ Spider
 Spider API
 ----------
 
-.. class:: xpaw.spider.Spider(config=None, **kwargs)
+.. class:: xpaw.spider.Spider()
 
     用户自定义的spider需要继承此类。
-
-    :param ~xpaw.config.Config config: 爬虫相关配置
-    :param kwargs: 其他参数会作为爬虫的属性
 
     .. classmethod:: from_crawler(crawler)
 

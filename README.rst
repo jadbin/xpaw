@@ -51,15 +51,3 @@ Documentation
 =============
 
 http://xpaw.readthedocs.io/
-
-Requirements
-============
-
-- Python >= 3.5.3
-- `tornado`_
-- `lxml`_
-- `cssselect`_
-
-.. _tornado: https://pypi.python.org/pypi/tornado
-.. _lxml: https://pypi.python.org/pypi/lxml
-.. _cssselect: https://pypi.python.org/pypi/cssselect
