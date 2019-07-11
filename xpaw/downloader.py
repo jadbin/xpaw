@@ -28,7 +28,7 @@ class Downloader:
         self._http_client = CurlAsyncHTTPClient(max_clients=max_clients, force_instance=True)
         self._renderer = ChromeRenderer()
         if renderer_cores is None:
-            renderer_cores = 4 * cpu_count()
+            renderer_cores = self._max_clients
         self._renderer_semaphore = Semaphore(renderer_cores)
 
     @classmethod
