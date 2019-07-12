@@ -19,6 +19,4 @@ RUN CHROME_DRIVER_VERSION=$(wget -q -O - https://chromedriver.storage.googleapis
   && chmod 755 /opt/selenium/chromedriver-$CHROME_DRIVER_VERSION \
   && ln -fs /opt/selenium/chromedriver-$CHROME_DRIVER_VERSION /usr/bin/chromedriver
 
-ADD ./ /opt/xpaw
-
-RUN pip install -e /opt/xpaw
+RUN pip install xpaw
