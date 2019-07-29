@@ -51,10 +51,6 @@ Request API
 
         请求发送的数据
 
-    .. attribute:: params
-
-        请求参数
-
     .. attribute:: headers
 
         HTTP headers

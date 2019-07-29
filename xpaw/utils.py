@@ -176,9 +176,6 @@ def get_encoding_from_content(content):
 
 
 def make_url(url, params=None):
-    res = urlsplit(url)
-    if res.scheme == '':
-        url = 'http://{}'.format(url)
     args = []
     if isinstance(params, dict):
         for k, v in params.items():

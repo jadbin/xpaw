@@ -4,7 +4,6 @@ import logging
 import inspect
 from asyncio import CancelledError
 from urllib.parse import urlsplit
-from os import cpu_count
 from asyncio import Semaphore
 
 from tornado.httpclient import HTTPRequest, HTTPClientError
@@ -17,7 +16,7 @@ from .http import HttpRequest, HttpResponse, HttpHeaders
 from .errors import ClientError, HttpError
 from . import events
 from .renderer import ChromeRenderer
-from .utils import make_url, get_params_in_url, with_not_none_params
+from .utils import with_not_none_params
 
 log = logging.getLogger(__name__)
 
@@ -65,8 +64,7 @@ class Downloader:
         log.debug("HTTP response: %s", response)
         return response
 
-    @classmethod
-    def _make_request(cls, request):
+    def _make_request(self, request):
         kwargs = {'method': request.method,
                   'headers': request.headers,
                   'body': request.body,
@@ -99,8 +97,7 @@ class Downloader:
             kwargs['proxy_password'] = proxy_password
         return HTTPRequest(request.url, **kwargs)
 
-    @staticmethod
-    def _make_response(resp):
+    def _make_response(self, resp):
         return HttpResponse(resp.effective_url,
                             resp.code,
                             headers=resp.headers,
@@ -160,8 +157,6 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         return res
 
     async def _handle_request(self, request):
-        request.url = make_url(request.url, params=request.params)
-        request.params = get_params_in_url(request.url)
         request.headers = self._make_request_headers(request.headers)
         for method in self._request_handlers:
             res = method(request)

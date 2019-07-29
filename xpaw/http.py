@@ -4,7 +4,7 @@ import inspect
 
 from tornado.httputil import HTTPHeaders
 
-from .utils import get_encoding_from_content, get_encoding_from_content_type
+from .utils import get_encoding_from_content, get_encoding_from_content_type, make_url
 
 HttpHeaders = HTTPHeaders
 
@@ -17,10 +17,9 @@ class HttpRequest:
         """
         Construct an HTTP request.
         """
-        self.url = url
+        self.url = make_url(url, params)
         self.method = method
         self.body = body
-        self.params = params
         self.headers = headers
         self.proxy = proxy
         self.timeout = timeout
@@ -48,7 +47,7 @@ class HttpRequest:
         return self.replace()
 
     def replace(self, **kwargs):
-        for i in ["url", "method", "body", "params", "headers", "proxy",
+        for i in ["url", "method", "body", "headers", "proxy",
                   "timeout", "verify_ssl", "allow_redirects", "auth", "proxy_auth",
                   "priority", "dont_filter", "callback", "errback", "meta",
                   "render"]:
@@ -66,7 +65,6 @@ class HttpRequest:
             'url': self.url,
             'method': self.method,
             'body': self.body,
-            'params': self.params,
             'headers': self.headers,
             'proxy': self.proxy,
             'timeout': self.timeout,
