@@ -22,10 +22,10 @@ log = logging.getLogger(__name__)
 
 
 class Downloader:
-    def __init__(self, max_clients=100, renderer_cores=None):
+    def __init__(self, max_clients=100, renderer=None, renderer_cores=None):
         self._max_clients = max_clients
         self._http_client = CurlAsyncHTTPClient(max_clients=max_clients, force_instance=True)
-        self._renderer = ChromeRenderer()
+        self._renderer = renderer
         if renderer_cores is None:
             renderer_cores = self._max_clients
         self._renderer_semaphore = Semaphore(renderer_cores)
@@ -33,7 +33,9 @@ class Downloader:
     @classmethod
     def from_crawler(cls, crawler):
         config = crawler.config
+        renderer = ChromeRenderer(options=config.get('chrome_renderer_options'))
         downloader = cls(**with_not_none_params(max_clients=config.getint('downloader_clients'),
+                                                renderer=renderer,
                                                 renderer_cores=config.getint('renderer_cores')))
         crawler.event_bus.subscribe(downloader.close, events.crawler_shutdown)
         return downloader
@@ -105,6 +107,7 @@ class Downloader:
 
     def close(self):
         self._http_client.close()
+        self._renderer.close()
 
 
 def prepare_curl_socks5(curl):

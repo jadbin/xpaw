@@ -82,6 +82,15 @@ renderer_cores
 
 渲染进程的并发量。
 
+.. _chrome_renderer_options:
+
+chrome_renderer_options
+^^^^^^^^^^^^^^^^^^^^^^^
+
+- Type: ``dict``
+
+Chrome渲染器的配置，以 ``'NAME': {'arguments': [], 'experimental_options': {}}`` 的方式进行配置，其中 ``NAME`` 表示渲染器实例的名称。
+
 .. _default_headers:
 
 default_headers
@@ -164,31 +173,18 @@ retry_http_status
 
 前面加 ``!`` 表示取反，例如 ``!2xx`` 表示所有不是以 ``2`` 开头的状态码。
 
-Speed Limit
------------
-
-.. _speed_limit_rate:
-
-speed_limit_rate
-^^^^^^^^^^^^^^^^
-
-- Default: ``1``
-- Type: ``float`` , ``int``
-
-下载速率，单位：请求/秒。
-
-.. _speed_limit_burst:
-
-speed_limit_burst
-^^^^^^^^^^^^^^^^^
-
-- Default: ``1``
-- Type: ``int``
-
-下载时最大并发量。
-
 Spider Behaviour
 ----------------
+
+.. _speed_limit:
+
+speed_limit
+^^^^^^^^^^^
+
+- Type: ``dict``
+
+``rate`` 表示下载速率，单位：请求/秒， ``burst`` 表示下载时最大并发量。
+
 
 .. _max_depth:
 

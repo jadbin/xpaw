@@ -74,7 +74,7 @@ class Crawler:
             if isinstance(e, IgnoreRequest):
                 await self.event_bus.send(events.request_ignored, request=req, error=e)
             elif isinstance(e, (ClientError, HttpError)):
-                log.debug('Failed to make %s: %s', req, e)
+                log.info('Failed to make %s: %s', req, e)
             else:
                 log.warning("Failed to request %s", req, exc_info=True)
             await self.spider.request_error(req, e)

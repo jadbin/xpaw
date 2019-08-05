@@ -37,7 +37,7 @@ Request API
     :param errback: 请求失败时的回调函数，必须是spider的成员函数，也可以传递函数名称
     :type errback: str or method
     :param dict meta: :attr:`~xpaw.http.HttpRequest.meta` 属性的初始值，用于存储请求相关的元信息
-    :param render: 是否使用浏览器渲染，以及配置参数
+    :param render: 是否使用浏览器渲染
 
     .. attribute:: url
 
@@ -102,7 +102,7 @@ Request API
 
     .. attribute:: render
 
-        是否使用浏览器渲染，以及配置参数
+        是否使用浏览器渲染
 
     .. method:: copy()
 
