@@ -16,4 +16,4 @@ __all__ = ['HttpRequest', 'HttpResponse', 'HttpHeaders',
            'run_spider', 'run_spider_project', 'make_requests',
            'every']
 
-__version__ = '0.11.1'
+__version__ = '0.11.2'
