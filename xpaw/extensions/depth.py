@@ -2,9 +2,11 @@
 
 import logging
 
-from .http import HttpRequest
+from xpaw.http import HttpRequest
 
 log = logging.getLogger(__name__)
+
+__all__ = ['DepthMiddleware']
 
 
 class DepthMiddleware:
@@ -21,7 +23,7 @@ class DepthMiddleware:
         max_depth = config.getint('max_depth')
         return cls(max_depth=max_depth)
 
-    def handle_output(self, response, result):
+    def handle_spider_output(self, response, result):
         depth = response.meta.get('depth', 0) + 1
         for r in result:
             if isinstance(r, HttpRequest):

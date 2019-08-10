@@ -4,9 +4,7 @@ import logging
 import inspect
 from asyncio import CancelledError
 
-from .middleware import MiddlewareManager
 from . import events
-from .utils import iterable_to_list
 from .http import HttpRequest
 
 log = logging.getLogger(__name__)
@@ -67,109 +65,6 @@ class Spider:
         if isinstance(method, str):
             method = getattr(self, method)
         return method
-
-
-def _isiterable(obj):
-    return hasattr(obj, "__iter__") or hasattr(obj, "__aiter__")
-
-
-class SpiderMiddlewareManager(MiddlewareManager):
-    def __init__(self, *middlewares):
-        self._input_handlers = []
-        self._output_handlers = []
-        self._error_handlers = []
-        self._start_requests_handlers = []
-        super().__init__(*middlewares)
-
-    def _add_middleware(self, middleware):
-        super()._add_middleware(middleware)
-        if hasattr(middleware, "handle_input"):
-            self._input_handlers.append(middleware.handle_input)
-        if hasattr(middleware, "handle_output"):
-            self._output_handlers.insert(0, middleware.handle_output)
-        if hasattr(middleware, "handle_error"):
-            self._error_handlers.insert(0, middleware.handle_error)
-        if hasattr(middleware, "handle_start_requests"):
-            self._start_requests_handlers.insert(0, middleware.handle_start_requests)
-
-    @classmethod
-    def _middleware_list_from_config(cls, config):
-        return cls._make_component_list('spider_middlewares', config)
-
-    async def parse(self, response, spider):
-        request = response.request
-        try:
-            try:
-                await self._handle_input(response)
-            except CancelledError:
-                raise
-            except Exception as e:
-                await spider.request_error(request, e)
-                raise e
-            res = await spider.request_success(response)
-            assert res is None or _isiterable(res), \
-                "Parsing result must be None or an iterable object, got {}".format(type(res).__name__)
-            result = await iterable_to_list(res)
-        except CancelledError:
-            raise
-        except Exception as e:
-            res = await self._handle_error(response, e)
-            if isinstance(res, Exception):
-                raise res
-            result = await iterable_to_list(res)
-        if result:
-            res = await self._handle_output(response, result)
-            result = await iterable_to_list(res)
-        return result
-
-    async def start_requests(self, spider):
-        res = spider.start_requests()
-        if inspect.iscoroutine(res):
-            res = await res
-        assert res is None or _isiterable(res), \
-            "Start requests must be None or an iterable object, got {}".format(type(res).__name__)
-        result = await iterable_to_list(res)
-        if result:
-            res = await self._handle_start_requests(result)
-            result = await iterable_to_list(res)
-        return result
-
-    async def _handle_input(self, response):
-        for method in self._input_handlers:
-            res = method(response)
-            if inspect.iscoroutine(res):
-                res = await res
-            assert res is None, \
-                "Input handler must return None, got {}".format(type(res).__name__)
-
-    async def _handle_output(self, response, result):
-        for method in self._output_handlers:
-            result = method(response, result)
-            if inspect.iscoroutine(result):
-                result = await result
-            assert _isiterable(result), \
-                "Output handler must return an iterable object, got {}".format(type(result).__name__)
-        return result
-
-    async def _handle_error(self, response, error):
-        for method in self._error_handlers:
-            res = method(response, error)
-            if inspect.iscoroutine(res):
-                res = await res
-            assert res is None or _isiterable(res), \
-                "Exception handler must return None or an iterable object, got {}".format(type(res).__name__)
-            if res is not None:
-                return res
-        return error
-
-    async def _handle_start_requests(self, result):
-        for method in self._start_requests_handlers:
-            result = method(result)
-            if inspect.iscoroutine(result):
-                result = await result
-            assert _isiterable(result), \
-                "Start requests handler must return an iterable object, got {}".format(type(result).__name__)
-        return result
 
 
 class RequestsSpider(Spider):

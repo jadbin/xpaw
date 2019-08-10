@@ -200,3 +200,7 @@ def with_not_none_params(**kwargs):
         if v is not None:
             params[k] = v
     return params
+
+
+def isiterable(obj):
+    return hasattr(obj, "__iter__") or hasattr(obj, "__aiter__")

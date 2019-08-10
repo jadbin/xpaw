@@ -144,6 +144,7 @@ class CrawlCommand(Command):
         else:
             raise UsageError('Cannot find {}'.format(args.path))
 
+
 class VersionCommand(Command):
     @property
     def name(self):

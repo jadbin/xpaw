@@ -208,33 +208,6 @@ spider
 
 使用的爬虫类或爬虫类路径。
 
-.. _downloader_middlewares_setting:
-
-downloader_middlewares
-^^^^^^^^^^^^^^^^^^^^^^
-
-- Default: ``None``
-
-使用的下载中间件。
-
-.. _spider_middlewares_setting:
-
-spider_middlewares
-^^^^^^^^^^^^^^^^^^
-
-- Default: ``None``
-
-使用的解析中间件。
-
-.. _item_pipelines_setting:
-
-item_pipelines
-^^^^^^^^^^^^^^
-
-- Default: ``None``
-
-使用的数据处理器。
-
 .. _extensions_setting:
 
 extensions

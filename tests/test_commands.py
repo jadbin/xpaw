@@ -1,8 +1,7 @@
 # coding=utf-8
 
 import pytest
-from os.path import isfile, isdir, join
-from os import remove
+from os.path import join
 
 from xpaw.cmdline import main
 from xpaw import __version__

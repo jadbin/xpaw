@@ -122,18 +122,12 @@ DEFAULT_CONFIG = {
     'stats_collector': 'xpaw.stats.StatsCollector',
     'queue': 'xpaw.queue.PriorityQueue',
     'dupe_filter': 'xpaw.dupefilter.HashDupeFilter',
-    'default_downloader_middlewares': {
-        # crawler side
-        'xpaw.downloader_middlewares.DefaultHeadersMiddleware': 300,
-        'xpaw.downloader_middlewares.UserAgentMiddleware': 400,
-        'xpaw.downloader_middlewares.RetryMiddleware': 500,
-        'xpaw.downloader_middlewares.ProxyMiddleware': 700,
-        'xpaw.downloader_middlewares.SpeedLimitMiddleware': 900,
-        # downloader side
-    },
-    'default_spider_middlewares': {
-        # crawler side
-        'xpaw.spider_middlewares.DepthMiddleware': 900
-        # spider side
-    }
+    'default_extensions': [
+        'xpaw.extensions.DefaultHeadersMiddleware',
+        'xpaw.extensions.UserAgentMiddleware',
+        'xpaw.extensions.RetryMiddleware',
+        'xpaw.extensions.ProxyMiddleware',
+        'xpaw.extensions.SpeedLimitMiddleware',
+        'xpaw.extensions.DepthMiddleware',
+    ]
 }

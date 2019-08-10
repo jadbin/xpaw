@@ -21,7 +21,7 @@ Data Flow
 5. downloader完成下载后生成 :class:`~xpaw.http.HttpResponse` 返回给crawler。
 6. crawler将得到的 :class:`~xpaw.http.HttpResponse` 交由spider处理。
 7. spider处理 :class:`~xpaw.http.HttpResponse` 并提取数据 :class:`~xpaw.item.Item` 和新的请求 :class:`~xpaw.http.HttpRequest` 。
-8. crawler将得到的 :class:`~xpaw.item.Item` 交由pipeline处理，将得到的 :class:`~xpaw.http.HttpRequest` 放入到queue中。
+8. crawler将得到的 :class:`~xpaw.http.HttpRequest` 放入到queue中。
 
 爬虫会持续运行直到所有生成的requests都被处理完且不再生成新的requests为止。
 
@@ -47,8 +47,3 @@ Spider
 ^^^^^^
 
 用户在 :class:`~xpaw.spider.Spider` 中实现采集任务的核心逻辑，包括网页解析、数据抽取、链接抽取等。
-
-Pipeline
-^^^^^^^^
-
-处理采集得到的结构化数据。

@@ -2,11 +2,11 @@
 
 import inspect
 
-from tornado.httputil import HTTPHeaders
+from tornado.httputil import HTTPHeaders as _HttpHeaders
 
 from .utils import get_encoding_from_content, get_encoding_from_content_type, make_url
 
-HttpHeaders = HTTPHeaders
+HttpHeaders = _HttpHeaders
 
 
 class HttpRequest:

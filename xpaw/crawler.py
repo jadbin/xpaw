@@ -8,14 +8,12 @@ import inspect
 
 from .http import HttpRequest, HttpResponse
 from .errors import IgnoreRequest, IgnoreItem, StopCrawler, ClientError, HttpError
-from .downloader import DownloaderMiddlewareManager
-from .spider import Spider, SpiderMiddlewareManager
+from .spider import Spider
 from .eventbus import EventBus
 from . import events
 from .extension import ExtensionManager
 from .item import BaseItem
-from .pipeline import ItemPipelineManager
-from .utils import load_object
+from .utils import load_object, iterable_to_list, isiterable
 
 log = logging.getLogger(__name__)
 
@@ -31,24 +29,30 @@ class Crawler:
         self.spider = self._instance_from_crawler(self.config.get('spider'))
         assert isinstance(self.spider, Spider), 'spider must inherit from the Spider class'
         log.info('Spider: %s', str(self.spider))
-        self.downloader_middlware = DownloaderMiddlewareManager.from_crawler(self)
-        log.info('Downloader middlewares: %s', self._log_objects(self.downloader_middlware.components))
-        self.spider_middleware = SpiderMiddlewareManager.from_crawler(self)
-        log.info('Spider middlewares: %s', self._log_objects(self.spider_middleware.components))
-        self.item_pipeline = ItemPipelineManager.from_crawler(self)
-        log.info('Item pipelines: %s', self._log_objects(self.item_pipeline.components))
         self.extension = ExtensionManager.from_crawler(self)
         log.info('Extensions: %s', self._log_objects(self.extension.components))
 
     async def start_requests(self):
         try:
-            res = await self.spider_middleware.start_requests(self.spider)
+            res = await self._start_requests()
         except CancelledError:
             raise
         except Exception:
             log.warning("Failed to get start requests", exc_info=True)
         else:
             return [r for r in res if isinstance(r, HttpRequest)]
+
+    async def _start_requests(self):
+        res = self.spider.start_requests()
+        if inspect.iscoroutine(res):
+            res = await res
+        assert res is None or isiterable(res), \
+            "Start requests must be None or an iterable object, got {}".format(type(res).__name__)
+        result = await iterable_to_list(res)
+        if result:
+            res = await self.extension.handle_start_requests(result)
+            result = await iterable_to_list(res)
+        return result
 
     async def schedule(self, request):
         try:
@@ -66,8 +70,9 @@ class Crawler:
         return req
 
     async def fetch(self, req):
+
         try:
-            resp = await self.downloader_middlware.fetch(req, self.downloader)
+            resp = await self._fetch(req)
         except CancelledError:
             raise
         except Exception as e:
@@ -81,13 +86,34 @@ class Crawler:
         else:
             await self._handle_response(resp)
 
+    async def _fetch(self, req):
+        try:
+            res = await self.extension.handle_request(req)
+            if isinstance(res, HttpRequest):
+                return res
+            if res is None:
+                res = await self.downloader.fetch(req)
+        except CancelledError:
+            raise
+        except Exception as e:
+            res = await self.extension.handle_error(req, e)
+            if isinstance(res, Exception):
+                raise res
+        if isinstance(res, HttpResponse):
+            _res = await self.extension.handle_response(req, res)
+            if _res:
+                res = _res
+            # bind request
+            res.request = req
+        return res
+
     async def _handle_response(self, resp):
         if isinstance(resp, HttpRequest):
             await self.schedule(resp)
         elif isinstance(resp, HttpResponse):
             await self.event_bus.send(events.response_received, response=resp)
             try:
-                result = await self.spider_middleware.parse(resp, self.spider)
+                result = await self._parse(resp)
             except CancelledError:
                 raise
             except Exception as e:
@@ -102,12 +128,38 @@ class Crawler:
                 for r in result:
                     await self._handle_parsing_result(r)
 
+    async def _parse(self, response):
+        request = response.request
+        try:
+            try:
+                await self.extension.handle_spider_input(response)
+            except CancelledError:
+                raise
+            except Exception as e:
+                await self.spider.request_error(request, e)
+                raise e
+            res = await self.spider.request_success(response)
+            assert res is None or isiterable(res), \
+                "Parsing result must be None or an iterable object, got {}".format(type(res).__name__)
+            result = await iterable_to_list(res)
+        except CancelledError:
+            raise
+        except Exception as e:
+            res = await self.extension.handle_spider_error(response, e)
+            if isinstance(res, Exception):
+                raise res
+            result = await iterable_to_list(res)
+        if result:
+            res = await self.extension.handle_spider_output(response, result)
+            result = await iterable_to_list(res)
+        return result
+
     async def _handle_parsing_result(self, result):
         if isinstance(result, HttpRequest):
             await self.schedule(result)
         elif isinstance(result, (BaseItem, dict)):
             try:
-                await self.item_pipeline.handle_item(result)
+                await self.extension.handle_item(result)
             except CancelledError:
                 raise
             except Exception as e:

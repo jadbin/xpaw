@@ -111,11 +111,11 @@ class HandlerDownloaderMiddleware:
 
 
 class HandlerSpiderMiddleware:
-    def handle_input(self, response):
+    def handle_spider_input(self, response):
         if response.request.url.endswith('not-found'):
             raise FooError
 
-    def handle_error(self, response, error):
+    def handle_spider_error(self, response, error):
         if isinstance(error, FooError):
             return ()
 
@@ -177,9 +177,8 @@ class HandlerSpider(Spider):
 
 def test_spider_handlers():
     data = set()
-    run_spider(HandlerSpider, log_level='DEBUG', spider_middlewares=[HandlerSpiderMiddleware],
-               downloader_middlewares=[HandlerDownloaderMiddleware], data=data,
-               server_address='python.org')
+    run_spider(HandlerSpider, log_level='DEBUG', extensions=[HandlerDownloaderMiddleware, HandlerSpiderMiddleware],
+               data=data, server_address='python.org')
     assert 'parse' in data
     assert 'error_back' in data
     assert 'async_error_back' in data
@@ -231,7 +230,7 @@ class ItemSpider(Spider):
 
 def test_handle_item():
     data = {}
-    run_spider(ItemSpider, log_level='DEBUG', data=data, item_pipelines=[FooItemPipeLine])
+    run_spider(ItemSpider, log_level='DEBUG', data=data, extensions=[FooItemPipeLine])
     assert isinstance(data.get('item'), DummyItem)
 
 

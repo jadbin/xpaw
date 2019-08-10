@@ -1,7 +1,6 @@
 # coding=utf-8
 
 import logging
-import inspect
 from asyncio import CancelledError
 from urllib.parse import urlsplit
 from asyncio import Semaphore
@@ -11,8 +10,7 @@ from tornado.curl_httpclient import CurlAsyncHTTPClient
 
 import pycurl
 
-from .middleware import MiddlewareManager
-from .http import HttpRequest, HttpResponse, HttpHeaders
+from .http import HttpResponse
 from .errors import ClientError, HttpError
 from . import events
 from .renderer import ChromeRenderer
@@ -116,93 +114,3 @@ def prepare_curl_socks5(curl):
 
 def prepare_curl_socks4(curl):
     curl.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_SOCKS4)
-
-
-class DownloaderMiddlewareManager(MiddlewareManager):
-    def __init__(self, *middlewares):
-        self._request_handlers = []
-        self._response_handlers = []
-        self._error_handlers = []
-        super().__init__(*middlewares)
-
-    def _add_middleware(self, middleware):
-        super()._add_middleware(middleware)
-        if hasattr(middleware, "handle_request"):
-            self._request_handlers.append(middleware.handle_request)
-        if hasattr(middleware, "handle_response"):
-            self._response_handlers.insert(0, middleware.handle_response)
-        if hasattr(middleware, "handle_error"):
-            self._error_handlers.insert(0, middleware.handle_error)
-
-    @classmethod
-    def _middleware_list_from_config(cls, config):
-        return cls._make_component_list('downloader_middlewares', config)
-
-    async def fetch(self, request, downloader):
-        try:
-            res = await self._handle_request(request)
-            if isinstance(res, HttpRequest):
-                return res
-            if res is None:
-                res = await downloader.fetch(request)
-        except CancelledError:
-            raise
-        except Exception as e:
-            res = await self._handle_error(request, e)
-            if isinstance(res, Exception):
-                raise res
-        if isinstance(res, HttpResponse):
-            _res = await self._handle_response(request, res)
-            if _res:
-                res = _res
-            # bind request
-            res.request = request
-        return res
-
-    async def _handle_request(self, request):
-        request.headers = self._make_request_headers(request.headers)
-        for method in self._request_handlers:
-            res = method(request)
-            if inspect.iscoroutine(res):
-                res = await res
-            assert res is None or isinstance(res, (HttpRequest, HttpResponse)), \
-                "Request handler must return None, HttpRequest or HttpResponse, got {}".format(type(res).__name__)
-            if res:
-                return res
-
-    def _make_request_headers(self, headers):
-        if isinstance(headers, HttpHeaders):
-            return headers
-        res = HttpHeaders()
-        if isinstance(headers, dict):
-            for k, v in headers.items():
-                if isinstance(v, (tuple, list)):
-                    for i in v:
-                        res.add(k, i)
-                else:
-                    res.add(k, v)
-        elif isinstance(headers, (tuple, list)):
-            for k, v in headers:
-                res.add(k, v)
-        return res
-
-    async def _handle_response(self, request, response):
-        for method in self._response_handlers:
-            res = method(request, response)
-            if inspect.iscoroutine(res):
-                res = await res
-            assert res is None or isinstance(res, HttpRequest), \
-                "Response handler must return None or HttpRequest, got {}".format(type(res).__name__)
-            if res:
-                return res
-
-    async def _handle_error(self, request, error):
-        for method in self._error_handlers:
-            res = method(request, error)
-            if inspect.iscoroutine(res):
-                res = await res
-            assert res is None or isinstance(res, (HttpRequest, HttpResponse)), \
-                "Exception handler must return None, HttpRequest or HttpResponse, got {}".format(type(res).__name__)
-            if res:
-                return res
-        return error
