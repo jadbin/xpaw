@@ -44,7 +44,6 @@ Table of Contents
 
     make_requests
     tutorial1
-    tutorial2
 
 .. toctree::
     :caption: Basic References

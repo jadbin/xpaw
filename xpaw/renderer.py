@@ -74,6 +74,7 @@ class ChromeRenderer:
 
     def create_driver_instance(self, name):
         driver = Chrome(options=self.options[name])
+        self._set_navigator(driver)
         return DriverInstance(name, driver)
 
     def _set_navigator(self, driver):

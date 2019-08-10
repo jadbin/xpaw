@@ -89,7 +89,7 @@ chrome_renderer_options
 
 - Type: ``dict``
 
-Chrome渲染器的配置，以 ``'NAME': {'arguments': [], 'experimental_options': {}}`` 的方式进行配置，其中 ``NAME`` 表示渲染器实例的名称。
+Chrome渲染器的配置，以 ``'NAME': {'arguments': [], 'experimental_options': {}}`` 的方式进行配置，其中 ``NAME`` 表示渲染器类别的名称。
 
 .. _default_headers:
 
