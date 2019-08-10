@@ -1,15 +1,13 @@
 # coding=utf-8
 
-import os
-from os.path import exists, join, abspath, isfile, isdir, basename, dirname, split, splitext
-from shutil import move, copy, copymode, ignore_patterns
+from os.path import abspath, isfile, isdir, split, splitext
 import logging
 from importlib import import_module
 import sys
 import inspect
 
 from .errors import UsageError
-from .utils import string_camelcase, render_template_file, load_config, iter_settings
+from .utils import load_config, iter_settings
 from . import __version__
 from .run import run_crawler
 from .spider import Spider
@@ -145,75 +143,6 @@ class CrawlCommand(Command):
             run_crawler(proj_dir=args.path, config=self.config)
         else:
             raise UsageError('Cannot find {}'.format(args.path))
-
-
-_ignore_file_type = ignore_patterns("*.pyc")
-
-
-class InitCommand(Command):
-    @property
-    def syntax(self):
-        return "<DIR>"
-
-    @property
-    def name(self):
-        return "init"
-
-    @property
-    def short_desc(self):
-        return "Initialize a crawling project"
-
-    def add_arguments(self, parser):
-        parser.add_argument("project_dir", metavar="DIR", nargs=1,
-                            help="project directory, the last part of the path is the project name")
-        parser.add_argument('--templates', metavar='DIR', dest='templates',
-                            default=join(dirname(__file__), 'templates'),
-                            help='the directory of templates')
-
-    def process_arguments(self, args):
-        args.project_dir = args.project_dir[0]
-        if not exists(args.project_dir):
-            os.mkdir(args.project_dir, mode=0o775)
-
-    def run(self, args):
-        project_dir = abspath(args.project_dir)
-        project_name = basename(project_dir)
-        templates_dir = abspath(args.templates)
-        module_dir = join(project_dir, project_name)
-        self._copytree(join(templates_dir, 'project'), project_dir)
-        move(join(project_dir, "module"), module_dir)
-        self._render_files(project_dir,
-                           lambda f: render_template_file(f, version=__version__,
-                                                          project_name=project_name,
-                                                          ProjectName=string_camelcase(project_name)))
-
-        print("New project '{}' created in {}".format(project_name, abspath(project_dir)))
-
-    def _copytree(self, src, dst):
-        if not exists(dst):
-            os.makedirs(dst, 0o755)
-        copymode(src, dst)
-        names = os.listdir(src)
-        ignored_names = _ignore_file_type(src, names)
-        for name in names:
-            if name in ignored_names:
-                continue
-            srcname = join(src, name)
-            dstname = join(dst, name)
-            if isdir(srcname):
-                self._copytree(srcname, dstname)
-            else:
-                copy(srcname, dstname)
-
-    def _render_files(self, src, render):
-        names = os.listdir(src)
-        for name in names:
-            srcname = join(src, name)
-            if isdir(srcname):
-                self._render_files(srcname, render)
-            else:
-                render(srcname)
-
 
 class VersionCommand(Command):
     @property

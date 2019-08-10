@@ -5,16 +5,38 @@ from os.path import join
 import pytest
 
 from xpaw.spider import Spider
-from xpaw.cmdline import main
 from xpaw.run import run_spider, run_spider_project, make_requests
 from xpaw.http import HttpRequest, HttpResponse
 from xpaw.errors import ClientError, HttpError
 
+spider_source = """# coding=utf-8
+
+from xpaw import Spider
+
+
+class NewSpider(Spider):
+
+    def start_requests(self):
+        pass
+
+    def parse(self, response):
+        pass
+"""
+
+config_source = """# coding=utf-8
+
+spider = 'spider.NewSpider'
+"""
+
 
 def test_run_spider_project(tmpdir):
-    proj_name = 'test_run_spider_project'
-    proj_dir = join(str(tmpdir), proj_name)
-    main(argv=['xpaw', 'init', proj_dir])
+    proj_dir = str(tmpdir)
+    spider_file = join(proj_dir, 'spider.py')
+    config_file = join(proj_dir, 'config.py')
+    with open(spider_file, 'w') as f:
+        f.write(spider_source)
+    with open(config_file, 'w') as f:
+        f.write(config_source)
     run_spider_project(proj_dir, log_level='DEBUG')
 
 
