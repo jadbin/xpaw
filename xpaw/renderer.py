@@ -76,6 +76,10 @@ class ChromeRenderer:
         driver = Chrome(options=self.options[name])
         return DriverInstance(name, driver)
 
+    def _set_navigator(self, driver):
+        source = """Object.defineProperties(navigator,{webdriver:{get:()=> undefined}});"""
+        add_script_to_evaluate_on_new_document(source, driver)
+
     def get_driver_name(self, request):
         if isinstance(request.render, str):
             name = request.render
@@ -124,6 +128,10 @@ class ChromeRenderer:
                     break
                 else:
                     driver_instance.destroy_driver()
+
+
+def add_script_to_evaluate_on_new_document(source, driver):
+    return driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': source})
 
 
 class DriverInstance:
