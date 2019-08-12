@@ -11,10 +11,18 @@ from .http import HttpResponse, HttpHeaders
 
 log = logging.getLogger(__name__)
 
+page_js_source = """
+Object.defineProperties(navigator, { webdriver: {
+    get: () => undefined
+}, userAgent: {
+    get: () => '%s'
+}});
+"""
+
 
 class ChromeRenderer:
-    default_arguments = ['--headless', '--incognito', '--ignore-certificate-errors', '--ignore-ssl-errors',
-                         '--disable-gpu', '--no-sandbox']
+    default_arguments = ['headless', 'incognito', 'ignore-certificate-errors', 'ignore-ssl-errors',
+                         'disable-gpu', 'no-sandbox', 'window-size=1920,1080']
     default_prefs = {'profile.managed_default_content_settings.images': 2}
 
     def __init__(self, options=None):
@@ -78,8 +86,9 @@ class ChromeRenderer:
         return DriverInstance(name, driver)
 
     def _set_navigator(self, driver):
-        source = """Object.defineProperties(navigator,{webdriver:{get:()=> undefined}});"""
-        add_script_to_evaluate_on_new_document(source, driver)
+        user_agent = driver.execute_script('return window.navigator.userAgent')
+        user_agent = user_agent.replace('HeadlessChrome', 'Chrome')
+        add_script_to_evaluate_on_new_document(page_js_source % user_agent, driver)
 
     def get_driver_name(self, request):
         if isinstance(request.render, str):
@@ -111,6 +120,7 @@ class ChromeRenderer:
             driver.switch_to.window(handles[i])
             driver.close()
         driver.switch_to.window(handles[-1])
+        self._set_navigator(driver)
 
     def push_driver_instance(self, driver_instance):
         try:
