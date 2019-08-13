@@ -110,8 +110,8 @@ user_agent
 
 指定HTTP请求头的User-Agent字段。
 
-以 ``:`` 开头表示命令模式，命令分为终端类型和浏览器类型， 终端类型包括 ``desktop`` 、``mobile``，浏览器类型包括 ``chrome`` 。
-多个命令之间用逗号 ``,`` 隔开，如 ``:mobile,chrome`` 表示移动端的Chrome浏览器。
+以 ``:`` 开头表示命令模式，多个命令之间用逗号 ``,`` 隔开，开启命令模式后默认使用Chrome浏览器。
+可声明终端类型包括 ``desktop`` 、``mobile``，如 ``:mobile`` 表示移动端的Chrome浏览器。
 
 其他字符串则直接视为User-Agent。
 
