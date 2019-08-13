@@ -16,6 +16,8 @@ Object.defineProperties(navigator, { webdriver: {
     get: () => undefined
 }, userAgent: {
     get: () => '%s'
+}, appVersion: {
+    get: () => '%s'
 }});
 """
 
@@ -86,9 +88,11 @@ class ChromeRenderer:
         return DriverInstance(name, driver)
 
     def _set_navigator(self, driver):
-        user_agent = driver.execute_script('return window.navigator.userAgent')
+        user_agent = driver.execute_script('return navigator.userAgent')
         user_agent = user_agent.replace('HeadlessChrome', 'Chrome')
-        add_script_to_evaluate_on_new_document(page_js_source % user_agent, driver)
+        app_version = driver.execute_script('return navigator.appVersion')
+        app_version = app_version.replace('HeadlessChrome', 'Chrome')
+        add_script_to_evaluate_on_new_document(page_js_source % (user_agent, app_version), driver)
 
     def get_driver_name(self, request):
         if isinstance(request.render, str):
