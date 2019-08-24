@@ -26,6 +26,8 @@ class Spider:
         return log
 
     def log(self, message, *args, level=logging.INFO, **kwargs):
+        if isinstance(level, str):
+            level = logging._nameToLevel(level.upper())
         self.logger.log(level, message, *args, **kwargs)
 
     def parse(self, response):

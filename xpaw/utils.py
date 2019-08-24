@@ -37,7 +37,6 @@ def configure_logger(name, config):
         handler = logging.FileHandler(log_file)
     else:
         handler = logging.StreamHandler()
-    handler.setLevel(log_level)
     formatter = logging.Formatter(log_format, log_dateformat)
     handler.setFormatter(formatter)
     logger.handlers.clear()
