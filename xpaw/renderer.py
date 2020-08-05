@@ -53,7 +53,7 @@ class ChromeRenderer:
             driver_instance = self.get_driver_instance(request)
             driver = driver_instance.driver
             driver.get(request.url)
-            response = HttpResponse(driver.current_url, 200, body=driver.page_source.encode('utf-8'),
+            response = HttpResponse(driver.current_url, 200, body=driver.page_source,
                                     headers=HttpHeaders(), request=request)
             self.push_driver_instance(driver_instance)
             loop.call_soon_threadsafe(lock.set_result, response)
